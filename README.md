@@ -1,8 +1,8 @@
 # telliGRAM
 
-A powerful Intellivision GRAM card creator for both **IntyBASIC** and **Intellivision Assembly** (as1600 / CP1610).
+A visual editor for creating Intellivision GRAM cards with support for **IntyBASIC** and **Intellivision Assembly** (as1600 / CP1610).
 
-Convert your pixel art, sprite sheets, and ASCII art into ready-to-use GRAM card definitions for Intellivision game development.
+Create custom 8×8 graphics for Intellivision games using an intuitive GUI with real-time pixel editing and project management.
 
 ## What are GRAM Cards?
 
@@ -15,27 +15,30 @@ GRAM (Graphics RAM) cards are user-definable 8×8 pixel graphics on the Intelliv
 
 ## Features
 
-- 🎨 Convert images to GRAM card data
-- 📝 Support for ASCII art input
-- 🔄 Output to IntyBASIC or Assembly formats
-- 📦 Batch processing for sprite sheets
-- ✅ Automatic validation (dimensions, colors, limits)
-- 🎯 Smart GROM detection (avoid wasting GRAM on built-in characters)
+- 🎨 **Visual Pixel Editor** - Interactive 8×8 grid with click-and-drag painting
+- 📦 **64-Card Project Manager** - Organize all GRAM cards in one project
+- 💾 **Save/Load Projects** - JSON-based `.telligram` file format
+- 🔄 **Card Transformations** - Flip horizontal/vertical, clear, invert
+- 👁️ **Live Preview** - See all 64 cards at once with thumbnail grid
+- ⌨️ **Keyboard Shortcuts** - Ctrl+N/O/S for quick file operations
+- ✅ **Test-Driven Development** - 100% test coverage on core modules (39/39 tests passing)
 
 ## Quick Start
 
 ```bash
-# Convert an 8×8 PNG to IntyBASIC format
-telligram sprite.png -o sprite.bas -f intybasic
+# Install dependencies
+pip install -r requirements.txt
 
-# Convert sprite sheet to assembly (binary format)
-telligram spritesheet.png -o sprites.asm -f assembly-bin
+# Run the GUI application
+python3 -m telligram.main
 
-# ASCII art to assembly (hexadecimal format)
-telligram ascii_art.txt -o graphics.asm -f assembly-hex
+# Or set PYTHONPATH for development
+PYTHONPATH=src python3 -m telligram.main
 ```
 
-## Output Examples
+## Planned Output Formats
+
+Code generation is planned for future releases. The application will export to:
 
 ### IntyBASIC Format
 ```basic
@@ -96,60 +99,45 @@ cd telliGRAM
 
 # Install dependencies
 pip install -r requirements.txt
-
-# Install telliGRAM
-pip install -e .
 ```
 
 ## Usage
 
-### Basic Usage
+### GUI Application
 
 ```bash
-# Convert image to IntyBASIC
-telligram input.png -o output.bas -f intybasic
-
-# Convert to assembly (binary format)
-telligram input.png -o output.asm -f assembly-bin
-
-# Convert to assembly (hexadecimal format)
-telligram input.png -o output.asm -f assembly-hex
+# Run the application
+python3 -m telligram.main
 ```
 
-### Advanced Options
+**Features:**
+- **Left Panel:** 64-card grid view - click any card to edit
+- **Right Panel:** 8×8 pixel editor with real-time preview
+- **File Menu:** New, Open, Save, Save As (.telligram format)
+- **Edit Menu:** Clear card, flip transformations
+- **Mouse Controls:**
+  - Left-click: Toggle pixels on/off
+  - Drag: Paint multiple pixels
+  - Right-click: Erase pixels
+
+**Keyboard Shortcuts:**
+- `Ctrl+N` - New project
+- `Ctrl+O` - Open project
+- `Ctrl+S` - Save project
+- `Ctrl+Shift+S` - Save As
+- `Ctrl+Shift+C` - Clear current card
+- `Ctrl+Q` - Quit
+
+### Running Tests
 
 ```bash
-# Sprite sheet with custom label
-telligram sheet.png -o sprites.bas -f intybasic -l game_sprites --grid 8x8
+# Run all tests (requires PYTHONPATH)
+PYTHONPATH=src python3 -m pytest tests/
 
-# Batch processing
-telligram sprites/*.png -o output/ -f assembly-bin
+# Run with coverage report
+PYTHONPATH=src python3 -m pytest tests/ --cov=telligram --cov-report=html
 
-# Interactive mode
-telligram -i
-
-# ASCII art input
-telligram --ascii art.txt -o output.bas
-```
-
-### Configuration File
-
-Create a `.telligram.yaml` file in your project:
-
-```yaml
-output_format: assembly-bin
-label_prefix: gfx_
-indentation: 8
-comments: true
-visual_preview: true
-
-intybasic:
-  pixel_on: 'X'
-  pixel_off: '.'
-
-assembly:
-  format: binary  # or hexadecimal
-  include_visual: true
+# Current status: 39/39 tests passing (100% core coverage)
 ```
 
 ## Technical Specifications
@@ -173,35 +161,31 @@ assembly:
 
 ## Development Status
 
-🚧 **Currently in development** - See [PROJECT_REQUIREMENTS.md](docs/PROJECT_REQUIREMENTS.md) for roadmap
+✅ **Phase 1: Core Data Models (COMPLETE)**
+- [x] GramCard class with pixel manipulation
+- [x] Project class with 64-card management
+- [x] JSON save/load functionality (.telligram format)
+- [x] Card transformations (flip H/V, invert, clear)
+- [x] Comprehensive test suite (39/39 tests passing, 100% coverage)
 
-### Phase 1: Core Functionality (MVP)
-- [ ] Card data structure
-- [ ] ASCII art input parser
-- [ ] IntyBASIC output formatter
-- [ ] Assembly output formatter (binary)
-- [ ] Basic CLI
-- [ ] Unit tests
+✅ **Phase 2: Basic GUI (COMPLETE)**
+- [x] Main application window with PySide6
+- [x] 64-card grid view with thumbnails
+- [x] Interactive 8×8 pixel editor
+- [x] Real-time preview and updates
+- [x] File menu (New, Open, Save, Save As)
+- [x] Edit menu (Clear, Flip H/V)
+- [x] Keyboard shortcuts
 
-### Phase 2: Image Support
-- [ ] Image file input (PNG)
-- [ ] Color detection and validation
-- [ ] Sprite sheet extraction
-- [ ] Grid detection
-
-### Phase 3: Advanced Features
-- [ ] Assembly hexadecimal output
-- [ ] Visual preview
-- [ ] Configuration file support
-- [ ] Batch processing
-
-## Examples
-
-Check the `examples/` folder for:
-- Sample sprite PNG files
-- ASCII art templates
-- Expected output files (IntyBASIC and Assembly)
-- Complete usage examples
+🚧 **Phase 3: Advanced Features (PLANNED)**
+- [ ] GROM character browser (reference mode)
+- [ ] Animation timeline editor
+- [ ] Screen layout editor (20×12 BACKTAB)
+- [ ] IntyBASIC code export (BITMAP format)
+- [ ] Assembly code export (DECLE format)
+- [ ] Import from sprite sheets/images
+- [ ] Undo/redo system
+- [ ] Color palette preview
 
 ## Contributing
 
