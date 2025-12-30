@@ -2,7 +2,7 @@
 from PySide6.QtWidgets import (
     QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
     QMenuBar, QMenu, QFileDialog, QMessageBox, QStatusBar,
-    QLabel, QPushButton
+    QLabel, QPushButton, QTabWidget
 )
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QAction
@@ -11,6 +11,8 @@ from pathlib import Path
 from telligram.core.project import Project
 from telligram.gui.widgets.card_grid import CardGridWidget
 from telligram.gui.widgets.pixel_editor import PixelEditorWidget
+from telligram.gui.widgets.grom_browser import GromBrowserWidget
+from telligram.gui.widgets.timeline_editor import TimelineEditorWidget
 
 
 class MainWindow(QMainWindow):
@@ -23,7 +25,7 @@ class MainWindow(QMainWindow):
         self.current_card_slot = 0
 
         self.setWindowTitle("telliGRAM - Intellivision GRAM Card Creator")
-        self.setMinimumSize(1000, 700)
+        self.setMinimumSize(1200, 800)
 
         self._create_menu_bar()
         self._create_widgets()
@@ -84,32 +86,35 @@ class MainWindow(QMainWindow):
         central_widget = QWidget()
         self.setCentralWidget(central_widget)
 
-        layout = QHBoxLayout(central_widget)
+        main_layout = QHBoxLayout(central_widget)
 
-        # Left panel - Card grid
+        # Left panel - GRAM Card grid and pixel editor
         left_panel = QWidget()
-        left_layout = QVBoxLayout(left_panel)
+        left_panel_layout = QHBoxLayout(left_panel)
 
-        left_layout.addWidget(QLabel("<h3>GRAM Cards (64 slots)</h3>"))
+        # GRAM Card grid
+        grid_panel = QWidget()
+        grid_layout = QVBoxLayout(grid_panel)
+        grid_layout.addWidget(QLabel("<h3>GRAM Cards (64 slots)</h3>"))
 
         self.card_grid = CardGridWidget()
-        left_layout.addWidget(self.card_grid)
+        grid_layout.addWidget(self.card_grid)
 
         # Info label
         self.cards_info_label = QLabel("Cards used: 0/64")
-        left_layout.addWidget(self.cards_info_label)
+        grid_layout.addWidget(self.cards_info_label)
 
-        layout.addWidget(left_panel, stretch=1)
+        left_panel_layout.addWidget(grid_panel, stretch=1)
 
-        # Right panel - Pixel editor
-        right_panel = QWidget()
-        right_layout = QVBoxLayout(right_panel)
+        # Pixel editor
+        editor_panel = QWidget()
+        editor_layout = QVBoxLayout(editor_panel)
 
         self.card_label = QLabel("<h3>Card #0</h3>")
-        right_layout.addWidget(self.card_label)
+        editor_layout.addWidget(self.card_label)
 
         self.pixel_editor = PixelEditorWidget()
-        right_layout.addWidget(self.pixel_editor)
+        editor_layout.addWidget(self.pixel_editor)
 
         # Buttons
         button_layout = QHBoxLayout()
@@ -126,10 +131,25 @@ class MainWindow(QMainWindow):
         flip_v_btn.clicked.connect(self.flip_vertical)
         button_layout.addWidget(flip_v_btn)
 
-        right_layout.addLayout(button_layout)
-        right_layout.addStretch()
+        editor_layout.addLayout(button_layout)
+        editor_layout.addStretch()
 
-        layout.addWidget(right_panel, stretch=2)
+        left_panel_layout.addWidget(editor_panel, stretch=2)
+
+        main_layout.addWidget(left_panel, stretch=3)
+
+        # Right panel - Tabbed view for GROM browser and Timeline editor
+        self.tabs = QTabWidget()
+
+        # GROM Browser tab
+        self.grom_browser = GromBrowserWidget()
+        self.tabs.addTab(self.grom_browser, "GROM Browser")
+
+        # Timeline Editor tab
+        self.timeline_editor = TimelineEditorWidget(self.project)
+        self.tabs.addTab(self.timeline_editor, "Animation Timeline")
+
+        main_layout.addWidget(self.tabs, stretch=1)
 
     def _create_status_bar(self):
         """Create status bar"""
@@ -141,6 +161,7 @@ class MainWindow(QMainWindow):
         """Connect widget signals"""
         self.card_grid.card_selected.connect(self.on_card_selected)
         self.pixel_editor.card_changed.connect(self.on_card_changed)
+        self.timeline_editor.animation_changed.connect(self.on_animation_changed)
 
     def new_project(self):
         """Create new project"""
@@ -149,6 +170,7 @@ class MainWindow(QMainWindow):
         self.current_file = None
         self.card_grid.set_project(self.project)
         self.pixel_editor.set_card(None)
+        self.timeline_editor.set_project(self.project)
         self.update_title()
         self.update_cards_info()
         self.status_bar.showMessage("New project created")
@@ -168,6 +190,7 @@ class MainWindow(QMainWindow):
                 self.current_file = Path(filename)
                 self.card_grid.set_project(self.project)
                 self.pixel_editor.set_card(self.project.get_card(self.current_card_slot))
+                self.timeline_editor.set_project(self.project)
                 self.update_title()
                 self.update_cards_info()
                 self.status_bar.showMessage(f"Opened: {filename}")
@@ -212,6 +235,7 @@ class MainWindow(QMainWindow):
         card = self.project.get_card(slot)
         self.pixel_editor.set_card(card)
         self.card_label.setText(f"<h3>Card #{slot} (GRAM {256 + slot})</h3>")
+        self.timeline_editor.set_current_card_slot(slot)
 
     def on_card_changed(self):
         """Handle card modification in pixel editor"""
@@ -255,6 +279,12 @@ class MainWindow(QMainWindow):
         """Update cards info label"""
         count = self.project.get_card_count()
         self.cards_info_label.setText(f"Cards used: {count}/64")
+
+    def on_animation_changed(self):
+        """Handle animation modification"""
+        # Animations are stored in the project, nothing special to do here
+        # Just mark that the project has been modified (TODO: track dirty state)
+        pass
 
     def show_about(self):
         """Show about dialog"""

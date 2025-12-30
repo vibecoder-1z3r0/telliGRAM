@@ -3,6 +3,7 @@ import json
 from pathlib import Path
 from typing import List, Optional, Dict, Any
 from .card import GramCard
+from .animation import Animation
 
 
 class Project:
@@ -37,6 +38,9 @@ class Project:
 
         # Initialize 64 empty card slots
         self.cards: List[Optional[GramCard]] = [None] * self.MAX_CARDS
+
+        # Initialize animations list
+        self.animations: List[Animation] = []
 
     def get_card(self, slot: int) -> Optional[GramCard]:
         """
@@ -99,6 +103,15 @@ class Project:
         """
         return sum(1 for card in self.cards if card is not None)
 
+    def add_animation(self, animation: Animation) -> None:
+        """
+        Add animation to project
+
+        Args:
+            animation: Animation to add
+        """
+        self.animations.append(animation)
+
     def to_dict(self) -> Dict[str, Any]:
         """
         Export project as dictionary for JSON serialization
@@ -114,6 +127,9 @@ class Project:
             "cards": [
                 card.to_dict() if card is not None else None
                 for card in self.cards
+            ],
+            "animations": [
+                anim.to_dict() for anim in self.animations
             ]
         }
 
@@ -140,6 +156,11 @@ class Project:
         for i, card_data in enumerate(cards_data):
             if card_data is not None:
                 project.cards[i] = GramCard.from_dict(card_data)
+
+        # Load animations
+        animations_data = data.get("animations", [])
+        for anim_data in animations_data:
+            project.animations.append(Animation.from_dict(anim_data))
 
         return project
 
