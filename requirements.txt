@@ -1,0 +1,6 @@
+# telliGRAM Requirements
+
+# Core dependencies
+PySide6>=6.5.0
+
+# Development dependencies (install with: pip install -r requirements-dev.txt)
