@@ -140,14 +140,20 @@ class MainWindow(QMainWindow):
 
         # Right panel - Tabbed view for GROM browser and Timeline editor
         self.tabs = QTabWidget()
+        self.tabs.currentChanged.connect(self._on_tab_changed)
 
-        # GROM Browser tab
-        self.grom_browser = GromBrowserWidget()
-        self.tabs.addTab(self.grom_browser, "GROM Browser")
-
-        # Timeline Editor tab
+        # Timeline Editor tab (create immediately - it's lightweight)
         self.timeline_editor = TimelineEditorWidget(self.project)
         self.tabs.addTab(self.timeline_editor, "Animation Timeline")
+
+        # GROM Browser tab (lazy-loaded - 256 widgets is heavy on WSL)
+        self.grom_browser = None
+        self.grom_placeholder = QWidget()
+        placeholder_layout = QVBoxLayout(self.grom_placeholder)
+        placeholder_label = QLabel("Loading GROM browser...")
+        placeholder_label.setAlignment(Qt.AlignCenter)
+        placeholder_layout.addWidget(placeholder_label)
+        self.tabs.addTab(self.grom_placeholder, "GROM Browser")
 
         main_layout.addWidget(self.tabs, stretch=1)
 
@@ -162,6 +168,19 @@ class MainWindow(QMainWindow):
         self.card_grid.card_selected.connect(self.on_card_selected)
         self.pixel_editor.card_changed.connect(self.on_card_changed)
         self.timeline_editor.animation_changed.connect(self.on_animation_changed)
+
+    def _on_tab_changed(self, index: int):
+        """Handle tab change - lazy load GROM browser when needed"""
+        # GROM browser is tab index 1 (after Animation Timeline at 0)
+        if index == 1 and self.grom_browser is None:
+            # Create GROM browser on first access
+            self.status_bar.showMessage("Loading GROM browser (256 characters)...")
+            self.grom_browser = GromBrowserWidget()
+            # Replace placeholder with actual browser
+            self.tabs.removeTab(1)
+            self.tabs.insertTab(1, self.grom_browser, "GROM Browser")
+            self.tabs.setCurrentIndex(1)
+            self.status_bar.showMessage("GROM browser loaded")
 
     def new_project(self):
         """Create new project"""
