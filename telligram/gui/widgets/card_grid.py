@@ -38,6 +38,9 @@ class CardThumbnail(QFrame):
         self.preview_label.setAlignment(Qt.AlignCenter)
         layout.addWidget(self.preview_label, alignment=Qt.AlignCenter)
 
+        # Add flexible space at bottom to balance layout
+        layout.addStretch()
+
         # Set initial style
         self._update_style()
 
