@@ -1,9 +1,10 @@
 """Card grid widget - displays all 64 GRAM card slots"""
 from PySide6.QtWidgets import (
-    QWidget, QGridLayout, QFrame, QLabel, QVBoxLayout
+    QWidget, QGridLayout, QFrame, QLabel, QVBoxLayout,
+    QMenu, QDialog, QTextEdit, QPushButton, QApplication
 )
 from PySide6.QtCore import Qt, Signal
-from PySide6.QtGui import QPainter, QColor, QPen, QPixmap
+from PySide6.QtGui import QPainter, QColor, QPen, QPixmap, QAction, QFont
 
 from telligram.core.project import Project
 from telligram.core.card import GramCard
@@ -116,7 +117,93 @@ class CardThumbnail(QFrame):
 
     def mousePressEvent(self, event):
         """Handle mouse click"""
-        self.clicked.emit(self.slot)
+        if event.button() == Qt.LeftButton:
+            self.clicked.emit(self.slot)
+
+    def contextMenuEvent(self, event):
+        """Handle right-click context menu"""
+        if self.card is None or self.card.is_empty():
+            return  # No context menu for empty cards
+
+        menu = QMenu(self)
+
+        # Code generation submenu
+        gen_menu = menu.addMenu("Generate Code")
+
+        intybasic_action = QAction("IntyBASIC", self)
+        intybasic_action.triggered.connect(self._generate_intybasic)
+        gen_menu.addAction(intybasic_action)
+
+        asm_action = QAction("Assembly (DECLE)", self)
+        asm_action.triggered.connect(self._generate_asm)
+        gen_menu.addAction(asm_action)
+
+        menu.exec(event.globalPos())
+
+    def _generate_intybasic(self):
+        """Generate IntyBASIC code for this card"""
+        if self.card is None:
+            return
+
+        # Get card data as 8 bytes
+        data = self.card.to_bytes()
+
+        # Format as IntyBASIC BITMAP
+        code = f"' GRAM Card #{self.slot} (slot {256 + self.slot})\n"
+        code += f"BITMAP card_{self.slot}\n"
+        code += "    DATA "
+        code += ", ".join(f"${byte:02X}" for byte in data)
+        code += "\nEND\n"
+
+        self._show_code_dialog("IntyBASIC Code", code)
+
+    def _generate_asm(self):
+        """Generate Assembly DECLE code for this card"""
+        if self.card is None:
+            return
+
+        # Get card data as 8 bytes
+        data = self.card.to_bytes()
+
+        # Pack bytes into 16-bit DECLEs (4 words for 8 bytes)
+        # Intellivision is little-endian: low byte first
+        code = f"; GRAM Card #{self.slot} (slot {256 + self.slot})\n"
+        code += f"card_{self.slot}:\n"
+
+        for i in range(0, 8, 2):
+            low_byte = data[i]
+            high_byte = data[i + 1] if i + 1 < 8 else 0
+            decle = (high_byte << 8) | low_byte
+            code += f"    DECLE ${decle:04X}    ; rows {i}-{i+1}\n"
+
+        self._show_code_dialog("Assembly Code", code)
+
+    def _show_code_dialog(self, title: str, code: str):
+        """Show generated code in a dialog"""
+        dialog = QDialog(self)
+        dialog.setWindowTitle(title)
+        dialog.setMinimumSize(500, 300)
+
+        layout = QVBoxLayout(dialog)
+
+        # Code display
+        text_edit = QTextEdit()
+        text_edit.setPlainText(code)
+        text_edit.setReadOnly(True)
+        text_edit.setFont(QFont("Courier", 10))
+        layout.addWidget(text_edit)
+
+        # Copy button
+        copy_button = QPushButton("Copy to Clipboard")
+        copy_button.clicked.connect(lambda: QApplication.clipboard().setText(code))
+        layout.addWidget(copy_button)
+
+        # Close button
+        close_button = QPushButton("Close")
+        close_button.clicked.connect(dialog.accept)
+        layout.addWidget(close_button)
+
+        dialog.exec()
 
 
 class CardGridWidget(QWidget):
