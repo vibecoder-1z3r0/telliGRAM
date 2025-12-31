@@ -26,6 +26,9 @@ class CardThumbnail(QFrame):
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(0)
 
+        # Add flexible space at top
+        layout.addStretch()
+
         # Slot number label - same width as preview for tab-like appearance
         self.slot_label = QLabel(f"#{slot}")
         self.slot_label.setFixedWidth(60)
@@ -38,7 +41,7 @@ class CardThumbnail(QFrame):
         self.preview_label.setAlignment(Qt.AlignCenter)
         layout.addWidget(self.preview_label, alignment=Qt.AlignCenter)
 
-        # Add flexible space at bottom to balance layout
+        # Add flexible space at bottom
         layout.addStretch()
 
         # Set initial style
