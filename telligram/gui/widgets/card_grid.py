@@ -3,14 +3,14 @@ from PySide6.QtWidgets import (
     QWidget, QGridLayout, QFrame, QLabel, QVBoxLayout
 )
 from PySide6.QtCore import Qt, Signal
-from PySide6.QtGui import QPainter, QColor, QPen
+from PySide6.QtGui import QPainter, QColor, QPen, QPixmap
 
 from telligram.core.project import Project
 from telligram.core.card import GramCard
 
 
-class CardThumbnail(QWidget):
-    """Thumbnail view of a single card"""
+class CardThumbnail(QFrame):
+    """Thumbnail view of a single card - uses QPixmap for WSL compatibility"""
 
     clicked = Signal(int)  # Emits slot number when clicked
 
@@ -21,54 +21,41 @@ class CardThumbnail(QWidget):
         self.selected = False
         self.setFixedSize(70, 90)
 
-    def set_card(self, card: GramCard):
-        """Set card to display"""
-        self.card = card
-        self.update()  # Trigger repaint
+        # Create UI elements
+        layout = QVBoxLayout(self)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(2)
 
-    def set_selected(self, selected: bool):
-        """Set selection state"""
-        self.selected = selected
-        self.update()  # Trigger repaint
+        # Slot number label
+        self.slot_label = QLabel(f"#{slot}")
+        self.slot_label.setAlignment(Qt.AlignLeft)
+        layout.addWidget(self.slot_label)
 
-    def mousePressEvent(self, event):
-        """Handle mouse click"""
-        self.clicked.emit(self.slot)
+        # Card preview (QLabel displaying QPixmap)
+        self.preview_label = QLabel()
+        self.preview_label.setFixedSize(60, 60)
+        self.preview_label.setAlignment(Qt.AlignCenter)
+        layout.addWidget(self.preview_label)
 
-    def paintEvent(self, event):
-        """Paint the card thumbnail"""
-        painter = QPainter(self)
+        # Set initial style
+        self._update_style()
 
-        # Background
-        if self.selected:
-            painter.fillRect(0, 0, self.width(), self.height(), QColor("#0078D4"))
-            painter.setPen(QPen(QColor("#0078D4"), 2))
-        else:
-            painter.fillRect(0, 0, self.width(), self.height(), QColor("#2b2b2b"))
-            painter.setPen(QPen(QColor("#3c3c3c"), 1))
-
-        painter.drawRect(0, 0, self.width() - 1, self.height() - 1)
-
-        # Draw slot number
-        painter.setPen(QColor(180, 180, 180) if self.selected else QColor(120, 120, 120))
-        painter.drawText(5, 12, f"#{self.slot}")
-
-        # Draw preview area background
-        preview_x = 5
-        preview_y = 20
-        preview_size = 60
-
-        painter.fillRect(preview_x, preview_y, preview_size, preview_size, QColor("#1a1a1a"))
-        painter.setPen(QColor("#444"))
-        painter.drawRect(preview_x, preview_y, preview_size, preview_size)
+    def _render_card(self) -> QPixmap:
+        """Render card to QPixmap - more WSL-compatible than direct painting"""
+        pixmap = QPixmap(60, 60)
+        pixmap.fill(QColor("#1a1a1a"))
 
         if self.card is None:
-            return
+            return pixmap
+
+        painter = QPainter(pixmap)
+        painter.setPen(QColor("#444"))
+        painter.drawRect(0, 0, 59, 59)
 
         # Draw card pixels (8×8 scaled to 56×56, centered in 60×60)
         pixel_size = 7
-        offset_x = preview_x + 2  # Center the 56px grid in 60px area
-        offset_y = preview_y + 2
+        offset_x = 2
+        offset_y = 2
 
         for y in range(8):
             for x in range(8):
@@ -80,6 +67,49 @@ class CardThumbnail(QWidget):
                         pixel_size,
                         QColor("#FFFFFF")
                     )
+
+        painter.end()
+        return pixmap
+
+    def _update_style(self):
+        """Update visual style based on selection state"""
+        if self.selected:
+            self.setStyleSheet("""
+                QFrame {
+                    background-color: #0078D4;
+                    border: 2px solid #0078D4;
+                }
+                QLabel {
+                    color: #b4b4b4;
+                    background-color: transparent;
+                }
+            """)
+        else:
+            self.setStyleSheet("""
+                QFrame {
+                    background-color: #2b2b2b;
+                    border: 1px solid #3c3c3c;
+                }
+                QLabel {
+                    color: #787878;
+                    background-color: transparent;
+                }
+            """)
+
+    def set_card(self, card: GramCard):
+        """Set card to display"""
+        self.card = card
+        pixmap = self._render_card()
+        self.preview_label.setPixmap(pixmap)
+
+    def set_selected(self, selected: bool):
+        """Set selection state"""
+        self.selected = selected
+        self._update_style()
+
+    def mousePressEvent(self, event):
+        """Handle mouse click"""
+        self.clicked.emit(self.slot)
 
 
 class CardGridWidget(QWidget):
