@@ -5,16 +5,17 @@ Displays all 256 built-in Intellivision GROM characters in a read-only grid.
 Helps users reference available characters and avoid wasting GRAM slots.
 """
 
-from PySide6.QtWidgets import QWidget, QGridLayout, QLabel, QVBoxLayout, QScrollArea
+from PySide6.QtWidgets import QWidget, QGridLayout, QLabel, QVBoxLayout, QScrollArea, QFrame
 from PySide6.QtCore import Qt, Signal
-from PySide6.QtGui import QPainter, QColor, QPen, QFont
+from PySide6.QtGui import QPainter, QColor, QPen, QFont, QPixmap
 
 from telligram.core.grom import GromData
 
 
-class GromThumbnail(QWidget):
+class GromThumbnail(QFrame):
     """
     Thumbnail widget displaying a single GROM character.
+    Uses QPixmap for WSL compatibility instead of custom paintEvent.
 
     Shows the 8x8 character graphic with its card number and label.
     """
@@ -32,32 +33,53 @@ class GromThumbnail(QWidget):
         self.pixel_size = 6
         self.setFixedSize(60, 80)  # Width: 60px, Height: 80px (extra space for labels)
 
+        # Create UI elements
+        layout = QVBoxLayout(self)
+        layout.setContentsMargins(2, 2, 2, 2)
+        layout.setSpacing(1)
+
+        # Card number label
+        self.num_label = QLabel(f"{card_num}")
+        self.num_label.setStyleSheet("color: #787878; font-size: 9px;")
+        layout.addWidget(self.num_label)
+
+        # Character preview (QLabel displaying QPixmap)
+        self.preview_label = QLabel()
+        self.preview_label.setFixedSize(48, 48)
+        self.preview_label.setAlignment(Qt.AlignCenter)
+        pixmap = self._render_character()
+        self.preview_label.setPixmap(pixmap)
+        layout.addWidget(self.preview_label)
+
+        # Character label
+        self.char_label = QLabel(self.label_text[:10])  # Truncate long labels
+        self.char_label.setStyleSheet("color: #969696; font-size: 8px;")
+        self.char_label.setAlignment(Qt.AlignCenter)
+        layout.addWidget(self.char_label)
+
         # Style
         self.setStyleSheet("""
-            GromThumbnail {
+            QFrame {
                 background-color: #2b2b2b;
                 border: 1px solid #3c3c3c;
             }
-            GromThumbnail:hover {
+            QFrame:hover {
                 background-color: #3c3c3c;
                 border: 1px solid #5c5c5c;
             }
+            QLabel {
+                background-color: transparent;
+            }
         """)
 
-    def paintEvent(self, event):
-        """Draw the GROM character"""
-        super().paintEvent(event)
-        painter = QPainter(self)
+    def _render_character(self) -> QPixmap:
+        """Render GROM character to QPixmap - more WSL-compatible than direct painting"""
+        pixmap = QPixmap(48, 48)
+        pixmap.fill(Qt.transparent)
 
-        # Draw card number
-        painter.setPen(QColor(120, 120, 120))
-        font = QFont()
-        font.setPixelSize(9)
-        painter.setFont(font)
-        painter.drawText(2, 10, f"{self.card_num}")
+        painter = QPainter(pixmap)
 
         # Draw the 8x8 graphic
-        start_y = 14
         for y in range(8):
             row_byte = self.card_data[y]
             for x in range(8):
@@ -67,19 +89,15 @@ class GromThumbnail(QWidget):
                 # Draw pixel
                 if pixel_on:
                     painter.fillRect(
-                        6 + x * self.pixel_size,
-                        start_y + y * self.pixel_size,
+                        x * self.pixel_size,
+                        y * self.pixel_size,
                         self.pixel_size,
                         self.pixel_size,
                         QColor(200, 200, 200)
                     )
 
-        # Draw label (ASCII character or "Extended")
-        painter.setPen(QColor(150, 150, 150))
-        font.setPixelSize(8)
-        painter.setFont(font)
-        label_y = start_y + 8 * self.pixel_size + 10
-        painter.drawText(4, label_y, self.label_text[:10])  # Truncate long labels
+        painter.end()
+        return pixmap
 
     def mousePressEvent(self, event):
         """Handle mouse click"""
