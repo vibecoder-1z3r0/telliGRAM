@@ -9,7 +9,7 @@ from telligram.core.project import Project
 from telligram.core.card import GramCard
 
 
-class CardThumbnail(QFrame):
+class CardThumbnail(QWidget):
     """Thumbnail view of a single card"""
 
     clicked = Signal(int)  # Emits slot number when clicked
@@ -19,58 +19,63 @@ class CardThumbnail(QFrame):
         self.slot = slot
         self.card = None
         self.selected = False
-
         self.setFixedSize(70, 90)
-        self.setFrameStyle(QFrame.Box | QFrame.Plain)
-        self.setLineWidth(2)
-
-        layout = QVBoxLayout(self)
-        layout.setContentsMargins(4, 4, 4, 4)
-
-        self.label = QLabel(f"#{slot}")
-        self.label.setAlignment(Qt.AlignCenter)
-        layout.addWidget(self.label)
-
-        self.preview = QLabel()
-        self.preview.setFixedSize(60, 60)
-        self.preview.setStyleSheet("background-color: #222; border: 1px solid #444;")
-        layout.addWidget(self.preview)
 
     def set_card(self, card: GramCard):
         """Set card to display"""
         self.card = card
-        self.update()
+        self.update()  # Trigger repaint
 
     def set_selected(self, selected: bool):
         """Set selection state"""
         self.selected = selected
-        if selected:
-            self.setStyleSheet("CardThumbnail { border: 2px solid #0078D4; background: #E6F2FF; }")
-        else:
-            self.setStyleSheet("")
-        self.update()
+        self.update()  # Trigger repaint
 
     def mousePressEvent(self, event):
         """Handle mouse click"""
         self.clicked.emit(self.slot)
 
     def paintEvent(self, event):
-        """Custom paint for card preview"""
-        super().paintEvent(event)
+        """Paint the card thumbnail"""
+        painter = QPainter(self)
+
+        # Background
+        if self.selected:
+            painter.fillRect(0, 0, self.width(), self.height(), QColor("#0078D4"))
+            painter.setPen(QPen(QColor("#0078D4"), 2))
+        else:
+            painter.fillRect(0, 0, self.width(), self.height(), QColor("#2b2b2b"))
+            painter.setPen(QPen(QColor("#3c3c3c"), 1))
+
+        painter.drawRect(0, 0, self.width() - 1, self.height() - 1)
+
+        # Draw slot number
+        painter.setPen(QColor(180, 180, 180) if self.selected else QColor(120, 120, 120))
+        painter.drawText(5, 12, f"#{self.slot}")
+
+        # Draw preview area background
+        preview_x = 5
+        preview_y = 20
+        preview_size = 60
+
+        painter.fillRect(preview_x, preview_y, preview_size, preview_size, QColor("#1a1a1a"))
+        painter.setPen(QColor("#444"))
+        painter.drawRect(preview_x, preview_y, preview_size, preview_size)
 
         if self.card is None:
             return
 
-        # Draw card preview (zoomed 7.5x to fit 60×60 area)
-        painter = QPainter(self.preview)
-        pixel_size = 7  # 60÷8 = 7.5, use 7 for clean pixels
+        # Draw card pixels (8×8 scaled to 56×56, centered in 60×60)
+        pixel_size = 7
+        offset_x = preview_x + 2  # Center the 56px grid in 60px area
+        offset_y = preview_y + 2
 
         for y in range(8):
             for x in range(8):
                 if self.card.get_pixel(x, y):
                     painter.fillRect(
-                        x * pixel_size + 2,
-                        y * pixel_size + 2,
+                        offset_x + x * pixel_size,
+                        offset_y + y * pixel_size,
                         pixel_size,
                         pixel_size,
                         QColor("#FFFFFF")

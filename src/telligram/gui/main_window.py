@@ -242,8 +242,13 @@ class MainWindow(QMainWindow):
         # Save card back to project
         card = self.pixel_editor.get_card()
         if card is not None:
-            self.project.set_card(self.current_card_slot, card)
-            self.card_grid.update_card(self.current_card_slot, card)
+            # If card is empty, clear the slot instead of saving an empty card
+            if card.is_empty():
+                self.project.clear_card(self.current_card_slot)
+                self.card_grid.update_card(self.current_card_slot, None)
+            else:
+                self.project.set_card(self.current_card_slot, card)
+                self.card_grid.update_card(self.current_card_slot, card)
             self.update_cards_info()
 
     def clear_current_card(self):

@@ -149,6 +149,10 @@ class GromBrowserWidget(QWidget):
             col = i % 16
             grid_layout.addWidget(thumb, row, col)
 
+        # Set minimum width to fit all 16 columns
+        # 16 cols * 60px + 15 gaps * 2px + margins 8px = 998px
+        container.setMinimumWidth(998)
+
         scroll.setWidget(container)
         main_layout.addWidget(scroll)
 
