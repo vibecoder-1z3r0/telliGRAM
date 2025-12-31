@@ -61,6 +61,25 @@ class MainWindow(QMainWindow):
 
         file_menu.addSeparator()
 
+        # Export submenu
+        export_menu = file_menu.addMenu("&Export All Cards")
+
+        export_intybasic_visual_action = QAction("IntyBASIC (Visual)...", self)
+        export_intybasic_visual_action.triggered.connect(self.export_all_intybasic_visual)
+        export_menu.addAction(export_intybasic_visual_action)
+
+        export_intybasic_data_action = QAction("IntyBASIC (Data)...", self)
+        export_intybasic_data_action.triggered.connect(self.export_all_intybasic_data)
+        export_menu.addAction(export_intybasic_data_action)
+
+        export_menu.addSeparator()
+
+        export_asm_action = QAction("Assembly (DECLE)...", self)
+        export_asm_action.triggered.connect(self.export_all_asm)
+        export_menu.addAction(export_asm_action)
+
+        file_menu.addSeparator()
+
         quit_action = QAction("&Quit", self)
         quit_action.setShortcut("Ctrl+Q")
         quit_action.triggered.connect(self.close)
@@ -312,6 +331,143 @@ class MainWindow(QMainWindow):
             "<p>Create custom 8×8 graphics for Intellivision games</p>"
             "<p>© 2025 Vibe-Coder 1.z3r0</p>"
         )
+
+    def export_all_intybasic_visual(self):
+        """Export all cards as IntyBASIC code (visual format)"""
+        filename, _ = QFileDialog.getSaveFileName(
+            self,
+            "Export All Cards (IntyBASIC Visual)",
+            "",
+            "IntyBASIC Source (*.bas);;All Files (*)"
+        )
+
+        if filename:
+            if not filename.endswith('.bas'):
+                filename += '.bas'
+
+            try:
+                code = self._generate_all_cards_intybasic_visual()
+                with open(filename, 'w') as f:
+                    f.write(code)
+                self.status_bar.showMessage(f"Exported to: {filename}")
+            except Exception as e:
+                QMessageBox.critical(self, "Error", f"Failed to export cards:\n{e}")
+
+    def export_all_intybasic_data(self):
+        """Export all cards as IntyBASIC code (DATA format)"""
+        filename, _ = QFileDialog.getSaveFileName(
+            self,
+            "Export All Cards (IntyBASIC Data)",
+            "",
+            "IntyBASIC Source (*.bas);;All Files (*)"
+        )
+
+        if filename:
+            if not filename.endswith('.bas'):
+                filename += '.bas'
+
+            try:
+                code = self._generate_all_cards_intybasic_data()
+                with open(filename, 'w') as f:
+                    f.write(code)
+                self.status_bar.showMessage(f"Exported to: {filename}")
+            except Exception as e:
+                QMessageBox.critical(self, "Error", f"Failed to export cards:\n{e}")
+
+    def export_all_asm(self):
+        """Export all cards as Assembly code"""
+        filename, _ = QFileDialog.getSaveFileName(
+            self,
+            "Export All Cards (Assembly)",
+            "",
+            "Assembly Source (*.asm);;All Files (*)"
+        )
+
+        if filename:
+            if not filename.endswith('.asm'):
+                filename += '.asm'
+
+            try:
+                code = self._generate_all_cards_asm()
+                with open(filename, 'w') as f:
+                    f.write(code)
+                self.status_bar.showMessage(f"Exported to: {filename}")
+            except Exception as e:
+                QMessageBox.critical(self, "Error", f"Failed to export cards:\n{e}")
+
+    def _generate_all_cards_intybasic_visual(self) -> str:
+        """Generate IntyBASIC code for all non-empty cards (visual format)"""
+        code = "' telliGRAM Export - All GRAM Cards (Visual Format)\n"
+        code += f"' Project: {self.current_file.name if self.current_file else 'Untitled'}\n\n"
+
+        card_count = 0
+        for slot in range(64):
+            card = self.project.get_card(slot)
+            if card is not None and not card.is_empty():
+                # Get card data as binary strings
+                binary_rows = card.to_binary_strings()
+
+                # Convert to visual representation
+                visual_rows = []
+                for row in binary_rows:
+                    visual_row = row.replace('1', '#').replace('0', '.')
+                    visual_rows.append(f'    "{visual_row}"')
+
+                code += f"' GRAM Card #{slot} (slot {256 + slot})\n"
+                code += f"BITMAP card_{slot}\n"
+                code += "\n".join(visual_rows)
+                code += "\nEND\n\n"
+                card_count += 1
+
+        code += f"' Total cards exported: {card_count}\n"
+        return code
+
+    def _generate_all_cards_intybasic_data(self) -> str:
+        """Generate IntyBASIC code for all non-empty cards (DATA format)"""
+        code = "' telliGRAM Export - All GRAM Cards (Data Format)\n"
+        code += f"' Project: {self.current_file.name if self.current_file else 'Untitled'}\n\n"
+
+        card_count = 0
+        for slot in range(64):
+            card = self.project.get_card(slot)
+            if card is not None and not card.is_empty():
+                data = card.to_bytes()
+
+                code += f"' GRAM Card #{slot} (slot {256 + slot})\n"
+                code += f"BITMAP card_{slot}\n"
+                code += "    DATA "
+                code += ", ".join(f"${byte:02X}" for byte in data)
+                code += "\nEND\n\n"
+                card_count += 1
+
+        code += f"' Total cards exported: {card_count}\n"
+        return code
+
+    def _generate_all_cards_asm(self) -> str:
+        """Generate Assembly code for all non-empty cards"""
+        code = "; telliGRAM Export - All GRAM Cards (Assembly)\n"
+        code += f"; Project: {self.current_file.name if self.current_file else 'Untitled'}\n\n"
+
+        card_count = 0
+        for slot in range(64):
+            card = self.project.get_card(slot)
+            if card is not None and not card.is_empty():
+                data = card.to_bytes()
+
+                code += f"; GRAM Card #{slot} (slot {256 + slot})\n"
+                code += f"card_{slot}:\n"
+
+                for i in range(0, 8, 2):
+                    low_byte = data[i]
+                    high_byte = data[i + 1] if i + 1 < 8 else 0
+                    decle = (high_byte << 8) | low_byte
+                    code += f"    DECLE ${decle:04X}    ; rows {i}-{i+1}\n"
+
+                code += "\n"
+                card_count += 1
+
+        code += f"; Total cards exported: {card_count}\n"
+        return code
 
     def closeEvent(self, event):
         """Handle window close event"""

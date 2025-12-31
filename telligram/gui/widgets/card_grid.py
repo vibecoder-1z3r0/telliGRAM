@@ -152,9 +152,15 @@ class CardThumbnail(QFrame):
         if has_card:
             gen_menu = menu.addMenu("Generate Code")
 
-            intybasic_action = QAction("IntyBASIC", self)
-            intybasic_action.triggered.connect(self._generate_intybasic)
-            gen_menu.addAction(intybasic_action)
+            intybasic_visual_action = QAction("IntyBASIC (Visual)", self)
+            intybasic_visual_action.triggered.connect(self._generate_intybasic_visual)
+            gen_menu.addAction(intybasic_visual_action)
+
+            intybasic_data_action = QAction("IntyBASIC (Data)", self)
+            intybasic_data_action.triggered.connect(self._generate_intybasic_data)
+            gen_menu.addAction(intybasic_data_action)
+
+            gen_menu.addSeparator()
 
             asm_action = QAction("Assembly (DECLE)", self)
             asm_action.triggered.connect(self._generate_asm)
@@ -162,8 +168,8 @@ class CardThumbnail(QFrame):
 
         menu.exec(event.globalPos())
 
-    def _generate_intybasic(self):
-        """Generate IntyBASIC code for this card"""
+    def _generate_intybasic_visual(self):
+        """Generate IntyBASIC code for this card (visual format)"""
         if self.card is None:
             return
 
@@ -182,7 +188,24 @@ class CardThumbnail(QFrame):
         code += "\n".join(visual_rows)
         code += "\nEND\n"
 
-        self._show_code_dialog("IntyBASIC Code", code)
+        self._show_code_dialog("IntyBASIC Code (Visual)", code)
+
+    def _generate_intybasic_data(self):
+        """Generate IntyBASIC code for this card (DATA format)"""
+        if self.card is None:
+            return
+
+        # Get card data as 8 bytes
+        data = self.card.to_bytes()
+
+        # Format as IntyBASIC BITMAP with DATA
+        code = f"' GRAM Card #{self.slot} (slot {256 + self.slot})\n"
+        code += f"BITMAP card_{self.slot}\n"
+        code += "    DATA "
+        code += ", ".join(f"${byte:02X}" for byte in data)
+        code += "\nEND\n"
+
+        self._show_code_dialog("IntyBASIC Code (Data)", code)
 
     def _generate_asm(self):
         """Generate Assembly DECLE code for this card"""
