@@ -2,7 +2,7 @@
 from PySide6.QtWidgets import (
     QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
     QMenuBar, QMenu, QFileDialog, QMessageBox, QStatusBar,
-    QLabel, QPushButton, QTabWidget
+    QLabel, QPushButton, QTabWidget, QApplication
 )
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QAction
@@ -301,3 +301,9 @@ class MainWindow(QMainWindow):
             "<p>Create custom 8×8 graphics for Intellivision games</p>"
             "<p>© 2025 Vibe-Coder 1.z3r0</p>"
         )
+
+    def closeEvent(self, event):
+        """Handle window close event"""
+        # TODO: Ask to save if project has unsaved changes
+        event.accept()
+        QApplication.quit()
