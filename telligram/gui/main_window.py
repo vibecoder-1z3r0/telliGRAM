@@ -178,7 +178,8 @@ class MainWindow(QMainWindow):
         self.current_file = None
         self.card_grid.set_project(self.project)
         self.pixel_editor.set_card(None)
-        self.timeline_editor.set_project(self.project)
+        if self.timeline_editor:  # Timeline editor disabled for now
+            self.timeline_editor.set_project(self.project)
         self.update_title()
         self.update_cards_info()
         self.status_bar.showMessage("New project created")
@@ -198,7 +199,8 @@ class MainWindow(QMainWindow):
                 self.current_file = Path(filename)
                 self.card_grid.set_project(self.project)
                 self.pixel_editor.set_card(self.project.get_card(self.current_card_slot))
-                self.timeline_editor.set_project(self.project)
+                if self.timeline_editor:  # Timeline editor disabled for now
+                    self.timeline_editor.set_project(self.project)
                 self.update_title()
                 self.update_cards_info()
                 self.status_bar.showMessage(f"Opened: {filename}")
