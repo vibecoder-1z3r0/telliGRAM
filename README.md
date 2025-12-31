@@ -20,8 +20,10 @@ GRAM (Graphics RAM) cards are user-definable 8×8 pixel graphics on the Intelliv
 - 💾 **Save/Load Projects** - JSON-based `.telligram` file format
 - 🔄 **Card Transformations** - Flip horizontal/vertical, clear, invert
 - 👁️ **Live Preview** - See all 64 cards at once with thumbnail grid
+- 📚 **GROM Browser** - Reference all 256 built-in Intellivision characters
+- 🎬 **Animation Timeline** - Sequence GRAM cards with frame timing and playback
 - ⌨️ **Keyboard Shortcuts** - Ctrl+N/O/S for quick file operations
-- ✅ **Test-Driven Development** - 100% test coverage on core modules (39/39 tests passing)
+- ✅ **Test-Driven Development** - 100% test coverage on core modules (71/71 tests passing)
 
 ## Quick Start
 
@@ -111,8 +113,13 @@ python3 -m telligram.main
 ```
 
 **Features:**
-- **Left Panel:** 64-card grid view - click any card to edit
-- **Right Panel:** 8×8 pixel editor with real-time preview
+- **Left Panel:**
+  - 64-card grid view - click any card to edit
+  - 8×8 pixel editor with real-time preview
+  - Card transformation buttons (Clear, Flip H/V)
+- **Right Panel (Tabs):**
+  - **GROM Browser:** View all 256 built-in Intellivision characters
+  - **Animation Timeline:** Create animations by sequencing GRAM cards
 - **File Menu:** New, Open, Save, Save As (.telligram format)
 - **Edit Menu:** Clear card, flip transformations
 - **Mouse Controls:**
@@ -137,7 +144,7 @@ PYTHONPATH=src python3 -m pytest tests/
 # Run with coverage report
 PYTHONPATH=src python3 -m pytest tests/ --cov=telligram --cov-report=html
 
-# Current status: 39/39 tests passing (100% core coverage)
+# Current status: 71/71 tests passing (100% core coverage)
 ```
 
 ## Technical Specifications
@@ -166,7 +173,7 @@ PYTHONPATH=src python3 -m pytest tests/ --cov=telligram --cov-report=html
 - [x] Project class with 64-card management
 - [x] JSON save/load functionality (.telligram format)
 - [x] Card transformations (flip H/V, invert, clear)
-- [x] Comprehensive test suite (39/39 tests passing, 100% coverage)
+- [x] Comprehensive test suite (24 tests, 100% coverage)
 
 ✅ **Phase 2: Basic GUI (COMPLETE)**
 - [x] Main application window with PySide6
@@ -177,9 +184,15 @@ PYTHONPATH=src python3 -m pytest tests/ --cov=telligram --cov-report=html
 - [x] Edit menu (Clear, Flip H/V)
 - [x] Keyboard shortcuts
 
-🚧 **Phase 3: Advanced Features (PLANNED)**
-- [ ] GROM character browser (reference mode)
-- [ ] Animation timeline editor
+✅ **Phase 3: GROM & Animation (COMPLETE)**
+- [x] GROM data model with all 256 built-in characters (14 tests)
+- [x] GROM character browser widget (read-only reference)
+- [x] Animation class for sequencing GRAM cards (18 tests)
+- [x] Timeline editor with playback controls
+- [x] Tabbed interface for GROM browser and timeline editor
+- [x] Full project integration with save/load
+
+🚧 **Phase 4: Code Generation & Advanced Features (PLANNED)**
 - [ ] Screen layout editor (20×12 BACKTAB)
 - [ ] IntyBASIC code export (BITMAP format)
 - [ ] Assembly code export (DECLE format)
