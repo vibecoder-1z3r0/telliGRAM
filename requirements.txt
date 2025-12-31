@@ -1,6 +1,8 @@
 # telliGRAM Requirements
 
 # Core dependencies
-PySide6>=6.5.0
+# PySide6 6.2.x supports Python 3.8
+# PySide6 6.3+ requires Python 3.9+
+PySide6>=6.2.0
 
 # Development dependencies (install with: pip install -r requirements-dev.txt)

@@ -4,9 +4,11 @@ Get up and running with telliGRAM in 5 minutes!
 
 ## Prerequisites
 
-- **Python 3.8+** installed
+- **Python 3.8 or higher** installed
 - **pip** package manager
 - **Git** (to clone the repository)
+
+**Note:** PySide6 6.2.x is used for Python 3.8 compatibility. Python 3.9+ users will get newer versions automatically.
 
 ## Installation
 
