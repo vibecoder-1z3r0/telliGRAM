@@ -167,14 +167,19 @@ class CardThumbnail(QFrame):
         if self.card is None:
             return
 
-        # Get card data as 8 bytes
-        data = self.card.to_bytes()
+        # Get card data as binary strings
+        binary_rows = self.card.to_binary_strings()
+
+        # Convert to visual representation (1 -> #, 0 -> .)
+        visual_rows = []
+        for row in binary_rows:
+            visual_row = row.replace('1', '#').replace('0', '.')
+            visual_rows.append(f'    "{visual_row}"')
 
         # Format as IntyBASIC BITMAP
         code = f"' GRAM Card #{self.slot} (slot {256 + self.slot})\n"
         code += f"BITMAP card_{self.slot}\n"
-        code += "    DATA "
-        code += ", ".join(f"${byte:02X}" for byte in data)
+        code += "\n".join(visual_rows)
         code += "\nEND\n"
 
         self._show_code_dialog("IntyBASIC Code", code)
