@@ -10,7 +10,7 @@ from telligram.core.card import GramCard
 
 
 class CardThumbnail(QFrame):
-    """Thumbnail view of a single card - simplified for WSL compatibility"""
+    """Thumbnail view of a single card with visual preview"""
 
     clicked = Signal(int)  # Emits slot number when clicked
 
@@ -21,23 +21,55 @@ class CardThumbnail(QFrame):
         self.selected = False
         self.setFixedSize(70, 90)
 
-        # Create UI elements - just labels, no custom painting
+        # Create UI elements
         layout = QVBoxLayout(self)
-        layout.setContentsMargins(4, 4, 4, 4)
+        layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(2)
 
         # Slot number label
         self.slot_label = QLabel(f"#{slot}")
-        self.slot_label.setAlignment(Qt.AlignCenter)
+        self.slot_label.setAlignment(Qt.AlignLeft)
         layout.addWidget(self.slot_label)
 
-        # Status label (shows if card has data)
-        self.status_label = QLabel("Empty")
-        self.status_label.setAlignment(Qt.AlignCenter)
-        layout.addWidget(self.status_label)
+        # Card preview (QLabel displaying QPixmap)
+        self.preview_label = QLabel()
+        self.preview_label.setFixedSize(60, 60)
+        self.preview_label.setAlignment(Qt.AlignCenter)
+        layout.addWidget(self.preview_label)
 
         # Set initial style
         self._update_style()
+
+    def _render_card(self) -> QPixmap:
+        """Render card to QPixmap"""
+        pixmap = QPixmap(60, 60)
+        pixmap.fill(QColor("#1a1a1a"))
+
+        if self.card is None:
+            return pixmap
+
+        painter = QPainter(pixmap)
+        painter.setPen(QColor("#444"))
+        painter.drawRect(0, 0, 59, 59)
+
+        # Draw card pixels (8×8 scaled to 56×56, centered in 60×60)
+        pixel_size = 7
+        offset_x = 2
+        offset_y = 2
+
+        for y in range(8):
+            for x in range(8):
+                if self.card.get_pixel(x, y):
+                    painter.fillRect(
+                        offset_x + x * pixel_size,
+                        offset_y + y * pixel_size,
+                        pixel_size,
+                        pixel_size,
+                        QColor("#FFFFFF")
+                    )
+
+        painter.end()
+        return pixmap
 
     def _update_style(self):
         """Update visual style based on selection state"""
@@ -48,9 +80,8 @@ class CardThumbnail(QFrame):
                     border: 2px solid #0078D4;
                 }
                 QLabel {
-                    color: #FFFFFF;
+                    color: #b4b4b4;
                     background-color: transparent;
-                    font-weight: bold;
                 }
             """)
         else:
@@ -68,10 +99,8 @@ class CardThumbnail(QFrame):
     def set_card(self, card: GramCard):
         """Set card to display"""
         self.card = card
-        if card is None or card.is_empty():
-            self.status_label.setText("Empty")
-        else:
-            self.status_label.setText("Card")
+        pixmap = self._render_card()
+        self.preview_label.setPixmap(pixmap)
 
     def set_selected(self, selected: bool):
         """Set selection state"""
