@@ -33,12 +33,6 @@ That's it! The only dependency is **PySide6** (Qt for Python).
 python3 -m telligram.main
 ```
 
-Or if you need to set PYTHONPATH:
-
-```bash
-PYTHONPATH=src python3 -m telligram.main
-```
-
 ## First Steps
 
 ### Creating Your First GRAM Card
@@ -208,10 +202,10 @@ telliGRAM saves projects as **JSON files** with `.telligram` extension.
 
 ```bash
 # Make sure PySide6 is installed
-pip install PySide6>=6.5.0
+pip install PySide6>=6.2.0
 
-# Try with explicit PYTHONPATH
-PYTHONPATH=src python3 -m telligram.main
+# Try running again
+python3 -m telligram.main
 ```
 
 ### Tests failing
@@ -220,8 +214,8 @@ PYTHONPATH=src python3 -m telligram.main
 # Install dev requirements
 pip install -r requirements-dev.txt
 
-# Run tests with PYTHONPATH
-PYTHONPATH=src python3 -m pytest tests/
+# Run tests
+python3 -m pytest tests/
 ```
 
 ### Graphics look wrong

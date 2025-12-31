@@ -33,9 +33,6 @@ pip install -r requirements.txt
 
 # Run the GUI application
 python3 -m telligram.main
-
-# Or set PYTHONPATH for development
-PYTHONPATH=src python3 -m telligram.main
 ```
 
 ## Planned Output Formats
@@ -138,11 +135,11 @@ python3 -m telligram.main
 ### Running Tests
 
 ```bash
-# Run all tests (requires PYTHONPATH)
-PYTHONPATH=src python3 -m pytest tests/
+# Run all tests
+python3 -m pytest tests/
 
 # Run with coverage report
-PYTHONPATH=src python3 -m pytest tests/ --cov=telligram --cov-report=html
+python3 -m pytest tests/ --cov=telligram --cov-report=html
 
 # Current status: 71/71 tests passing (100% core coverage)
 ```
