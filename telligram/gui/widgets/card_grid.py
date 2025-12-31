@@ -23,7 +23,7 @@ class CardThumbnail(QFrame):
 
         # Create UI elements
         layout = QVBoxLayout(self)
-        layout.setContentsMargins(5, 2, 5, 2)
+        layout.setContentsMargins(5, 0, 5, 0)
         layout.setSpacing(0)
 
         # Slot number label - same width as preview for tab-like appearance
