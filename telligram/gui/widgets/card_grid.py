@@ -26,10 +26,11 @@ class CardThumbnail(QFrame):
         layout.setContentsMargins(5, 2, 5, 2)
         layout.setSpacing(0)
 
-        # Slot number label
+        # Slot number label - same width as preview for tab-like appearance
         self.slot_label = QLabel(f"#{slot}")
-        self.slot_label.setAlignment(Qt.AlignLeft)
-        layout.addWidget(self.slot_label)
+        self.slot_label.setFixedWidth(60)
+        self.slot_label.setAlignment(Qt.AlignCenter)
+        layout.addWidget(self.slot_label, alignment=Qt.AlignCenter)
 
         # Card preview (QLabel displaying QPixmap) - centered
         self.preview_label = QLabel()
