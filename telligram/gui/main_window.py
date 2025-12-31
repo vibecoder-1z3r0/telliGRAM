@@ -245,7 +245,8 @@ class MainWindow(QMainWindow):
         card = self.project.get_card(slot)
         self.pixel_editor.set_card(card)
         self.card_label.setText(f"<h3>Card #{slot} (GRAM {256 + slot})</h3>")
-        self.timeline_editor.set_current_card_slot(slot)
+        if self.timeline_editor:  # Timeline editor disabled for now
+            self.timeline_editor.set_current_card_slot(slot)
 
     def on_card_changed(self):
         """Handle card modification in pixel editor"""

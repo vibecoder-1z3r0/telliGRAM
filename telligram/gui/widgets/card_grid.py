@@ -15,11 +15,12 @@ class CardThumbnail(QFrame):
 
     clicked = Signal(int)  # Emits slot number when clicked
 
-    def __init__(self, slot: int):
+    def __init__(self, slot: int, parent_grid=None):
         super().__init__()
         self.slot = slot
         self.card = None
         self.selected = False
+        self.parent_grid = parent_grid  # Reference to CardGridWidget for clipboard access
         self.setFixedSize(70, 90)
 
         # Create UI elements
@@ -122,21 +123,42 @@ class CardThumbnail(QFrame):
 
     def contextMenuEvent(self, event):
         """Handle right-click context menu"""
-        if self.card is None or self.card.is_empty():
-            return  # No context menu for empty cards
+        has_card = self.card is not None and not self.card.is_empty()
+        has_clipboard = self.parent_grid and self.parent_grid.has_clipboard_data()
+
+        # Show menu if we have a card OR clipboard data
+        if not has_card and not has_clipboard:
+            return
 
         menu = QMenu(self)
 
-        # Code generation submenu
-        gen_menu = menu.addMenu("Generate Code")
+        # Copy action (only if card exists)
+        if has_card:
+            copy_action = QAction("Copy Card", self)
+            copy_action.triggered.connect(self._copy_card)
+            menu.addAction(copy_action)
 
-        intybasic_action = QAction("IntyBASIC", self)
-        intybasic_action.triggered.connect(self._generate_intybasic)
-        gen_menu.addAction(intybasic_action)
+        # Paste action (only if clipboard has data)
+        if has_clipboard:
+            paste_action = QAction("Paste Card", self)
+            paste_action.triggered.connect(self._paste_card)
+            menu.addAction(paste_action)
 
-        asm_action = QAction("Assembly (DECLE)", self)
-        asm_action.triggered.connect(self._generate_asm)
-        gen_menu.addAction(asm_action)
+        # Separator before code generation
+        if has_card and has_clipboard:
+            menu.addSeparator()
+
+        # Code generation submenu (only if card exists)
+        if has_card:
+            gen_menu = menu.addMenu("Generate Code")
+
+            intybasic_action = QAction("IntyBASIC", self)
+            intybasic_action.triggered.connect(self._generate_intybasic)
+            gen_menu.addAction(intybasic_action)
+
+            asm_action = QAction("Assembly (DECLE)", self)
+            asm_action.triggered.connect(self._generate_asm)
+            gen_menu.addAction(asm_action)
 
         menu.exec(event.globalPos())
 
@@ -205,6 +227,16 @@ class CardThumbnail(QFrame):
 
         dialog.exec()
 
+    def _copy_card(self):
+        """Copy this card to clipboard"""
+        if self.card is not None and self.parent_grid:
+            self.parent_grid.copy_card(self.card)
+
+    def _paste_card(self):
+        """Paste card from clipboard to this slot"""
+        if self.parent_grid:
+            self.parent_grid.paste_card(self.slot)
+
 
 class CardGridWidget(QWidget):
     """Grid widget showing all 64 GRAM cards"""
@@ -216,6 +248,7 @@ class CardGridWidget(QWidget):
         self.project = None
         self.thumbnails = []
         self.current_slot = 0
+        self._card_clipboard = None  # Clipboard for copy/paste
 
         self._create_ui()
 
@@ -226,7 +259,7 @@ class CardGridWidget(QWidget):
 
         # Create 64 thumbnails in 8×8 grid
         for i in range(64):
-            thumb = CardThumbnail(i)
+            thumb = CardThumbnail(i, parent_grid=self)
             thumb.clicked.connect(self.on_thumbnail_clicked)
             self.thumbnails.append(thumb)
 
@@ -264,5 +297,31 @@ class CardGridWidget(QWidget):
 
     def on_thumbnail_clicked(self, slot: int):
         """Handle thumbnail click"""
+        self.select_card(slot)
+        self.card_selected.emit(slot)
+
+    def has_clipboard_data(self) -> bool:
+        """Check if clipboard has card data"""
+        return self._card_clipboard is not None
+
+    def copy_card(self, card: GramCard):
+        """Copy card data to clipboard"""
+        if card is not None:
+            # Store card data as bytes
+            self._card_clipboard = card.to_bytes()
+
+    def paste_card(self, slot: int):
+        """Paste card from clipboard to specified slot"""
+        if self._card_clipboard is None or self.project is None:
+            return
+
+        # Create new card from clipboard data
+        new_card = GramCard(data=self._card_clipboard)
+
+        # Update project and UI
+        self.project.set_card(slot, new_card)
+        self.thumbnails[slot].set_card(new_card)
+
+        # Notify parent (triggers on_card_changed in main window)
         self.select_card(slot)
         self.card_selected.emit(slot)
