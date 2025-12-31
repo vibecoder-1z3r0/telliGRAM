@@ -407,10 +407,10 @@ class MainWindow(QMainWindow):
                 # Get card data as binary strings
                 binary_rows = card.to_binary_strings()
 
-                # Convert to visual representation
+                # Convert to visual representation (1 -> X, 0 -> .)
                 visual_rows = []
                 for row in binary_rows:
-                    visual_row = row.replace('1', '#').replace('0', '.')
+                    visual_row = row.replace('1', 'X').replace('0', '.')
                     visual_rows.append(f'    "{visual_row}"')
 
                 code += f"' GRAM Card #{slot} (slot {256 + slot})\n"
