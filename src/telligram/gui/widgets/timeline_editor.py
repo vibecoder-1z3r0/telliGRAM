@@ -136,6 +136,7 @@ class TimelineEditorWidget(QWidget):
 
         self.frame_list = QListWidget()
         self.frame_list.setMaximumHeight(150)
+        self.frame_list.itemSelectionChanged.connect(self._on_frame_selected)
         frames_layout.addWidget(self.frame_list)
 
         # Frame controls
@@ -158,6 +159,7 @@ class TimelineEditorWidget(QWidget):
         self.duration_spin.setRange(1, 60)
         self.duration_spin.setValue(2)
         self.duration_spin.setPrefix("Duration: ")
+        self.duration_spin.valueChanged.connect(self._on_duration_changed)
         frame_controls.addWidget(self.duration_spin)
 
         frames_layout.addLayout(frame_controls)
@@ -325,6 +327,7 @@ class TimelineEditorWidget(QWidget):
         self.current_animation.add_frame(self.current_card_slot, duration)
         self._refresh_frame_list()
         self._refresh_animation_list()
+        self._update_ui_state()  # Enable play button if frames were added
         self.animation_changed.emit()
 
     def _remove_frame(self):
@@ -351,6 +354,35 @@ class TimelineEditorWidget(QWidget):
         if self.current_animation:
             self.current_animation.fps = value
             self.animation_changed.emit()
+
+    def _on_frame_selected(self):
+        """Handle frame selection in list"""
+        if not self.current_animation:
+            return
+
+        current_row = self.frame_list.currentRow()
+        if current_row >= 0 and current_row < self.current_animation.frame_count:
+            frame = self.current_animation.get_frame(current_row)
+            # Update duration spinner to show selected frame's duration
+            self.duration_spin.blockSignals(True)  # Prevent triggering valueChanged
+            self.duration_spin.setValue(frame["duration"])
+            self.duration_spin.blockSignals(False)
+
+    def _on_duration_changed(self, value):
+        """Handle duration change for selected frame"""
+        if not self.current_animation:
+            return
+
+        current_row = self.frame_list.currentRow()
+        if current_row >= 0 and current_row < self.current_animation.frame_count:
+            # Update the frame's duration
+            frame = self.current_animation.get_frame(current_row)
+            frame["duration"] = value
+            self._refresh_frame_list()
+            self._refresh_animation_list()
+            self.animation_changed.emit()
+            # Restore selection
+            self.frame_list.setCurrentRow(current_row)
 
     def _update_ui_state(self):
         """Update UI button states"""
