@@ -23,19 +23,19 @@ class CardThumbnail(QFrame):
 
         # Create UI elements
         layout = QVBoxLayout(self)
-        layout.setContentsMargins(0, 0, 0, 0)
-        layout.setSpacing(2)
+        layout.setContentsMargins(5, 2, 5, 2)
+        layout.setSpacing(0)
 
         # Slot number label
         self.slot_label = QLabel(f"#{slot}")
         self.slot_label.setAlignment(Qt.AlignLeft)
         layout.addWidget(self.slot_label)
 
-        # Card preview (QLabel displaying QPixmap)
+        # Card preview (QLabel displaying QPixmap) - centered
         self.preview_label = QLabel()
         self.preview_label.setFixedSize(60, 60)
         self.preview_label.setAlignment(Qt.AlignCenter)
-        layout.addWidget(self.preview_label)
+        layout.addWidget(self.preview_label, alignment=Qt.AlignCenter)
 
         # Set initial style
         self._update_style()
