@@ -1025,10 +1025,10 @@ class ChangeCardColorCommand(QUndoCommand):
                 if hasattr(self.main_window, 'color_palette'):
                     self.main_window.color_palette.set_color(self.old_color)
             # Update timeline if needed
-            self.main_window.timeline_editor._load_animation(
-                self.main_window.timeline_editor.current_animation
-            )
-            self.main_window.mark_unsaved()
+            if self.main_window.timeline_editor.current_animation:
+                self.main_window.timeline_editor._load_animation(
+                    self.main_window.timeline_editor.current_animation
+                )
 
     def redo(self):
         """Apply new color"""
@@ -1043,10 +1043,10 @@ class ChangeCardColorCommand(QUndoCommand):
                 if hasattr(self.main_window, 'color_palette'):
                     self.main_window.color_palette.set_color(self.new_color)
             # Update timeline if needed
-            self.main_window.timeline_editor._load_animation(
-                self.main_window.timeline_editor.current_animation
-            )
-            self.main_window.mark_unsaved()
+            if self.main_window.timeline_editor.current_animation:
+                self.main_window.timeline_editor._load_animation(
+                    self.main_window.timeline_editor.current_animation
+                )
 
 
 # Animation Undo/Redo Command Classes
