@@ -150,7 +150,7 @@ class MainWindow(QMainWindow):
         self.card_label = QLabel("<h3>Card #0</h3>")
         editor_layout.addWidget(self.card_label)
 
-        self.pixel_editor = PixelEditorWidget()
+        self.pixel_editor = PixelEditorWidget(main_window=self)
         editor_layout.addWidget(self.pixel_editor)
 
         # Buttons
@@ -312,19 +312,13 @@ class MainWindow(QMainWindow):
 
     def flip_horizontal(self):
         """Flip current card horizontally"""
-        card = self.pixel_editor.get_card()
-        if card:
-            card.flip_horizontal()
-            self.pixel_editor.set_card(card)
-            self.on_card_changed()
+        command = FlipHorizontalCommand(self, self.current_card_slot)
+        self.undo_stack.push(command)
 
     def flip_vertical(self):
         """Flip current card vertically"""
-        card = self.pixel_editor.get_card()
-        if card:
-            card.flip_vertical()
-            self.pixel_editor.set_card(card)
-            self.on_card_changed()
+        command = FlipVerticalCommand(self, self.current_card_slot)
+        self.undo_stack.push(command)
 
     def update_title(self):
         """Update window title"""
@@ -614,12 +608,9 @@ class ClearCardCommand(CardOperationCommand):
     def __init__(self, main_window, slot):
         super().__init__(main_window, slot, f"Clear Card #{slot}")
 
-        # Perform the clear and store the result
+        # Calculate new state without modifying original
         from telligram.core.card import GramCard
-        card = main_window.project.get_card(slot)
-        if card is not None:
-            card.clear()
-            self.new_data = card.to_bytes()
+        self.new_data = [0] * 8  # Empty card
 
 
 class FlipHorizontalCommand(CardOperationCommand):
@@ -628,12 +619,14 @@ class FlipHorizontalCommand(CardOperationCommand):
     def __init__(self, main_window, slot):
         super().__init__(main_window, slot, f"Flip Horizontal Card #{slot}")
 
-        # Perform the flip and store the result
+        # Calculate new state without modifying original
         from telligram.core.card import GramCard
         card = main_window.project.get_card(slot)
         if card is not None:
-            card.flip_horizontal()
-            self.new_data = card.to_bytes()
+            # Create a copy and flip it
+            temp_card = GramCard(data=card.to_bytes())
+            temp_card.flip_horizontal()
+            self.new_data = temp_card.to_bytes()
 
 
 class FlipVerticalCommand(CardOperationCommand):
@@ -642,12 +635,14 @@ class FlipVerticalCommand(CardOperationCommand):
     def __init__(self, main_window, slot):
         super().__init__(main_window, slot, f"Flip Vertical Card #{slot}")
 
-        # Perform the flip and store the result
+        # Calculate new state without modifying original
         from telligram.core.card import GramCard
         card = main_window.project.get_card(slot)
         if card is not None:
-            card.flip_vertical()
-            self.new_data = card.to_bytes()
+            # Create a copy and flip it
+            temp_card = GramCard(data=card.to_bytes())
+            temp_card.flip_vertical()
+            self.new_data = temp_card.to_bytes()
 
 
 class PasteCardCommand(CardOperationCommand):
@@ -656,3 +651,37 @@ class PasteCardCommand(CardOperationCommand):
     def __init__(self, main_window, slot, card_data):
         super().__init__(main_window, slot, f"Paste Card #{slot}")
         self.new_data = card_data
+
+
+class PixelEditCommand(CardOperationCommand):
+    """Command for pixel editing (entire stroke from press to release)"""
+
+    def __init__(self, main_window, slot, old_data, new_data):
+        # Don't call super().__init__ because we already have the data
+        QUndoCommand.__init__(self, f"Edit Card #{slot}")
+        self.main_window = main_window
+        self.slot = slot
+        self.old_data = old_data
+        self.new_data = new_data
+
+    def undo(self):
+        """Restore old card state"""
+        if self.old_data is not None:
+            from telligram.core.card import GramCard
+            card = GramCard(data=self.old_data)
+            self.main_window.project.set_card(self.slot, card)
+            self.main_window.card_grid.update_card(self.slot, card)
+            # Update pixel editor if this is the current card
+            if self.main_window.current_card_slot == self.slot:
+                self.main_window.pixel_editor.set_card(card)
+
+    def redo(self):
+        """Apply new card state"""
+        if self.new_data is not None:
+            from telligram.core.card import GramCard
+            card = GramCard(data=self.new_data)
+            self.main_window.project.set_card(self.slot, card)
+            self.main_window.card_grid.update_card(self.slot, card)
+            # Update pixel editor if this is the current card
+            if self.main_window.current_card_slot == self.slot:
+                self.main_window.pixel_editor.set_card(card)

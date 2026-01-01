@@ -11,13 +11,15 @@ class PixelEditorWidget(QWidget):
 
     card_changed = Signal()  # Emitted when card is modified
 
-    def __init__(self):
+    def __init__(self, main_window=None):
         super().__init__()
+        self.main_window = main_window
         self.card = None
         self.pixel_size = 40  # Pixels are 40×40 on screen
         self.grid_size = 8
         self.drawing = False
         self.draw_value = 1  # 1 = set pixel, 0 = erase
+        self.stroke_start_data = None  # Card state at start of stroke
 
         # Calculate total size
         total_size = self.pixel_size * self.grid_size
@@ -50,6 +52,10 @@ class PixelEditorWidget(QWidget):
     def mousePressEvent(self, event: QMouseEvent):
         """Handle mouse press"""
         if event.button() == Qt.LeftButton:
+            # Store card state at start of stroke for undo
+            if self.card:
+                self.stroke_start_data = self.card.to_bytes()
+
             self.drawing = True
             x, y = self._get_pixel_coords(event.pos().x(), event.pos().y())
             if x is not None:
@@ -58,6 +64,10 @@ class PixelEditorWidget(QWidget):
                 self.draw_value = 1 if current == 0 else 0
                 self._set_pixel(x, y)
         elif event.button() == Qt.RightButton:
+            # Store card state at start of stroke for undo
+            if self.card:
+                self.stroke_start_data = self.card.to_bytes()
+
             # Right click = erase
             self.drawing = True
             self.draw_value = 0
@@ -75,6 +85,22 @@ class PixelEditorWidget(QWidget):
     def mouseReleaseEvent(self, event: QMouseEvent):
         """Handle mouse release"""
         self.drawing = False
+
+        # Create undo command for this stroke if something changed
+        if self.main_window and self.stroke_start_data and self.card:
+            current_data = self.card.to_bytes()
+            # Only create command if card actually changed
+            if current_data != self.stroke_start_data:
+                from telligram.gui.main_window import PixelEditCommand
+                command = PixelEditCommand(
+                    self.main_window,
+                    self.main_window.current_card_slot,
+                    self.stroke_start_data,
+                    current_data
+                )
+                self.main_window.undo_stack.push(command)
+
+        self.stroke_start_data = None
 
     def _get_pixel_coords(self, mouse_x: int, mouse_y: int):
         """Convert mouse coordinates to pixel coordinates"""
