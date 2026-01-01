@@ -218,7 +218,6 @@ class MainWindow(QMainWindow):
         self.pixel_editor.set_card(None)
         if self.timeline_editor:  # Timeline editor disabled for now
             self.timeline_editor.set_project(self.project)
-        self.undo_stack.clear()  # Clear undo history for new project
         self.undo_stack.setClean()
         self.update_title()
         self.update_cards_info()
@@ -241,7 +240,6 @@ class MainWindow(QMainWindow):
                 self.pixel_editor.set_card(self.project.get_card(self.current_card_slot))
                 if self.timeline_editor:  # Timeline editor disabled for now
                     self.timeline_editor.set_project(self.project)
-                self.undo_stack.clear()  # Clear undo history for opened project
                 self.undo_stack.setClean()
                 self.update_title()
                 self.update_cards_info()
