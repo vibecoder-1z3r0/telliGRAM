@@ -200,6 +200,7 @@ class MainWindow(QMainWindow):
         """Connect widget signals"""
         self.card_grid.card_selected.connect(self.on_card_selected)
         self.pixel_editor.card_changed.connect(self.on_card_changed)
+        self.undo_stack.cleanChanged.connect(self.update_title)
         # Timeline editor disabled for WSL debugging
         # self.timeline_editor.animation_changed.connect(self.on_animation_changed)
 
@@ -217,6 +218,8 @@ class MainWindow(QMainWindow):
         self.pixel_editor.set_card(None)
         if self.timeline_editor:  # Timeline editor disabled for now
             self.timeline_editor.set_project(self.project)
+        self.undo_stack.clear()  # Clear undo history for new project
+        self.undo_stack.setClean()
         self.update_title()
         self.update_cards_info()
         self.status_bar.showMessage("New project created")
@@ -238,6 +241,8 @@ class MainWindow(QMainWindow):
                 self.pixel_editor.set_card(self.project.get_card(self.current_card_slot))
                 if self.timeline_editor:  # Timeline editor disabled for now
                     self.timeline_editor.set_project(self.project)
+                self.undo_stack.clear()  # Clear undo history for opened project
+                self.undo_stack.setClean()
                 self.update_title()
                 self.update_cards_info()
                 self.status_bar.showMessage(f"Opened: {filename}")
@@ -251,6 +256,8 @@ class MainWindow(QMainWindow):
         else:
             try:
                 self.project.save(self.current_file)
+                self.undo_stack.setClean()
+                self.update_title()
                 self.status_bar.showMessage(f"Saved: {self.current_file}")
             except Exception as e:
                 QMessageBox.critical(self, "Error", f"Failed to save project:\n{e}")
@@ -271,6 +278,7 @@ class MainWindow(QMainWindow):
             try:
                 self.current_file = Path(filename)
                 self.project.save(self.current_file)
+                self.undo_stack.setClean()
                 self.update_title()
                 self.status_bar.showMessage(f"Saved: {filename}")
             except Exception as e:
@@ -327,6 +335,11 @@ class MainWindow(QMainWindow):
             title += f" - {self.current_file.name}"
         else:
             title += " - Untitled"
+
+        # Add asterisk if project has unsaved changes
+        if not self.undo_stack.isClean():
+            title += " *"
+
         self.setWindowTitle(title)
 
     def update_cards_info(self):
