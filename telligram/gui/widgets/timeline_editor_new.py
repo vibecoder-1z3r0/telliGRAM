@@ -244,8 +244,9 @@ class TimelineEditorWidget(QWidget):
 
     animation_changed = Signal()  # Emitted when animation is modified
 
-    def __init__(self):
+    def __init__(self, main_window=None):
         super().__init__()
+        self.main_window = main_window
         self.project = None
         self.current_animation = None
         self.current_card_slot = 0
@@ -460,23 +461,33 @@ class TimelineEditorWidget(QWidget):
         if not ok or not name:
             return
 
-        anim = Animation(name=name)  # Uses default fps=60, loop=False
-        self.project.add_animation(anim)
-
-        self._refresh_animation_list()
-        self.animation_combo.setCurrentIndex(len(self.project.animations) - 1)
-        self.animation_changed.emit()
+        # Use undoable command if main_window available
+        if self.main_window:
+            self.main_window.create_animation_undoable(name)
+        else:
+            # Fallback for direct use without main_window
+            anim = Animation(name=name)
+            self.project.add_animation(anim)
+            self._refresh_animation_list()
+            self.animation_combo.setCurrentIndex(len(self.project.animations) - 1)
+            self.animation_changed.emit()
 
     def _rename_animation(self):
         """Rename current animation"""
         if not self.current_animation:
             return
 
-        name, ok = QInputDialog.getText(self, "Rename Animation", "New name:", text=self.current_animation.name)
-        if ok and name:
-            self.current_animation.name = name
-            self._refresh_animation_list()
-            self.animation_changed.emit()
+        old_name = self.current_animation.name
+        name, ok = QInputDialog.getText(self, "Rename Animation", "New name:", text=old_name)
+        if ok and name and name != old_name:
+            # Use undoable command if main_window available
+            if self.main_window:
+                self.main_window.rename_animation_undoable(self.current_animation, old_name, name)
+            else:
+                # Fallback
+                self.current_animation.name = name
+                self._refresh_animation_list()
+                self.animation_changed.emit()
 
     def _delete_animation(self):
         """Delete current animation"""
@@ -491,15 +502,21 @@ class TimelineEditorWidget(QWidget):
         )
 
         if reply == QMessageBox.Yes:
-            self.project.animations.remove(self.current_animation)
-            self._refresh_animation_list()
+            # Find current index before deletion
+            current_index = self.project.animations.index(self.current_animation)
 
-            if len(self.project.animations) > 0:
-                self.animation_combo.setCurrentIndex(0)
+            # Use undoable command if main_window available
+            if self.main_window:
+                self.main_window.delete_animation_undoable(self.current_animation, current_index)
             else:
-                self._load_animation(None)
-
-            self.animation_changed.emit()
+                # Fallback
+                self.project.animations.remove(self.current_animation)
+                self._refresh_animation_list()
+                if len(self.project.animations) > 0:
+                    self.animation_combo.setCurrentIndex(0)
+                else:
+                    self._load_animation(None)
+                self.animation_changed.emit()
 
     def _add_current_card(self):
         """Add current card to end of animation"""
@@ -508,17 +525,27 @@ class TimelineEditorWidget(QWidget):
             if not self.project:
                 return
 
-            anim = Animation(name="Animation 1")
-            self.project.add_animation(anim)
-            self._refresh_animation_list()
-            self.animation_combo.setCurrentIndex(0)
-            self._load_animation(anim)
+            if self.main_window:
+                anim = self.main_window.create_animation_undoable("Animation 1")
+                self.current_animation = anim
+            else:
+                # Fallback
+                anim = Animation(name="Animation 1")
+                self.project.add_animation(anim)
+                self._refresh_animation_list()
+                self.animation_combo.setCurrentIndex(0)
+                self._load_animation(anim)
 
-        self.current_animation.add_frame(card_slot=self.current_card_slot, duration=5)
-        self._create_frame_thumbnail(self.current_animation.frame_count - 1)
-        self._refresh_animation_list()
-        self._update_playback_info()
-        self.animation_changed.emit()
+        # Use undoable command if main_window available
+        if self.main_window:
+            self.main_window.add_frame_undoable(self.current_animation, self.current_card_slot, 5)
+        else:
+            # Fallback
+            self.current_animation.add_frame(card_slot=self.current_card_slot, duration=5)
+            self._create_frame_thumbnail(self.current_animation.frame_count - 1)
+            self._refresh_animation_list()
+            self._update_playback_info()
+            self.animation_changed.emit()
 
     def _insert_frame(self):
         """Insert current card before selected frame"""
@@ -533,21 +560,31 @@ class TimelineEditorWidget(QWidget):
                 selected_index = i
                 break
 
-        self.current_animation.insert_frame(selected_index, self.current_card_slot, duration=5)
-        self._load_animation(self.current_animation)  # Reload to rebuild thumbnails
-        self._refresh_animation_list()
-        self.animation_changed.emit()
+        # Use undoable command if main_window available
+        if self.main_window:
+            self.main_window.insert_frame_undoable(self.current_animation, selected_index, self.current_card_slot, 5)
+        else:
+            # Fallback
+            self.current_animation.insert_frame(selected_index, self.current_card_slot, duration=5)
+            self._load_animation(self.current_animation)
+            self._refresh_animation_list()
+            self.animation_changed.emit()
 
     def _remove_frame_at(self, index):
         """Remove frame at index"""
         if not self.current_animation or index >= self.current_animation.frame_count:
             return
 
-        self.current_animation.remove_frame(index)
-        self._load_animation(self.current_animation)  # Reload
-        self._refresh_animation_list()
-        self._update_playback_info()
-        self.animation_changed.emit()
+        # Use undoable command if main_window available
+        if self.main_window:
+            self.main_window.remove_frame_undoable(self.current_animation, index)
+        else:
+            # Fallback
+            self.current_animation.remove_frame(index)
+            self._load_animation(self.current_animation)
+            self._refresh_animation_list()
+            self._update_playback_info()
+            self.animation_changed.emit()
 
     def _on_frame_clicked(self, frame_index):
         """Handle frame click - jump to frame in playback"""
@@ -562,9 +599,19 @@ class TimelineEditorWidget(QWidget):
             return
 
         frame = self.current_animation.get_frame(frame_index)
-        frame["duration"] = new_duration
-        self._update_playback_info()
-        self.animation_changed.emit()
+        old_duration = frame["duration"]
+
+        if old_duration != new_duration:
+            # Use undoable command if main_window available
+            if self.main_window:
+                self.main_window.change_frame_duration_undoable(
+                    self.current_animation, frame_index, old_duration, new_duration
+                )
+            else:
+                # Fallback
+                frame["duration"] = new_duration
+                self._update_playback_info()
+                self.animation_changed.emit()
 
     def _on_speed_changed(self, fps):
         """Handle speed slider change"""

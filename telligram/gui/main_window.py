@@ -198,7 +198,7 @@ class MainWindow(QMainWindow):
 
         right_layout.addWidget(QLabel("<h3>Animation Timeline</h3>"))
 
-        self.timeline_editor = TimelineEditorWidget()
+        self.timeline_editor = TimelineEditorWidget(main_window=self)
         right_layout.addWidget(self.timeline_editor)
 
         main_layout.addWidget(right_panel, stretch=2)
@@ -357,9 +357,45 @@ class MainWindow(QMainWindow):
 
     def on_animation_changed(self):
         """Handle animation modification"""
-        # Animation changes are auto-saved with the project
-        # Note: Animation changes don't go through undo stack
+        # Animation changes go through undo stack, so this is just for UI updates
         pass
+
+    # Animation undo-able operations
+    def create_animation_undoable(self, name: str):
+        """Create animation with undo support"""
+        command = CreateAnimationCommand(self, name)
+        self.undo_stack.push(command)
+        return command.animation
+
+    def rename_animation_undoable(self, animation, old_name: str, new_name: str):
+        """Rename animation with undo support"""
+        command = RenameAnimationCommand(self, animation, old_name, new_name)
+        self.undo_stack.push(command)
+
+    def delete_animation_undoable(self, animation, index: int):
+        """Delete animation with undo support"""
+        command = DeleteAnimationCommand(self, animation, index)
+        self.undo_stack.push(command)
+
+    def add_frame_undoable(self, animation, card_slot: int, duration: int):
+        """Add frame with undo support"""
+        command = AddFrameCommand(self, animation, card_slot, duration)
+        self.undo_stack.push(command)
+
+    def insert_frame_undoable(self, animation, index: int, card_slot: int, duration: int):
+        """Insert frame with undo support"""
+        command = InsertFrameCommand(self, animation, index, card_slot, duration)
+        self.undo_stack.push(command)
+
+    def remove_frame_undoable(self, animation, index: int):
+        """Remove frame with undo support"""
+        command = RemoveFrameCommand(self, animation, index)
+        self.undo_stack.push(command)
+
+    def change_frame_duration_undoable(self, animation, frame_index: int, old_duration: int, new_duration: int):
+        """Change frame duration with undo support"""
+        command = ChangeFrameDurationCommand(self, animation, frame_index, old_duration, new_duration)
+        self.undo_stack.push(command)
 
     def show_about(self):
         """Show about dialog"""
@@ -928,3 +964,189 @@ class PixelEditCommand(CardOperationCommand):
             # Update pixel editor if this is the current card
             if self.main_window.current_card_slot == self.slot:
                 self.main_window.pixel_editor.set_card(card)
+
+# Animation Undo/Redo Command Classes
+
+class CreateAnimationCommand(QUndoCommand):
+    """Command for creating a new animation"""
+
+    def __init__(self, main_window, animation_name):
+        super().__init__(f"Create Animation '{animation_name}'")
+        self.main_window = main_window
+        self.animation_name = animation_name
+        self.animation = None
+
+    def redo(self):
+        """Create the animation"""
+        from telligram.core.animation import Animation
+        self.animation = Animation(name=self.animation_name)
+        self.main_window.project.add_animation(self.animation)
+        self.main_window.timeline_editor._refresh_animation_list()
+        # Select the newly created animation
+        index = len(self.main_window.project.animations) - 1
+        self.main_window.timeline_editor.animation_combo.setCurrentIndex(index)
+
+    def undo(self):
+        """Remove the animation"""
+        if self.animation in self.main_window.project.animations:
+            self.main_window.project.animations.remove(self.animation)
+            self.main_window.timeline_editor._refresh_animation_list()
+            # Select first animation if any exist
+            if len(self.main_window.project.animations) > 0:
+                self.main_window.timeline_editor.animation_combo.setCurrentIndex(0)
+            else:
+                self.main_window.timeline_editor._load_animation(None)
+
+
+class RenameAnimationCommand(QUndoCommand):
+    """Command for renaming an animation"""
+
+    def __init__(self, main_window, animation, old_name, new_name):
+        super().__init__(f"Rename Animation '{old_name}' to '{new_name}'")
+        self.main_window = main_window
+        self.animation = animation
+        self.old_name = old_name
+        self.new_name = new_name
+
+    def redo(self):
+        """Apply new name"""
+        self.animation.name = self.new_name
+        self.main_window.timeline_editor._refresh_animation_list()
+
+    def undo(self):
+        """Restore old name"""
+        self.animation.name = self.old_name
+        self.main_window.timeline_editor._refresh_animation_list()
+
+
+class DeleteAnimationCommand(QUndoCommand):
+    """Command for deleting an animation"""
+
+    def __init__(self, main_window, animation, animation_index):
+        super().__init__(f"Delete Animation '{animation.name}'")
+        self.main_window = main_window
+        self.animation = animation
+        self.animation_index = animation_index
+        # Store full animation state
+        self.animation_data = animation.to_dict()
+
+    def redo(self):
+        """Delete the animation"""
+        if self.animation in self.main_window.project.animations:
+            self.main_window.project.animations.remove(self.animation)
+        self.main_window.timeline_editor._refresh_animation_list()
+        # Select another animation or none
+        if len(self.main_window.project.animations) > 0:
+            index = min(self.animation_index, len(self.main_window.project.animations) - 1)
+            self.main_window.timeline_editor.animation_combo.setCurrentIndex(index)
+        else:
+            self.main_window.timeline_editor._load_animation(None)
+
+    def undo(self):
+        """Restore the animation"""
+        from telligram.core.animation import Animation
+        restored_anim = Animation.from_dict(self.animation_data)
+        self.main_window.project.animations.insert(self.animation_index, restored_anim)
+        self.animation = restored_anim  # Update reference
+        self.main_window.timeline_editor._refresh_animation_list()
+        self.main_window.timeline_editor.animation_combo.setCurrentIndex(self.animation_index)
+
+
+class AddFrameCommand(QUndoCommand):
+    """Command for adding a frame to an animation"""
+
+    def __init__(self, main_window, animation, card_slot, duration):
+        super().__init__(f"Add Frame (Card #{card_slot})")
+        self.main_window = main_window
+        self.animation = animation
+        self.card_slot = card_slot
+        self.duration = duration
+        self.frame_index = None
+
+    def redo(self):
+        """Add the frame"""
+        self.animation.add_frame(self.card_slot, self.duration)
+        self.frame_index = self.animation.frame_count - 1
+        self.main_window.timeline_editor._load_animation(self.animation)
+        self.main_window.timeline_editor._refresh_animation_list()
+
+    def undo(self):
+        """Remove the frame"""
+        if self.frame_index is not None and self.frame_index < self.animation.frame_count:
+            self.animation.remove_frame(self.frame_index)
+            self.main_window.timeline_editor._load_animation(self.animation)
+            self.main_window.timeline_editor._refresh_animation_list()
+
+
+class InsertFrameCommand(QUndoCommand):
+    """Command for inserting a frame at a specific position"""
+
+    def __init__(self, main_window, animation, index, card_slot, duration):
+        super().__init__(f"Insert Frame at {index}")
+        self.main_window = main_window
+        self.animation = animation
+        self.index = index
+        self.card_slot = card_slot
+        self.duration = duration
+
+    def redo(self):
+        """Insert the frame"""
+        self.animation.insert_frame(self.index, self.card_slot, self.duration)
+        self.main_window.timeline_editor._load_animation(self.animation)
+        self.main_window.timeline_editor._refresh_animation_list()
+
+    def undo(self):
+        """Remove the inserted frame"""
+        if self.index < self.animation.frame_count:
+            self.animation.remove_frame(self.index)
+            self.main_window.timeline_editor._load_animation(self.animation)
+            self.main_window.timeline_editor._refresh_animation_list()
+
+
+class RemoveFrameCommand(QUndoCommand):
+    """Command for removing a frame from an animation"""
+
+    def __init__(self, main_window, animation, index):
+        frame = animation.get_frame(index)
+        super().__init__(f"Remove Frame {index}")
+        self.main_window = main_window
+        self.animation = animation
+        self.index = index
+        self.card_slot = frame["card_slot"]
+        self.duration = frame["duration"]
+
+    def redo(self):
+        """Remove the frame"""
+        self.animation.remove_frame(self.index)
+        self.main_window.timeline_editor._load_animation(self.animation)
+        self.main_window.timeline_editor._refresh_animation_list()
+
+    def undo(self):
+        """Restore the frame"""
+        self.animation.insert_frame(self.index, self.card_slot, self.duration)
+        self.main_window.timeline_editor._load_animation(self.animation)
+        self.main_window.timeline_editor._refresh_animation_list()
+
+
+class ChangeFrameDurationCommand(QUndoCommand):
+    """Command for changing a frame's duration"""
+
+    def __init__(self, main_window, animation, frame_index, old_duration, new_duration):
+        super().__init__(f"Change Frame {frame_index} Duration")
+        self.main_window = main_window
+        self.animation = animation
+        self.frame_index = frame_index
+        self.old_duration = old_duration
+        self.new_duration = new_duration
+
+    def redo(self):
+        """Apply new duration"""
+        frame = self.animation.get_frame(self.frame_index)
+        frame["duration"] = self.new_duration
+        self.main_window.timeline_editor._refresh_animation_list()
+
+    def undo(self):
+        """Restore old duration"""
+        frame = self.animation.get_frame(self.frame_index)
+        frame["duration"] = self.old_duration
+        self.main_window.timeline_editor._refresh_animation_list()
