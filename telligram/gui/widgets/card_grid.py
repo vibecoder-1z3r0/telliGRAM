@@ -162,6 +162,12 @@ class CardThumbnail(QFrame):
 
             gen_menu.addSeparator()
 
+            mbcc_action = QAction("MBCC", self)
+            mbcc_action.triggered.connect(self._generate_mbcc)
+            gen_menu.addAction(mbcc_action)
+
+            gen_menu.addSeparator()
+
             asm_action = QAction("Assembly (DECLE)", self)
             asm_action.triggered.connect(self._generate_asm)
             gen_menu.addAction(asm_action)
@@ -206,6 +212,28 @@ class CardThumbnail(QFrame):
         code += "\nEND\n"
 
         self._show_code_dialog("IntyBASIC Code (Data)", code)
+
+    def _generate_mbcc(self):
+        """Generate MBCC code for this card"""
+        if self.card is None:
+            return
+
+        # Get card data as binary strings
+        binary_rows = self.card.to_binary_strings()
+
+        # Convert to visual representation (1 -> #, 0 -> .)
+        visual_rows = []
+        for row in binary_rows:
+            visual_row = row.replace('1', '#').replace('0', '.')
+            visual_rows.append(f'            "{visual_row}"')
+
+        # Format as MBCC SBITMAP
+        code = f"// GRAM Card #{self.slot} (slot {256 + self.slot})\n"
+        code += f"const U16 card_{self.slot} = SBITMAP(\n"
+        code += ",\n".join(visual_rows)
+        code += ");\n"
+
+        self._show_code_dialog("MBCC Code", code)
 
     def _generate_asm(self):
         """Generate Assembly DECLE code for this card"""

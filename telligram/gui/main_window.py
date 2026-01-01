@@ -74,6 +74,12 @@ class MainWindow(QMainWindow):
 
         export_menu.addSeparator()
 
+        export_mbcc_action = QAction("MBCC...", self)
+        export_mbcc_action.triggered.connect(self.export_all_mbcc)
+        export_menu.addAction(export_mbcc_action)
+
+        export_menu.addSeparator()
+
         export_asm_action = QAction("Assembly (DECLE)...", self)
         export_asm_action.triggered.connect(self.export_all_asm)
         export_menu.addAction(export_asm_action)
@@ -374,6 +380,27 @@ class MainWindow(QMainWindow):
             except Exception as e:
                 QMessageBox.critical(self, "Error", f"Failed to export cards:\n{e}")
 
+    def export_all_mbcc(self):
+        """Export all cards as MBCC code"""
+        filename, _ = QFileDialog.getSaveFileName(
+            self,
+            "Export All Cards (MBCC)",
+            "",
+            "C Header (*.h);;C Source (*.c);;All Files (*)"
+        )
+
+        if filename:
+            if not filename.endswith('.h') and not filename.endswith('.c'):
+                filename += '.h'
+
+            try:
+                code = self._generate_all_cards_mbcc()
+                with open(filename, 'w') as f:
+                    f.write(code)
+                self.status_bar.showMessage(f"Exported to: {filename}")
+            except Exception as e:
+                QMessageBox.critical(self, "Error", f"Failed to export cards:\n{e}")
+
     def export_all_asm(self):
         """Export all cards as Assembly code"""
         filename, _ = QFileDialog.getSaveFileName(
@@ -441,6 +468,47 @@ class MainWindow(QMainWindow):
                 card_count += 1
 
         code += f"' Total cards exported: {card_count}\n"
+        return code
+
+    def _generate_all_cards_mbcc(self) -> str:
+        """Generate MBCC code for all non-empty cards"""
+        code = "// telliGRAM Export - All GRAM Cards (MBCC)\n"
+        code += f"// Project: {self.current_file.name if self.current_file else 'Untitled'}\n\n"
+
+        # Collect all non-empty cards
+        cards = []
+        for slot in range(64):
+            card = self.project.get_card(slot)
+            if card is not None and not card.is_empty():
+                cards.append((slot, card))
+
+        # Generate array declaration
+        code += f"const U16 my_gram[] = {{\n"
+
+        for i, (slot, card) in enumerate(cards):
+            # Get card data as binary strings
+            binary_rows = card.to_binary_strings()
+
+            # Convert to visual representation (1 -> #, 0 -> .)
+            visual_rows = []
+            for row in binary_rows:
+                visual_row = row.replace('1', '#').replace('0', '.')
+                visual_rows.append(f'            "{visual_row}"')
+
+            # Add comment
+            code += f"    // GRAM Card #{slot} (slot {256 + slot})\n"
+            code += "    SBITMAP(\n"
+            code += ",\n".join(visual_rows)
+            code += ")"
+
+            # Add comma if not last element
+            if i < len(cards) - 1:
+                code += ","
+
+            code += "\n"
+
+        code += "};\n\n"
+        code += f"// Total cards exported: {len(cards)}\n"
         return code
 
     def _generate_all_cards_asm(self) -> str:
