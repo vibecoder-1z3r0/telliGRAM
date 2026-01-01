@@ -140,10 +140,12 @@ class MainWindow(QMainWindow):
         self.setCentralWidget(central_widget)
 
         main_layout = QHBoxLayout(central_widget)
+        main_layout.setAlignment(Qt.AlignTop)
 
         # Left panel - GRAM Card grid and pixel editor
         left_panel = QWidget()
         left_panel_layout = QHBoxLayout(left_panel)
+        left_panel_layout.setAlignment(Qt.AlignTop)
 
         # GRAM Card grid
         grid_panel = QWidget()
