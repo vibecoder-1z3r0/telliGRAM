@@ -4,8 +4,8 @@ from PySide6.QtWidgets import (
     QPushButton, QLabel, QSlider, QCheckBox, QSpinBox, QFrame, QComboBox,
     QLineEdit, QMessageBox, QInputDialog
 )
-from PySide6.QtCore import Qt, Signal, QTimer, QSize
-from PySide6.QtGui import QPainter, QColor, QPen, QPixmap
+from PySide6.QtCore import Qt, Signal, QTimer, QSize, QMimeData, QPoint
+from PySide6.QtGui import QPainter, QColor, QPen, QPixmap, QDrag
 
 from telligram.core.project import Project
 from telligram.core.animation import Animation
@@ -24,9 +24,11 @@ class FrameThumbnail(QFrame):
         self.card_slot = None
         self.project = None
         self.is_current = False
+        self.drag_start_pos = None
 
         self.setFixedSize(90, 130)
         self.setFrameStyle(QFrame.Box | QFrame.Plain)
+        self.setAcceptDrops(True)
 
         layout = QVBoxLayout(self)
         layout.setContentsMargins(3, 3, 3, 3)
@@ -106,9 +108,45 @@ class FrameThumbnail(QFrame):
         self.duration_changed.emit(self.frame_index, value)
 
     def mousePressEvent(self, event):
-        """Handle click"""
+        """Handle click and drag start"""
         if event.button() == Qt.LeftButton:
+            self.drag_start_pos = event.pos()
             self.clicked.emit(self.frame_index)
+
+    def mouseMoveEvent(self, event):
+        """Handle drag"""
+        if not (event.buttons() & Qt.LeftButton):
+            return
+        if self.drag_start_pos is None:
+            return
+        if (event.pos() - self.drag_start_pos).manhattanLength() < 10:
+            return
+
+        # Start drag operation
+        drag = QDrag(self)
+        mime_data = QMimeData()
+        mime_data.setText(str(self.frame_index))
+        drag.setMimeData(mime_data)
+        drag.exec(Qt.MoveAction)
+
+    def dragEnterEvent(self, event):
+        """Accept drag enter"""
+        if event.mimeData().hasText():
+            event.acceptProposedAction()
+
+    def dragMoveEvent(self, event):
+        """Accept drag move"""
+        if event.mimeData().hasText():
+            event.acceptProposedAction()
+
+    def dropEvent(self, event):
+        """Handle drop - emit signal to parent"""
+        if event.mimeData().hasText():
+            from_index = int(event.mimeData().text())
+            to_index = self.frame_index
+            # Signal parent to handle reordering
+            self.parent().parent().parent()._reorder_frames(from_index, to_index)
+            event.acceptProposedAction()
 
     def contextMenuEvent(self, event):
         """Handle right-click"""
@@ -116,9 +154,17 @@ class FrameThumbnail(QFrame):
         from PySide6.QtGui import QAction
 
         menu = QMenu(self)
+
         remove_action = QAction("Remove Frame", self)
         remove_action.triggered.connect(lambda: self.remove_requested.emit(self.frame_index))
         menu.addAction(remove_action)
+
+        menu.addSeparator()
+
+        duplicate_action = QAction("Duplicate Frame", self)
+        duplicate_action.triggered.connect(lambda: self.parent().parent().parent()._duplicate_frame(self.frame_index))
+        menu.addAction(duplicate_action)
+
         menu.exec(event.globalPos())
 
     def paintEvent(self, event):
@@ -613,6 +659,39 @@ class TimelineEditorWidget(QWidget):
                 self._update_playback_info()
                 self.animation_changed.emit()
 
+    def _reorder_frames(self, from_index: int, to_index: int):
+        """Reorder frames in timeline"""
+        if not self.current_animation:
+            return
+        if from_index == to_index:
+            return
+
+        # Use undoable command if main_window available
+        if self.main_window:
+            self.main_window.reorder_frame_undoable(self.current_animation, from_index, to_index)
+        else:
+            # Fallback
+            frame = self.current_animation._frames.pop(from_index)
+            self.current_animation._frames.insert(to_index, frame)
+            self._load_animation(self.current_animation)
+            self.animation_changed.emit()
+
+    def _duplicate_frame(self, index: int):
+        """Duplicate a frame"""
+        if not self.current_animation or index >= self.current_animation.frame_count:
+            return
+
+        # Use undoable command if main_window available
+        if self.main_window:
+            self.main_window.duplicate_frame_undoable(self.current_animation, index)
+        else:
+            # Fallback
+            frame = self.current_animation.get_frame(index)
+            self.current_animation.insert_frame(index + 1, frame["card_slot"], frame["duration"])
+            self._load_animation(self.current_animation)
+            self._refresh_animation_list()
+            self.animation_changed.emit()
+
     def _on_speed_changed(self, fps):
         """Handle speed slider change"""
         self.speed_label.setText(f"{fps} fps")
@@ -667,10 +746,13 @@ class TimelineEditorWidget(QWidget):
         self._update_playback_info()
 
     def _update_playback_timer(self):
-        """Update timer interval based on FPS"""
-        if self.current_animation:
-            interval_ms = int(1000 / self.current_animation.fps)
-            self.playback_timer.setInterval(interval_ms)
+        """Update timer interval based on current frame's duration and FPS"""
+        if self.current_animation and self.current_playback_frame < self.current_animation.frame_count:
+            frame = self.current_animation.get_frame(self.current_playback_frame)
+            duration_frames = frame["duration"]
+            # Calculate milliseconds: (duration in frames) / (frames per second) * 1000
+            interval_ms = int((duration_frames / self.current_animation.fps) * 1000)
+            self.playback_timer.setInterval(max(16, interval_ms))  # Minimum 16ms (~60fps max)
 
     def _advance_frame(self):
         """Advance to next frame during playback"""
@@ -690,6 +772,7 @@ class TimelineEditorWidget(QWidget):
         self._update_current_frame_highlight()
         self._update_playback_info()
         self._update_preview()
+        self._update_playback_timer()  # Update timer for next frame's duration
 
     def _update_current_frame_highlight(self):
         """Update which frame is highlighted as current"""

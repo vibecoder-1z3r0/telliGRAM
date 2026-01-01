@@ -397,6 +397,16 @@ class MainWindow(QMainWindow):
         command = ChangeFrameDurationCommand(self, animation, frame_index, old_duration, new_duration)
         self.undo_stack.push(command)
 
+    def reorder_frame_undoable(self, animation, from_index: int, to_index: int):
+        """Reorder frame with undo support"""
+        command = ReorderFrameCommand(self, animation, from_index, to_index)
+        self.undo_stack.push(command)
+
+    def duplicate_frame_undoable(self, animation, index: int):
+        """Duplicate frame with undo support"""
+        command = DuplicateFrameCommand(self, animation, index)
+        self.undo_stack.push(command)
+
     def show_about(self):
         """Show about dialog"""
         QMessageBox.about(
@@ -1149,4 +1159,54 @@ class ChangeFrameDurationCommand(QUndoCommand):
         """Restore old duration"""
         frame = self.animation.get_frame(self.frame_index)
         frame["duration"] = self.old_duration
+        self.main_window.timeline_editor._refresh_animation_list()
+
+
+class ReorderFrameCommand(QUndoCommand):
+    """Command for reordering a frame in the timeline"""
+
+    def __init__(self, main_window, animation, from_index, to_index):
+        super().__init__(f"Reorder Frame {from_index} to {to_index}")
+        self.main_window = main_window
+        self.animation = animation
+        self.from_index = from_index
+        self.to_index = to_index
+
+    def redo(self):
+        """Reorder the frame"""
+        if self.from_index != self.to_index:
+            frame = self.animation._frames.pop(self.from_index)
+            self.animation._frames.insert(self.to_index, frame)
+            self.main_window.timeline_editor._load_animation(self.animation)
+
+    def undo(self):
+        """Reverse the reorder"""
+        if self.from_index != self.to_index:
+            frame = self.animation._frames.pop(self.to_index)
+            self.animation._frames.insert(self.from_index, frame)
+            self.main_window.timeline_editor._load_animation(self.animation)
+
+
+class DuplicateFrameCommand(QUndoCommand):
+    """Command for duplicating a frame"""
+
+    def __init__(self, main_window, animation, index):
+        frame = animation.get_frame(index)
+        super().__init__(f"Duplicate Frame {index}")
+        self.main_window = main_window
+        self.animation = animation
+        self.index = index
+        self.card_slot = frame["card_slot"]
+        self.duration = frame["duration"]
+
+    def redo(self):
+        """Duplicate the frame"""
+        self.animation.insert_frame(self.index + 1, self.card_slot, self.duration)
+        self.main_window.timeline_editor._load_animation(self.animation)
+        self.main_window.timeline_editor._refresh_animation_list()
+
+    def undo(self):
+        """Remove the duplicated frame"""
+        self.animation.remove_frame(self.index + 1)
+        self.main_window.timeline_editor._load_animation(self.animation)
         self.main_window.timeline_editor._refresh_animation_list()
