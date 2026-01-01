@@ -167,6 +167,78 @@ class FrameThumbnail(QFrame):
             painter.drawLine(preview_x, y, preview_x + preview_size, y)
 
 
+class AnimationPreviewWidget(QFrame):
+    """Preview widget showing the current animation frame"""
+
+    def __init__(self):
+        super().__init__()
+        self.project = None
+        self.current_card_slot = None
+        self.setFixedSize(200, 200)
+        self.setFrameStyle(QFrame.Box | QFrame.Raised)
+        self.setStyleSheet("background-color: #1a1a1a; border: 2px solid #3c3c3c;")
+
+    def set_card(self, card_slot: int, project):
+        """Set the card to display"""
+        self.current_card_slot = card_slot
+        self.project = project
+        self.update()
+
+    def clear(self):
+        """Clear the preview"""
+        self.current_card_slot = None
+        self.update()
+
+    def paintEvent(self, event):
+        """Paint the card preview"""
+        super().paintEvent(event)
+
+        painter = QPainter(self)
+
+        if self.project is None or self.current_card_slot is None:
+            # Draw "no animation" text
+            painter.setPen(QColor("#888"))
+            painter.drawText(self.rect(), Qt.AlignCenter, "No Preview")
+            return
+
+        card = self.project.get_card(self.current_card_slot)
+        if card is None:
+            painter.setPen(QColor("#888"))
+            painter.drawText(self.rect(), Qt.AlignCenter, f"Card {self.current_card_slot}\nEmpty")
+            return
+
+        # Draw card preview (160x160 centered)
+        preview_size = 160
+        pixel_size = preview_size // 8
+        offset_x = (200 - preview_size) // 2
+        offset_y = (200 - preview_size) // 2
+
+        # Draw background
+        painter.fillRect(offset_x, offset_y, preview_size, preview_size, QColor("#1a1a1a"))
+
+        # Draw pixels
+        for y in range(8):
+            for x in range(8):
+                if card.get_pixel(x, y):
+                    painter.fillRect(
+                        offset_x + x * pixel_size,
+                        offset_y + y * pixel_size,
+                        pixel_size,
+                        pixel_size,
+                        QColor("#FFFFFF")
+                    )
+
+        # Draw grid
+        painter.setPen(QPen(QColor("#444"), 1))
+        for i in range(9):
+            # Vertical lines
+            x = offset_x + i * pixel_size
+            painter.drawLine(x, offset_y, x, offset_y + preview_size)
+            # Horizontal lines
+            y = offset_y + i * pixel_size
+            painter.drawLine(offset_x, y, offset_x + preview_size, y)
+
+
 class TimelineEditorWidget(QWidget):
     """Enhanced timeline editor with visual preview and full controls"""
 
@@ -212,6 +284,14 @@ class TimelineEditorWidget(QWidget):
         anim_header.addWidget(self.delete_anim_btn)
 
         layout.addLayout(anim_header)
+
+        # Animation preview
+        preview_layout = QHBoxLayout()
+        preview_layout.addWidget(QLabel("<b>Preview:</b>"))
+        self.preview_widget = AnimationPreviewWidget()
+        preview_layout.addWidget(self.preview_widget, alignment=Qt.AlignLeft)
+        preview_layout.addStretch()
+        layout.addLayout(preview_layout)
 
         # Timeline scroll area
         timeline_label = QLabel("<b>Timeline:</b>")
@@ -424,7 +504,15 @@ class TimelineEditorWidget(QWidget):
     def _add_current_card(self):
         """Add current card to end of animation"""
         if not self.current_animation:
-            return
+            # No animation selected - create a default one
+            if not self.project:
+                return
+
+            anim = Animation(name="Animation 1")
+            self.project.add_animation(anim)
+            self._refresh_animation_list()
+            self.animation_combo.setCurrentIndex(0)
+            self._load_animation(anim)
 
         self.current_animation.add_frame(card_slot=self.current_card_slot, duration=5)
         self._create_frame_thumbnail(self.current_animation.frame_count - 1)
@@ -466,6 +554,7 @@ class TimelineEditorWidget(QWidget):
         self.current_playback_frame = frame_index
         self._update_current_frame_highlight()
         self._update_playback_info()
+        self._update_preview()
 
     def _on_frame_duration_changed(self, frame_index, new_duration):
         """Handle duration change"""
@@ -507,6 +596,7 @@ class TimelineEditorWidget(QWidget):
         self.is_playing = True
         self.play_btn.setText("⏸ Pause")
         self._update_playback_timer()
+        self._update_preview()  # Show initial frame
         self.playback_timer.start()
 
     def _pause_playback(self):
@@ -521,6 +611,7 @@ class TimelineEditorWidget(QWidget):
         self.current_playback_frame = 0
         self._update_current_frame_highlight()
         self._update_playback_info()
+        self.preview_widget.clear()
 
     def _rewind(self):
         """Rewind to start"""
@@ -551,6 +642,7 @@ class TimelineEditorWidget(QWidget):
 
         self._update_current_frame_highlight()
         self._update_playback_info()
+        self._update_preview()
 
     def _update_current_frame_highlight(self):
         """Update which frame is highlighted as current"""
@@ -564,3 +656,11 @@ class TimelineEditorWidget(QWidget):
             self.playback_info_label.setText(f"Frame: {self.current_playback_frame + 1} / {total}")
         else:
             self.playback_info_label.setText("Frame: 0 / 0")
+
+    def _update_preview(self):
+        """Update animation preview with current frame"""
+        if self.current_animation and self.current_playback_frame < self.current_animation.frame_count:
+            frame = self.current_animation.get_frame(self.current_playback_frame)
+            self.preview_widget.set_card(frame["card_slot"], self.project)
+        else:
+            self.preview_widget.clear()
