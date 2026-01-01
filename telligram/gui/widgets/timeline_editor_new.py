@@ -458,11 +458,11 @@ class TimelineEditorWidget(QWidget):
 
         self.preview_widget = AnimationPreviewWidget()
         preview_section.addWidget(self.preview_widget, alignment=Qt.AlignTop)
-        preview_section.addStretch()
 
         main_content.addLayout(preview_section, stretch=0)
 
         layout.addLayout(main_content)
+        layout.addStretch()  # Push everything to the top
 
     def set_project(self, project: Project):
         """Set project"""
