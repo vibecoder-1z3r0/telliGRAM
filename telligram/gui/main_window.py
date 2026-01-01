@@ -12,7 +12,7 @@ from telligram.core.project import Project
 from telligram.gui.widgets.card_grid import CardGridWidget
 from telligram.gui.widgets.pixel_editor import PixelEditorWidget
 from telligram.gui.widgets.grom_browser import GromBrowserWidget
-from telligram.gui.widgets.timeline_editor import TimelineEditorWidget
+from telligram.gui.widgets.timeline_editor_new import TimelineEditorWidget
 
 
 class MainWindow(QMainWindow):
@@ -84,6 +84,21 @@ class MainWindow(QMainWindow):
         export_asm_action = QAction("Assembly (DECLE)...", self)
         export_asm_action.triggered.connect(self.export_all_asm)
         export_menu.addAction(export_asm_action)
+
+        # Export Animation submenu
+        export_anim_menu = file_menu.addMenu("Export &Animation")
+
+        export_anim_intybasic_action = QAction("IntyBASIC...", self)
+        export_anim_intybasic_action.triggered.connect(self.export_animation_intybasic)
+        export_anim_menu.addAction(export_anim_intybasic_action)
+
+        export_anim_mbcc_action = QAction("MBCC...", self)
+        export_anim_mbcc_action.triggered.connect(self.export_animation_mbcc)
+        export_anim_menu.addAction(export_anim_mbcc_action)
+
+        export_anim_asm_action = QAction("Assembly (DECLE)...", self)
+        export_anim_asm_action.triggered.connect(self.export_animation_asm)
+        export_anim_menu.addAction(export_anim_asm_action)
 
         file_menu.addSeparator()
 
@@ -175,20 +190,17 @@ class MainWindow(QMainWindow):
 
         main_layout.addWidget(left_panel, stretch=3)
 
-        # Right panel - DISABLED for WSL debugging
-        # TODO: Re-enable once WSL issues resolved
+        # Right panel - Animation Timeline
         right_panel = QWidget()
         right_layout = QVBoxLayout(right_panel)
-        right_layout.addWidget(QLabel("Right panel temporarily disabled for WSL debugging"))
+        right_layout.setContentsMargins(0, 0, 0, 0)
 
-        self.timeline_editor = None  # Disabled for now
+        right_layout.addWidget(QLabel("<h3>Animation Timeline</h3>"))
 
-        # self.tabs = QTabWidget()
-        # self.tabs.currentChanged.connect(self._on_tab_changed)
-        # self.timeline_editor = TimelineEditorWidget(self.project)
-        # self.tabs.addTab(self.timeline_editor, "Animation Timeline")
+        self.timeline_editor = TimelineEditorWidget()
+        right_layout.addWidget(self.timeline_editor)
 
-        main_layout.addWidget(right_panel, stretch=1)
+        main_layout.addWidget(right_panel, stretch=2)
 
     def _create_status_bar(self):
         """Create status bar"""
@@ -201,8 +213,7 @@ class MainWindow(QMainWindow):
         self.card_grid.card_selected.connect(self.on_card_selected)
         self.pixel_editor.card_changed.connect(self.on_card_changed)
         self.undo_stack.cleanChanged.connect(self.update_title)
-        # Timeline editor disabled for WSL debugging
-        # self.timeline_editor.animation_changed.connect(self.on_animation_changed)
+        self.timeline_editor.animation_changed.connect(self.on_animation_changed)
 
     def _on_tab_changed(self, index: int):
         """Handle tab change - GROM browser disabled for WSL compatibility"""
@@ -216,8 +227,7 @@ class MainWindow(QMainWindow):
         self.current_file = None
         self.card_grid.set_project(self.project)
         self.pixel_editor.set_card(None)
-        if self.timeline_editor:  # Timeline editor disabled for now
-            self.timeline_editor.set_project(self.project)
+        self.timeline_editor.set_project(self.project)
         self.undo_stack.setClean()
         self.update_title()
         self.update_cards_info()
@@ -238,8 +248,7 @@ class MainWindow(QMainWindow):
                 self.current_file = Path(filename)
                 self.card_grid.set_project(self.project)
                 self.pixel_editor.set_card(self.project.get_card(self.current_card_slot))
-                if self.timeline_editor:  # Timeline editor disabled for now
-                    self.timeline_editor.set_project(self.project)
+                self.timeline_editor.set_project(self.project)
                 self.undo_stack.setClean()
                 self.update_title()
                 self.update_cards_info()
@@ -288,8 +297,7 @@ class MainWindow(QMainWindow):
         card = self.project.get_card(slot)
         self.pixel_editor.set_card(card)
         self.card_label.setText(f"<h3>Card #{slot} (GRAM {256 + slot})</h3>")
-        if self.timeline_editor:  # Timeline editor disabled for now
-            self.timeline_editor.set_current_card_slot(slot)
+        self.timeline_editor.set_current_card_slot(slot)
 
     def on_card_changed(self):
         """Handle card modification in pixel editor"""
@@ -341,8 +349,8 @@ class MainWindow(QMainWindow):
 
     def on_animation_changed(self):
         """Handle animation modification"""
-        # Animations are stored in the project, nothing special to do here
-        # Just mark that the project has been modified (TODO: track dirty state)
+        # Animation changes are auto-saved with the project
+        # Note: Animation changes don't go through undo stack
         pass
 
     def show_about(self):
@@ -553,6 +561,233 @@ class MainWindow(QMainWindow):
                 card_count += 1
 
         code += f"; Total cards exported: {card_count}\n"
+        return code
+
+    def export_animation_intybasic(self):
+        """Export current animation as IntyBASIC code"""
+        if not self.timeline_editor or not self.timeline_editor.current_animation:
+            QMessageBox.warning(self, "No Animation", "Please select an animation to export.")
+            return
+
+        anim = self.timeline_editor.current_animation
+
+        filename, _ = QFileDialog.getSaveFileName(
+            self,
+            "Export Animation (IntyBASIC)",
+            f"{anim.name}.bas",
+            "IntyBASIC Source (*.bas);;All Files (*)"
+        )
+
+        if filename:
+            if not filename.endswith('.bas'):
+                filename += '.bas'
+
+            try:
+                code = self._generate_animation_intybasic(anim)
+                with open(filename, 'w') as f:
+                    f.write(code)
+                self.status_bar.showMessage(f"Exported animation to: {filename}")
+            except Exception as e:
+                QMessageBox.critical(self, "Error", f"Failed to export animation:\n{e}")
+
+    def export_animation_mbcc(self):
+        """Export current animation as MBCC code"""
+        if not self.timeline_editor or not self.timeline_editor.current_animation:
+            QMessageBox.warning(self, "No Animation", "Please select an animation to export.")
+            return
+
+        anim = self.timeline_editor.current_animation
+
+        filename, _ = QFileDialog.getSaveFileName(
+            self,
+            "Export Animation (MBCC)",
+            f"{anim.name}.h",
+            "C Header (*.h);;C Source (*.c);;All Files (*)"
+        )
+
+        if filename:
+            if not filename.endswith('.h') and not filename.endswith('.c'):
+                filename += '.h'
+
+            try:
+                code = self._generate_animation_mbcc(anim)
+                with open(filename, 'w') as f:
+                    f.write(code)
+                self.status_bar.showMessage(f"Exported animation to: {filename}")
+            except Exception as e:
+                QMessageBox.critical(self, "Error", f"Failed to export animation:\n{e}")
+
+    def export_animation_asm(self):
+        """Export current animation as Assembly code"""
+        if not self.timeline_editor or not self.timeline_editor.current_animation:
+            QMessageBox.warning(self, "No Animation", "Please select an animation to export.")
+            return
+
+        anim = self.timeline_editor.current_animation
+
+        filename, _ = QFileDialog.getSaveFileName(
+            self,
+            "Export Animation (Assembly)",
+            f"{anim.name}.asm",
+            "Assembly Source (*.asm);;All Files (*)"
+        )
+
+        if filename:
+            if not filename.endswith('.asm'):
+                filename += '.asm'
+
+            try:
+                code = self._generate_animation_asm(anim)
+                with open(filename, 'w') as f:
+                    f.write(code)
+                self.status_bar.showMessage(f"Exported animation to: {filename}")
+            except Exception as e:
+                QMessageBox.critical(self, "Error", f"Failed to export animation:\n{e}")
+
+    def _generate_animation_intybasic(self, anim) -> str:
+        """Generate IntyBASIC code for animation"""
+        code = f"' telliGRAM Animation Export\n"
+        code += f"' Animation: {anim.name}\n"
+        code += f"' Frames: {anim.frame_count}, FPS: {anim.fps}, Loop: {anim.loop}\n\n"
+
+        # Collect unique cards used in animation
+        unique_cards = {}
+        for i in range(anim.frame_count):
+            frame = anim.get_frame(i)
+            card_slot = frame["card_slot"]
+            if card_slot not in unique_cards:
+                card = self.project.get_card(card_slot)
+                if card is not None:
+                    unique_cards[card_slot] = card
+
+        # Export card definitions
+        code += "' Card definitions used in animation\n"
+        for slot in sorted(unique_cards.keys()):
+            card = unique_cards[slot]
+            binary_rows = card.to_binary_strings()
+            visual_rows = []
+            for row in binary_rows:
+                visual_row = row.replace('1', 'X').replace('0', '.')
+                visual_rows.append(f'    "{visual_row}"')
+
+            code += f"BITMAP {anim.name}_card_{slot}\n"
+            code += "\n".join(visual_rows)
+            code += "\nEND\n\n"
+
+        # Export animation frame sequence
+        code += f"' Animation frame sequence (frame index, card slot, duration)\n"
+        code += f"' FPS: {anim.fps} (interval: {1000 // anim.fps}ms per frame)\n"
+        code += f"{anim.name}_frames:\n"
+        code += "    DATA "
+        code += str(anim.frame_count)
+        code += f"  ' Number of frames\n"
+
+        for i in range(anim.frame_count):
+            frame = anim.get_frame(i)
+            code += f"    DATA {frame['card_slot']}, {frame['duration']}"
+            code += f"  ' Frame {i}: slot {frame['card_slot']}, duration {frame['duration']}\n"
+
+        code += f"\n' Usage: Loop through frames, load each card for specified duration\n"
+        code += f"' Loop mode: {anim.loop}\n"
+
+        return code
+
+    def _generate_animation_mbcc(self, anim) -> str:
+        """Generate MBCC code for animation"""
+        code = f"// telliGRAM Animation Export\n"
+        code += f"// Animation: {anim.name}\n"
+        code += f"// Frames: {anim.frame_count}, FPS: {anim.fps}, Loop: {anim.loop}\n\n"
+
+        # Collect unique cards
+        unique_cards = {}
+        for i in range(anim.frame_count):
+            frame = anim.get_frame(i)
+            card_slot = frame["card_slot"]
+            if card_slot not in unique_cards:
+                card = self.project.get_card(card_slot)
+                if card is not None:
+                    unique_cards[card_slot] = card
+
+        # Export card definitions
+        code += "// Card definitions used in animation\n"
+        for slot in sorted(unique_cards.keys()):
+            card = unique_cards[slot]
+            binary_rows = card.to_binary_strings()
+            visual_rows = []
+            for row in binary_rows:
+                visual_row = row.replace('1', '#').replace('0', '.')
+                visual_rows.append(f'        "{visual_row}"')
+
+            code += f"const U16 {anim.name}_card_{slot} = SBITMAP(\n"
+            code += ",\n".join(visual_rows)
+            code += ");\n\n"
+
+        # Export animation frame sequence
+        code += f"// Animation frame data\n"
+        code += f"typedef struct {{\n"
+        code += f"    U16 card_slot;\n"
+        code += f"    U16 duration;\n"
+        code += f"}} AnimFrame;\n\n"
+
+        code += f"const AnimFrame {anim.name}_frames[] = {{\n"
+        for i in range(anim.frame_count):
+            frame = anim.get_frame(i)
+            code += f"    {{{frame['card_slot']}, {frame['duration']}}}"
+            if i < anim.frame_count - 1:
+                code += ","
+            code += f"  // Frame {i}\n"
+        code += "};\n\n"
+
+        code += f"#define {anim.name.upper()}_FRAME_COUNT {anim.frame_count}\n"
+        code += f"#define {anim.name.upper()}_FPS {anim.fps}\n"
+        code += f"#define {anim.name.upper()}_LOOP {1 if anim.loop else 0}\n"
+
+        return code
+
+    def _generate_animation_asm(self, anim) -> str:
+        """Generate Assembly code for animation"""
+        code = f"; telliGRAM Animation Export\n"
+        code += f"; Animation: {anim.name}\n"
+        code += f"; Frames: {anim.frame_count}, FPS: {anim.fps}, Loop: {anim.loop}\n\n"
+
+        # Collect unique cards
+        unique_cards = {}
+        for i in range(anim.frame_count):
+            frame = anim.get_frame(i)
+            card_slot = frame["card_slot"]
+            if card_slot not in unique_cards:
+                card = self.project.get_card(card_slot)
+                if card is not None:
+                    unique_cards[card_slot] = card
+
+        # Export card definitions
+        code += "; Card definitions used in animation\n"
+        for slot in sorted(unique_cards.keys()):
+            card = unique_cards[slot]
+            data = card.to_bytes()
+
+            code += f"{anim.name}_card_{slot}:\n"
+            for i in range(0, 8, 2):
+                low_byte = data[i]
+                high_byte = data[i + 1] if i + 1 < 8 else 0
+                decle = (high_byte << 8) | low_byte
+                code += f"    DECLE ${decle:04X}\n"
+            code += "\n"
+
+        # Export animation frame sequence
+        code += f"; Animation frame data (card_slot, duration pairs)\n"
+        code += f"{anim.name}_frames:\n"
+        code += f"    DECLE {anim.frame_count}  ; Frame count\n"
+
+        for i in range(anim.frame_count):
+            frame = anim.get_frame(i)
+            code += f"    DECLE {frame['card_slot']}, {frame['duration']}"
+            code += f"  ; Frame {i}\n"
+
+        code += f"\n; Animation properties\n"
+        code += f"{anim.name}_fps:    DECLE {anim.fps}\n"
+        code += f"{anim.name}_loop:   DECLE {1 if anim.loop else 0}\n"
+
         return code
 
     def closeEvent(self, event):
