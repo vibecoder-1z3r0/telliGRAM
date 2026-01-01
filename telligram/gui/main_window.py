@@ -198,7 +198,7 @@ class MainWindow(QMainWindow):
         # Right panel - Animation Timeline
         right_panel = QWidget()
         right_layout = QVBoxLayout(right_panel)
-        right_layout.setContentsMargins(0, 0, 0, 0)
+        right_layout.setContentsMargins(0, 3, 0, 0)  # Add 3px top margin to align with other headers
 
         right_layout.addWidget(QLabel("<h3>Animation Timeline</h3>"))
 
