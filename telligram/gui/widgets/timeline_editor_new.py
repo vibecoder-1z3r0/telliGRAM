@@ -346,14 +346,6 @@ class TimelineEditorWidget(QWidget):
 
         layout.addLayout(anim_header)
 
-        # Animation preview
-        preview_layout = QHBoxLayout()
-        preview_layout.addWidget(QLabel("<b>Preview:</b>"))
-        self.preview_widget = AnimationPreviewWidget()
-        preview_layout.addWidget(self.preview_widget, alignment=Qt.AlignLeft)
-        preview_layout.addStretch()
-        layout.addLayout(preview_layout)
-
         # Timeline scroll area
         timeline_label = QLabel("<b>Timeline:</b>")
         layout.addWidget(timeline_label)
@@ -442,6 +434,14 @@ class TimelineEditorWidget(QWidget):
         playback_controls.addWidget(self.playback_info_label)
 
         layout.addLayout(playback_controls)
+
+        # Animation preview at bottom
+        preview_layout = QHBoxLayout()
+        preview_layout.addWidget(QLabel("<b>Preview:</b>"))
+        self.preview_widget = AnimationPreviewWidget()
+        preview_layout.addWidget(self.preview_widget, alignment=Qt.AlignLeft)
+        preview_layout.addStretch()
+        layout.addLayout(preview_layout)
 
     def set_project(self, project: Project):
         """Set project"""
