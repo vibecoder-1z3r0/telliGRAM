@@ -32,6 +32,7 @@ class MainWindow(QMainWindow):
         self._create_widgets()
         self._create_status_bar()
         self._connect_signals()
+        self._initialize_widgets()
 
     def _create_menu_bar(self):
         """Create menu bar"""
@@ -214,6 +215,13 @@ class MainWindow(QMainWindow):
         self.pixel_editor.card_changed.connect(self.on_card_changed)
         self.undo_stack.cleanChanged.connect(self.update_title)
         self.timeline_editor.animation_changed.connect(self.on_animation_changed)
+
+    def _initialize_widgets(self):
+        """Initialize widgets with default project data"""
+        self.card_grid.set_project(self.project)
+        self.timeline_editor.set_project(self.project)
+        self.update_title()
+        self.update_cards_info()
 
     def _on_tab_changed(self, index: int):
         """Handle tab change - GROM browser disabled for WSL compatibility"""
