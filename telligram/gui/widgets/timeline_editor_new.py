@@ -322,9 +322,11 @@ class TimelineEditorWidget(QWidget):
         """Create UI"""
         layout = QVBoxLayout(self)
         layout.setContentsMargins(5, 5, 5, 5)
+        layout.setSpacing(3)  # Reduce spacing between sections
 
         # Animation manager section
         anim_header = QHBoxLayout()
+        anim_header.setSpacing(5)
         anim_header.addWidget(QLabel("<b>Animation:</b>"))
 
         self.animation_combo = QComboBox()
@@ -346,53 +348,13 @@ class TimelineEditorWidget(QWidget):
 
         layout.addLayout(anim_header)
 
-        # Timeline scroll area
+        # Timeline label
         timeline_label = QLabel("<b>Timeline:</b>")
         layout.addWidget(timeline_label)
 
-        scroll = QScrollArea()
-        scroll.setWidgetResizable(True)
-        scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOn)
-        scroll.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
-        scroll.setMinimumHeight(160)
-        scroll.setMaximumHeight(160)
-
-        self.timeline_widget = QWidget()
-        self.timeline_layout = QHBoxLayout(self.timeline_widget)
-        self.timeline_layout.setContentsMargins(5, 5, 5, 5)
-        self.timeline_layout.setSpacing(5)
-        self.timeline_layout.addStretch()
-
-        scroll.setWidget(self.timeline_widget)
-        layout.addWidget(scroll)
-
-        # Frame controls
-        frame_controls = QHBoxLayout()
-
-        self.add_frame_btn = QPushButton("Add Current Card")
-        self.add_frame_btn.clicked.connect(self._add_current_card)
-        frame_controls.addWidget(self.add_frame_btn)
-
-        self.insert_frame_btn = QPushButton("Insert Before Selected")
-        self.insert_frame_btn.clicked.connect(self._insert_frame)
-        frame_controls.addWidget(self.insert_frame_btn)
-
-        frame_controls.addWidget(QLabel("|"))
-
-        self.move_left_btn = QPushButton("◀ Move Left")
-        self.move_left_btn.clicked.connect(self._move_selected_left)
-        frame_controls.addWidget(self.move_left_btn)
-
-        self.move_right_btn = QPushButton("Move Right ▶")
-        self.move_right_btn.clicked.connect(self._move_selected_right)
-        frame_controls.addWidget(self.move_right_btn)
-
-        frame_controls.addStretch()
-
-        layout.addLayout(frame_controls)
-
-        # Playback controls
+        # Playback controls (above timeline)
         playback_controls = QHBoxLayout()
+        playback_controls.setSpacing(5)
 
         self.play_btn = QPushButton("▶ Play")
         self.play_btn.setMinimumWidth(80)
@@ -435,13 +397,72 @@ class TimelineEditorWidget(QWidget):
 
         layout.addLayout(playback_controls)
 
-        # Animation preview at bottom
-        preview_layout = QHBoxLayout()
-        preview_layout.addWidget(QLabel("<b>Preview:</b>"))
+        # Horizontal layout for timeline + preview
+        main_content = QHBoxLayout()
+        main_content.setSpacing(10)
+
+        # Left side: Timeline scroll area + frame controls
+        timeline_section = QVBoxLayout()
+        timeline_section.setSpacing(3)
+
+        scroll = QScrollArea()
+        scroll.setWidgetResizable(True)
+        scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOn)
+        scroll.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        scroll.setMinimumHeight(160)
+        scroll.setMaximumHeight(160)
+        scroll.setMinimumWidth(400)  # Shrink timeline horizontally
+
+        self.timeline_widget = QWidget()
+        self.timeline_layout = QHBoxLayout(self.timeline_widget)
+        self.timeline_layout.setContentsMargins(5, 5, 5, 5)
+        self.timeline_layout.setSpacing(5)
+        self.timeline_layout.addStretch()
+
+        scroll.setWidget(self.timeline_widget)
+        timeline_section.addWidget(scroll)
+
+        # Frame controls below timeline
+        frame_controls = QHBoxLayout()
+        frame_controls.setSpacing(5)
+
+        self.add_frame_btn = QPushButton("Add Current Card")
+        self.add_frame_btn.clicked.connect(self._add_current_card)
+        frame_controls.addWidget(self.add_frame_btn)
+
+        self.insert_frame_btn = QPushButton("Insert Before Selected")
+        self.insert_frame_btn.clicked.connect(self._insert_frame)
+        frame_controls.addWidget(self.insert_frame_btn)
+
+        frame_controls.addWidget(QLabel("|"))
+
+        self.move_left_btn = QPushButton("◀ Move Left")
+        self.move_left_btn.clicked.connect(self._move_selected_left)
+        frame_controls.addWidget(self.move_left_btn)
+
+        self.move_right_btn = QPushButton("Move Right ▶")
+        self.move_right_btn.clicked.connect(self._move_selected_right)
+        frame_controls.addWidget(self.move_right_btn)
+
+        frame_controls.addStretch()
+
+        timeline_section.addLayout(frame_controls)
+        main_content.addLayout(timeline_section, stretch=1)
+
+        # Right side: Preview label + preview widget
+        preview_section = QVBoxLayout()
+        preview_section.setSpacing(3)
+
+        preview_label = QLabel("<b>Preview:</b>")
+        preview_section.addWidget(preview_label, alignment=Qt.AlignTop)
+
         self.preview_widget = AnimationPreviewWidget()
-        preview_layout.addWidget(self.preview_widget, alignment=Qt.AlignLeft)
-        preview_layout.addStretch()
-        layout.addLayout(preview_layout)
+        preview_section.addWidget(self.preview_widget, alignment=Qt.AlignTop)
+        preview_section.addStretch()
+
+        main_content.addLayout(preview_section, stretch=0)
+
+        layout.addLayout(main_content)
 
     def set_project(self, project: Project):
         """Set project"""
