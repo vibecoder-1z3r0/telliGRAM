@@ -21,8 +21,8 @@ class ColorSwatch(QFrame):
         self.setFrameStyle(QFrame.Box | QFrame.Plain)
         self.setCursor(Qt.PointingHandCursor)
 
-        # Tooltip showing color name
-        self.setToolTip(f"{self.color_data['name']} (#{color_index})")
+        # Tooltip showing color name and Intellivision color index
+        self.setToolTip(f"{self.color_data['name']} (Intellivision Color #{color_index})")
 
     def set_selected(self, selected: bool):
         """Set selection state"""
