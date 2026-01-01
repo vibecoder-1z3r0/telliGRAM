@@ -449,12 +449,9 @@ class TimelineEditorWidget(QWidget):
         timeline_section.addLayout(frame_controls)
         main_content.addLayout(timeline_section, stretch=1)
 
-        # Right side: Preview label + preview widget
+        # Right side: Preview widget
         preview_section = QVBoxLayout()
         preview_section.setSpacing(3)
-
-        preview_label = QLabel("<b>Preview:</b>")
-        preview_section.addWidget(preview_label, alignment=Qt.AlignTop)
 
         self.preview_widget = AnimationPreviewWidget()
         preview_section.addWidget(self.preview_widget, alignment=Qt.AlignTop)
