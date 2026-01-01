@@ -174,7 +174,8 @@ class CardThumbnail(QFrame):
             for i in range(16):
                 color_data = INTELLIVISION_PALETTE[i]
                 color_action = QAction(f"{color_data['name']} (#{i})", self)
-                color_action.triggered.connect(lambda idx=i: self._change_color(idx))
+                # Use *args to ignore the 'checked' argument that triggered() passes
+                color_action.triggered.connect(lambda *args, idx=i: self._change_color(idx))
                 color_menu.addAction(color_action)
 
         # Separator before code generation
