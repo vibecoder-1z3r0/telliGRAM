@@ -17,6 +17,8 @@ class FrameThumbnail(QFrame):
     clicked = Signal(int)  # Emits frame index when clicked
     duration_changed = Signal(int, int)  # Emits (frame_index, new_duration)
     remove_requested = Signal(int)  # Emits frame index to remove
+    reorder_requested = Signal(int, int)  # Emits (from_index, to_index)
+    duplicate_requested = Signal(int)  # Emits frame index to duplicate
 
     def __init__(self, frame_index: int):
         super().__init__()
@@ -140,12 +142,11 @@ class FrameThumbnail(QFrame):
             event.acceptProposedAction()
 
     def dropEvent(self, event):
-        """Handle drop - emit signal to parent"""
+        """Handle drop - emit signal"""
         if event.mimeData().hasText():
             from_index = int(event.mimeData().text())
             to_index = self.frame_index
-            # Signal parent to handle reordering
-            self.parent().parent().parent()._reorder_frames(from_index, to_index)
+            self.reorder_requested.emit(from_index, to_index)
             event.acceptProposedAction()
 
     def contextMenuEvent(self, event):
@@ -155,15 +156,28 @@ class FrameThumbnail(QFrame):
 
         menu = QMenu(self)
 
-        remove_action = QAction("Remove Frame", self)
-        remove_action.triggered.connect(lambda: self.remove_requested.emit(self.frame_index))
-        menu.addAction(remove_action)
+        # Move actions
+        move_left_action = QAction("Move Left", self)
+        move_left_action.triggered.connect(lambda: self.reorder_requested.emit(self.frame_index, self.frame_index - 1))
+        move_left_action.setEnabled(self.frame_index > 0)
+        menu.addAction(move_left_action)
+
+        move_right_action = QAction("Move Right", self)
+        move_right_action.triggered.connect(lambda: self.reorder_requested.emit(self.frame_index, self.frame_index + 1))
+        # Enable will be checked by parent
+        menu.addAction(move_right_action)
 
         menu.addSeparator()
 
         duplicate_action = QAction("Duplicate Frame", self)
-        duplicate_action.triggered.connect(lambda: self.parent().parent().parent()._duplicate_frame(self.frame_index))
+        duplicate_action.triggered.connect(lambda: self.duplicate_requested.emit(self.frame_index))
         menu.addAction(duplicate_action)
+
+        menu.addSeparator()
+
+        remove_action = QAction("Remove Frame", self)
+        remove_action.triggered.connect(lambda: self.remove_requested.emit(self.frame_index))
+        menu.addAction(remove_action)
 
         menu.exec(event.globalPos())
 
@@ -371,6 +385,16 @@ class TimelineEditorWidget(QWidget):
         self.insert_frame_btn.clicked.connect(self._insert_frame)
         frame_controls.addWidget(self.insert_frame_btn)
 
+        frame_controls.addWidget(QLabel("|"))
+
+        self.move_left_btn = QPushButton("◀ Move Left")
+        self.move_left_btn.clicked.connect(self._move_selected_left)
+        frame_controls.addWidget(self.move_left_btn)
+
+        self.move_right_btn = QPushButton("Move Right ▶")
+        self.move_right_btn.clicked.connect(self._move_selected_right)
+        frame_controls.addWidget(self.move_right_btn)
+
         frame_controls.addStretch()
 
         layout.addLayout(frame_controls)
@@ -490,6 +514,8 @@ class TimelineEditorWidget(QWidget):
         thumb.clicked.connect(self._on_frame_clicked)
         thumb.duration_changed.connect(self._on_frame_duration_changed)
         thumb.remove_requested.connect(self._remove_frame_at)
+        thumb.reorder_requested.connect(self._reorder_frames)
+        thumb.duplicate_requested.connect(self._duplicate_frame)
 
         # Insert before stretch
         self.timeline_layout.insertWidget(index, thumb)
@@ -693,6 +719,22 @@ class TimelineEditorWidget(QWidget):
             self._load_animation(self.current_animation)
             self._refresh_animation_list()
             self.animation_changed.emit()
+
+    def _move_selected_left(self):
+        """Move currently selected/playing frame left"""
+        if not self.current_animation or self.current_playback_frame <= 0:
+            return
+        self._reorder_frames(self.current_playback_frame, self.current_playback_frame - 1)
+        self.current_playback_frame -= 1
+        self._update_current_frame_highlight()
+
+    def _move_selected_right(self):
+        """Move currently selected/playing frame right"""
+        if not self.current_animation or self.current_playback_frame >= self.current_animation.frame_count - 1:
+            return
+        self._reorder_frames(self.current_playback_frame, self.current_playback_frame + 1)
+        self.current_playback_frame += 1
+        self._update_current_frame_highlight()
 
     def _on_speed_changed(self, fps):
         """Handle speed slider change"""
