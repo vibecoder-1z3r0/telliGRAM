@@ -144,8 +144,27 @@ class CardThumbnail(QFrame):
             paste_action.triggered.connect(self._paste_card)
             menu.addAction(paste_action)
 
+        # Card operations (only if card exists)
+        if has_card:
+            if has_clipboard:
+                menu.addSeparator()
+
+            clear_action = QAction("Clear Card", self)
+            clear_action.triggered.connect(self._clear_card)
+            menu.addAction(clear_action)
+
+            menu.addSeparator()
+
+            flip_h_action = QAction("Flip Horizontal", self)
+            flip_h_action.triggered.connect(self._flip_horizontal)
+            menu.addAction(flip_h_action)
+
+            flip_v_action = QAction("Flip Vertical", self)
+            flip_v_action.triggered.connect(self._flip_vertical)
+            menu.addAction(flip_v_action)
+
         # Separator before code generation
-        if has_card and has_clipboard:
+        if has_card:
             menu.addSeparator()
 
         # Code generation submenu (only if card exists)
@@ -292,6 +311,36 @@ class CardThumbnail(QFrame):
         """Paste card from clipboard to this slot"""
         if self.parent_grid:
             self.parent_grid.paste_card(self.slot)
+
+    def _clear_card(self):
+        """Clear this card"""
+        if self.card is not None and self.parent_grid:
+            self.card.clear()
+            self.set_card(self.card)
+            # Notify parent to update project
+            if self.parent_grid.project:
+                self.parent_grid.project.set_card(self.slot, self.card)
+                self.parent_grid.card_selected.emit(self.slot)
+
+    def _flip_horizontal(self):
+        """Flip this card horizontally"""
+        if self.card is not None and self.parent_grid:
+            self.card.flip_horizontal()
+            self.set_card(self.card)
+            # Notify parent to update project
+            if self.parent_grid.project:
+                self.parent_grid.project.set_card(self.slot, self.card)
+                self.parent_grid.card_selected.emit(self.slot)
+
+    def _flip_vertical(self):
+        """Flip this card vertically"""
+        if self.card is not None and self.parent_grid:
+            self.card.flip_vertical()
+            self.set_card(self.card)
+            # Notify parent to update project
+            if self.parent_grid.project:
+                self.parent_grid.project.set_card(self.slot, self.card)
+                self.parent_grid.card_selected.emit(self.slot)
 
 
 class CardGridWidget(QWidget):
