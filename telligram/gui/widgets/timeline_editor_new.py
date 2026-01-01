@@ -425,6 +425,8 @@ class TimelineEditorWidget(QWidget):
         self._refresh_animation_list()
         if len(project.animations) > 0:
             self.animation_combo.setCurrentIndex(0)
+            # Manually load the first animation since signals are blocked during refresh
+            self._load_animation(project.animations[0])
         else:
             self._load_animation(None)
 

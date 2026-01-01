@@ -995,6 +995,8 @@ class CreateAnimationCommand(QUndoCommand):
         # Select the newly created animation
         index = len(self.main_window.project.animations) - 1
         self.main_window.timeline_editor.animation_combo.setCurrentIndex(index)
+        # Manually load since signals are blocked during refresh
+        self.main_window.timeline_editor._load_animation(self.animation)
 
     def undo(self):
         """Remove the animation"""
@@ -1004,6 +1006,8 @@ class CreateAnimationCommand(QUndoCommand):
             # Select first animation if any exist
             if len(self.main_window.project.animations) > 0:
                 self.main_window.timeline_editor.animation_combo.setCurrentIndex(0)
+                # Manually load since signals are blocked during refresh
+                self.main_window.timeline_editor._load_animation(self.main_window.project.animations[0])
             else:
                 self.main_window.timeline_editor._load_animation(None)
 
@@ -1049,6 +1053,8 @@ class DeleteAnimationCommand(QUndoCommand):
         if len(self.main_window.project.animations) > 0:
             index = min(self.animation_index, len(self.main_window.project.animations) - 1)
             self.main_window.timeline_editor.animation_combo.setCurrentIndex(index)
+            # Manually load since signals are blocked during refresh
+            self.main_window.timeline_editor._load_animation(self.main_window.project.animations[index])
         else:
             self.main_window.timeline_editor._load_animation(None)
 
@@ -1060,6 +1066,8 @@ class DeleteAnimationCommand(QUndoCommand):
         self.animation = restored_anim  # Update reference
         self.main_window.timeline_editor._refresh_animation_list()
         self.main_window.timeline_editor.animation_combo.setCurrentIndex(self.animation_index)
+        # Manually load since signals are blocked during refresh
+        self.main_window.timeline_editor._load_animation(restored_anim)
 
 
 class AddFrameCommand(QUndoCommand):
