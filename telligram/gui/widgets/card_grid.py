@@ -174,7 +174,7 @@ class CardThumbnail(QFrame):
             for i in range(16):
                 color_data = INTELLIVISION_PALETTE[i]
                 color_action = QAction(f"{color_data['name']} (#{i})", self)
-                color_action.triggered.connect(lambda checked, idx=i: self._change_color(idx))
+                color_action.triggered.connect(lambda idx=i: self._change_color(idx))
                 color_menu.addAction(color_action)
 
         # Separator before code generation
@@ -352,23 +352,13 @@ class CardThumbnail(QFrame):
 
     def _change_color(self, color_index: int):
         """Change this card's color"""
-        print(f"DEBUG: _change_color called with color_index={color_index}")
-        print(f"DEBUG: self.card={self.card}, parent_grid={self.parent_grid}, main_window={self.parent_grid.main_window if self.parent_grid else None}")
-
         if self.card is not None and self.parent_grid and self.parent_grid.main_window:
             old_color = self.card.color if hasattr(self.card, 'color') else 7
-            print(f"DEBUG: old_color={old_color}, new_color={color_index}, slot={self.slot}")
-
             if old_color != color_index:
                 # Use undo command
                 from telligram.gui.main_window import ChangeCardColorCommand
                 command = ChangeCardColorCommand(self.parent_grid.main_window, self.slot, old_color, color_index)
-                print(f"DEBUG: Pushing ChangeCardColorCommand to undo stack")
                 self.parent_grid.main_window.undo_stack.push(command)
-            else:
-                print(f"DEBUG: Color unchanged (already {old_color})")
-        else:
-            print(f"DEBUG: Conditions not met - card is None, no parent_grid, or no main_window")
 
 
 class CardGridWidget(QWidget):
