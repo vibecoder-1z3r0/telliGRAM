@@ -16,13 +16,13 @@ class Animation:
     Supports playback calculations and serialization.
     """
 
-    def __init__(self, name: str, fps: int = 10, loop: bool = False):
+    def __init__(self, name: str, fps: int = 60, loop: bool = False):
         """
         Create new animation.
 
         Args:
             name: Animation name
-            fps: Frames per second (must be positive)
+            fps: Frames per second (default 60, matching STIC 60Hz)
             loop: Whether animation loops
 
         Raises:

@@ -276,12 +276,12 @@ class TimelineEditorWidget(QWidget):
         self.speed_slider = QSlider(Qt.Horizontal)
         self.speed_slider.setMinimum(1)
         self.speed_slider.setMaximum(60)
-        self.speed_slider.setValue(10)
+        self.speed_slider.setValue(60)
         self.speed_slider.setFixedWidth(150)
         self.speed_slider.valueChanged.connect(self._on_speed_changed)
         playback_controls.addWidget(self.speed_slider)
 
-        self.speed_label = QLabel("10 fps")
+        self.speed_label = QLabel("60 fps")
         self.speed_label.setFixedWidth(50)
         playback_controls.addWidget(self.speed_label)
 
@@ -380,7 +380,7 @@ class TimelineEditorWidget(QWidget):
         if not ok or not name:
             return
 
-        anim = Animation(name=name, fps=10, loop=False)
+        anim = Animation(name=name)  # Uses default fps=60, loop=False
         self.project.add_animation(anim)
 
         self._refresh_animation_list()
