@@ -148,6 +148,7 @@ class MainWindow(QMainWindow):
         # GRAM Card grid
         grid_panel = QWidget()
         grid_layout = QVBoxLayout(grid_panel)
+        grid_layout.setContentsMargins(0, 0, 0, 0)
         grid_layout.addWidget(QLabel("<h3>GRAM Cards (64 slots)</h3>"))
 
         self.card_grid = CardGridWidget(main_window=self)
@@ -162,6 +163,7 @@ class MainWindow(QMainWindow):
         # Pixel editor
         editor_panel = QWidget()
         editor_layout = QVBoxLayout(editor_panel)
+        editor_layout.setContentsMargins(0, 0, 0, 0)
 
         self.card_label = QLabel("<h3>Card #0</h3>")
         editor_layout.addWidget(self.card_label)
