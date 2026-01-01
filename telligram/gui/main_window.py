@@ -192,7 +192,8 @@ class MainWindow(QMainWindow):
         editor_layout.addLayout(button_layout)
 
         # Color palette
-        editor_layout.addWidget(QLabel("<b>Color:</b>"))
+        self.color_label = QLabel("<b>Color (#7):</b>")
+        editor_layout.addWidget(self.color_label)
         self.color_palette = ColorPaletteWidget()
         editor_layout.addWidget(self.color_palette)
 
@@ -322,6 +323,7 @@ class MainWindow(QMainWindow):
         # Update color palette to show this card's color
         if card is not None and hasattr(card, 'color'):
             self.color_palette.set_color(card.color)
+            self.color_label.setText(f"<b>Color (#{card.color}):</b>")
 
     def on_color_selected(self, color_index: int):
         """Handle color selection from palette"""
@@ -332,6 +334,8 @@ class MainWindow(QMainWindow):
                 # Create undoable command
                 command = ChangeCardColorCommand(self, self.current_card_slot, old_color, color_index)
                 self.undo_stack.push(command)
+                # Update color label
+                self.color_label.setText(f"<b>Color (#{color_index}):</b>")
 
     def on_card_changed(self):
         """Handle card modification in pixel editor"""
@@ -1024,6 +1028,9 @@ class ChangeCardColorCommand(QUndoCommand):
                 # Update color palette selection
                 if hasattr(self.main_window, 'color_palette'):
                     self.main_window.color_palette.set_color(self.old_color)
+                # Update color label
+                if hasattr(self.main_window, 'color_label'):
+                    self.main_window.color_label.setText(f"<b>Color (#{self.old_color}):</b>")
             # Update timeline if needed
             if self.main_window.timeline_editor.current_animation:
                 self.main_window.timeline_editor._load_animation(
@@ -1042,6 +1049,9 @@ class ChangeCardColorCommand(QUndoCommand):
                 # Update color palette selection
                 if hasattr(self.main_window, 'color_palette'):
                     self.main_window.color_palette.set_color(self.new_color)
+                # Update color label
+                if hasattr(self.main_window, 'color_label'):
+                    self.main_window.color_label.setText(f"<b>Color (#{self.new_color}):</b>")
             # Update timeline if needed
             if self.main_window.timeline_editor.current_animation:
                 self.main_window.timeline_editor._load_animation(

@@ -8,7 +8,7 @@ from PySide6.QtGui import QPainter, QColor, QPen, QPixmap, QAction, QFont
 
 from telligram.core.project import Project
 from telligram.core.card import GramCard
-from telligram.core.constants import get_color_hex
+from telligram.core.constants import get_color_hex, INTELLIVISION_PALETTE
 
 
 class CardThumbnail(QFrame):
@@ -166,6 +166,16 @@ class CardThumbnail(QFrame):
             flip_v_action = QAction("Flip Vertical", self)
             flip_v_action.triggered.connect(self._flip_vertical)
             menu.addAction(flip_v_action)
+
+            menu.addSeparator()
+
+            # Change Color submenu
+            color_menu = menu.addMenu("Change Color")
+            for i in range(16):
+                color_data = INTELLIVISION_PALETTE[i]
+                color_action = QAction(f"{color_data['name']} (#{i})", self)
+                color_action.triggered.connect(lambda checked, idx=i: self._change_color(idx))
+                color_menu.addAction(color_action)
 
         # Separator before code generation
         if has_card:
@@ -339,6 +349,16 @@ class CardThumbnail(QFrame):
             from telligram.gui.main_window import FlipVerticalCommand
             command = FlipVerticalCommand(self.parent_grid.main_window, self.slot)
             self.parent_grid.main_window.undo_stack.push(command)
+
+    def _change_color(self, color_index: int):
+        """Change this card's color"""
+        if self.card is not None and self.parent_grid and self.parent_grid.main_window:
+            old_color = self.card.color if hasattr(self.card, 'color') else 7
+            if old_color != color_index:
+                # Use undo command
+                from telligram.gui.main_window import ChangeCardColorCommand
+                command = ChangeCardColorCommand(self.parent_grid.main_window, self.slot, old_color, color_index)
+                self.parent_grid.main_window.undo_stack.push(command)
 
 
 class CardGridWidget(QWidget):
