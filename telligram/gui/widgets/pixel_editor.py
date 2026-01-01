@@ -4,6 +4,7 @@ from PySide6.QtCore import Qt, Signal, QRect
 from PySide6.QtGui import QPainter, QColor, QPen, QMouseEvent
 
 from telligram.core.card import GramCard
+from telligram.core.constants import get_color_hex
 
 
 class PixelEditorWidget(QWidget):
@@ -129,6 +130,9 @@ class PixelEditorWidget(QWidget):
         if self.card is None:
             return
 
+        # Get card color
+        card_color = get_color_hex(self.card.color) if hasattr(self.card, 'color') else "#FFFFFF"
+
         # Draw pixels
         for y in range(self.grid_size):
             for x in range(self.grid_size):
@@ -137,7 +141,7 @@ class PixelEditorWidget(QWidget):
 
                 # Draw pixel
                 if self.card.get_pixel(x, y):
-                    painter.fillRect(px, py, self.pixel_size, self.pixel_size, QColor("#FFFFFF"))
+                    painter.fillRect(px, py, self.pixel_size, self.pixel_size, QColor(card_color))
                 else:
                     painter.fillRect(px, py, self.pixel_size, self.pixel_size, QColor("#2D2D30"))
 

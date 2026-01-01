@@ -1,5 +1,6 @@
 """GRAM Card data model"""
 from typing import List, Optional, Dict, Any
+from telligram.core.constants import DEFAULT_CARD_COLOR
 
 
 class GramCard:
@@ -13,12 +14,13 @@ class GramCard:
     WIDTH = 8
     HEIGHT = 8
 
-    def __init__(self, data: Optional[List[int]] = None):
+    def __init__(self, data: Optional[List[int]] = None, color: int = DEFAULT_CARD_COLOR):
         """
         Initialize GRAM card
 
         Args:
             data: Optional list of 8 bytes (one per row), each 0-255
+            color: Color index (0-15), defaults to 7 (White)
 
         Raises:
             ValueError: If data is not 8 bytes or contains invalid values
@@ -37,6 +39,7 @@ class GramCard:
             self._data = list(data)
 
         self.label = ""
+        self.color = color  # Intellivision color palette index (0-15)
 
     @property
     def width(self) -> int:
@@ -117,11 +120,12 @@ class GramCard:
         Export as dictionary for JSON serialization
 
         Returns:
-            Dict with 'label' and 'data' keys
+            Dict with 'label', 'data', and 'color' keys
         """
         return {
             "label": self.label,
-            "data": self.to_bytes()
+            "data": self.to_bytes(),
+            "color": self.color
         }
 
     @classmethod
@@ -130,12 +134,13 @@ class GramCard:
         Create card from dictionary
 
         Args:
-            data: Dict with 'label' and 'data' keys
+            data: Dict with 'label', 'data', and optional 'color' keys
 
         Returns:
             New GramCard instance
         """
-        card = cls(data["data"])
+        color = data.get("color", DEFAULT_CARD_COLOR)
+        card = cls(data["data"], color=color)
         card.label = data.get("label", "")
         return card
 

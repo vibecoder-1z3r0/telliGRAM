@@ -13,6 +13,7 @@ from telligram.gui.widgets.card_grid import CardGridWidget
 from telligram.gui.widgets.pixel_editor import PixelEditorWidget
 from telligram.gui.widgets.grom_browser import GromBrowserWidget
 from telligram.gui.widgets.timeline_editor_new import TimelineEditorWidget
+from telligram.gui.widgets.color_palette import ColorPaletteWidget
 
 
 class MainWindow(QMainWindow):
@@ -189,6 +190,12 @@ class MainWindow(QMainWindow):
         button_layout.addWidget(flip_v_btn)
 
         editor_layout.addLayout(button_layout)
+
+        # Color palette
+        editor_layout.addWidget(QLabel("<b>Color:</b>"))
+        self.color_palette = ColorPaletteWidget()
+        editor_layout.addWidget(self.color_palette)
+
         editor_layout.addStretch()
 
         left_panel_layout.addWidget(editor_panel, stretch=2)
@@ -219,6 +226,7 @@ class MainWindow(QMainWindow):
         self.pixel_editor.card_changed.connect(self.on_card_changed)
         self.undo_stack.cleanChanged.connect(self.update_title)
         self.timeline_editor.animation_changed.connect(self.on_animation_changed)
+        self.color_palette.color_selected.connect(self.on_color_selected)
 
     def _initialize_widgets(self):
         """Initialize widgets with default project data"""
@@ -310,6 +318,20 @@ class MainWindow(QMainWindow):
         self.pixel_editor.set_card(card)
         self.card_label.setText(f"<h3>Card #{slot} (GRAM {256 + slot})</h3>")
         self.timeline_editor.set_current_card_slot(slot)
+
+        # Update color palette to show this card's color
+        if card is not None and hasattr(card, 'color'):
+            self.color_palette.set_color(card.color)
+
+    def on_color_selected(self, color_index: int):
+        """Handle color selection from palette"""
+        card = self.project.get_card(self.current_card_slot)
+        if card is not None:
+            old_color = card.color if hasattr(card, 'color') else 7
+            if old_color != color_index:
+                # Create undoable command
+                command = ChangeCardColorCommand(self, self.current_card_slot, old_color, color_index)
+                self.undo_stack.push(command)
 
     def on_card_changed(self):
         """Handle card modification in pixel editor"""
@@ -978,6 +1000,54 @@ class PixelEditCommand(CardOperationCommand):
             # Update pixel editor if this is the current card
             if self.main_window.current_card_slot == self.slot:
                 self.main_window.pixel_editor.set_card(card)
+
+
+class ChangeCardColorCommand(QUndoCommand):
+    """Command for changing a card's color"""
+
+    def __init__(self, main_window, slot, old_color, new_color):
+        super().__init__(f"Change Color Card #{slot}")
+        self.main_window = main_window
+        self.slot = slot
+        self.old_color = old_color
+        self.new_color = new_color
+
+    def undo(self):
+        """Restore old color"""
+        card = self.main_window.project.get_card(self.slot)
+        if card is not None:
+            card.color = self.old_color
+            self.main_window.card_grid.update_card(self.slot, card)
+            # Update pixel editor if this is the current card
+            if self.main_window.current_card_slot == self.slot:
+                self.main_window.pixel_editor.set_card(card)
+                # Update color palette selection
+                if hasattr(self.main_window, 'color_palette'):
+                    self.main_window.color_palette.set_color(self.old_color)
+            # Update timeline if needed
+            self.main_window.timeline_editor._load_animation(
+                self.main_window.timeline_editor.current_animation
+            )
+            self.main_window.mark_unsaved()
+
+    def redo(self):
+        """Apply new color"""
+        card = self.main_window.project.get_card(self.slot)
+        if card is not None:
+            card.color = self.new_color
+            self.main_window.card_grid.update_card(self.slot, card)
+            # Update pixel editor if this is the current card
+            if self.main_window.current_card_slot == self.slot:
+                self.main_window.pixel_editor.set_card(card)
+                # Update color palette selection
+                if hasattr(self.main_window, 'color_palette'):
+                    self.main_window.color_palette.set_color(self.new_color)
+            # Update timeline if needed
+            self.main_window.timeline_editor._load_animation(
+                self.main_window.timeline_editor.current_animation
+            )
+            self.main_window.mark_unsaved()
+
 
 # Animation Undo/Redo Command Classes
 

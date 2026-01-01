@@ -8,6 +8,7 @@ from PySide6.QtGui import QPainter, QColor, QPen, QPixmap, QAction, QFont
 
 from telligram.core.project import Project
 from telligram.core.card import GramCard
+from telligram.core.constants import get_color_hex
 
 
 class CardThumbnail(QFrame):
@@ -66,6 +67,9 @@ class CardThumbnail(QFrame):
         offset_x = 2
         offset_y = 2
 
+        # Get card color
+        card_color = get_color_hex(self.card.color) if hasattr(self.card, 'color') else "#FFFFFF"
+
         for y in range(8):
             for x in range(8):
                 if self.card.get_pixel(x, y):
@@ -74,7 +78,7 @@ class CardThumbnail(QFrame):
                         offset_y + y * pixel_size,
                         pixel_size,
                         pixel_size,
-                        QColor("#FFFFFF")
+                        QColor(card_color)
                     )
 
         painter.end()

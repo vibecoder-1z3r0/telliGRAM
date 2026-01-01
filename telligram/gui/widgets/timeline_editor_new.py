@@ -9,6 +9,7 @@ from PySide6.QtGui import QPainter, QColor, QPen, QPixmap, QDrag
 
 from telligram.core.project import Project
 from telligram.core.animation import Animation
+from telligram.core.constants import get_color_hex
 
 
 class FrameThumbnail(QFrame):
@@ -204,6 +205,9 @@ class FrameThumbnail(QFrame):
         # Draw background
         painter.fillRect(preview_x, preview_y, preview_size, preview_size, QColor("#1a1a1a"))
 
+        # Get card color
+        card_color = get_color_hex(card.color) if hasattr(card, 'color') else "#FFFFFF"
+
         # Draw pixels
         for y in range(8):
             for x in range(8):
@@ -213,7 +217,7 @@ class FrameThumbnail(QFrame):
                         preview_y + y * pixel_size,
                         pixel_size,
                         pixel_size,
-                        QColor("#FFFFFF")
+                        QColor(card_color)
                     )
 
         # Draw grid
@@ -276,6 +280,9 @@ class AnimationPreviewWidget(QFrame):
         # Draw background
         painter.fillRect(offset_x, offset_y, preview_size, preview_size, QColor("#1a1a1a"))
 
+        # Get card color
+        card_color = get_color_hex(card.color) if hasattr(card, 'color') else "#FFFFFF"
+
         # Draw pixels
         for y in range(8):
             for x in range(8):
@@ -285,7 +292,7 @@ class AnimationPreviewWidget(QFrame):
                         offset_y + y * pixel_size,
                         pixel_size,
                         pixel_size,
-                        QColor("#FFFFFF")
+                        QColor(card_color)
                     )
 
         # Draw grid
