@@ -314,33 +314,27 @@ class CardThumbnail(QFrame):
 
     def _clear_card(self):
         """Clear this card"""
-        if self.card is not None and self.parent_grid:
-            self.card.clear()
-            self.set_card(self.card)
-            # Notify parent to update project
-            if self.parent_grid.project:
-                self.parent_grid.project.set_card(self.slot, self.card)
-                self.parent_grid.card_selected.emit(self.slot)
+        if self.card is not None and self.parent_grid and self.parent_grid.main_window:
+            # Use undo command
+            from telligram.gui.main_window import ClearCardCommand
+            command = ClearCardCommand(self.parent_grid.main_window, self.slot)
+            self.parent_grid.main_window.undo_stack.push(command)
 
     def _flip_horizontal(self):
         """Flip this card horizontally"""
-        if self.card is not None and self.parent_grid:
-            self.card.flip_horizontal()
-            self.set_card(self.card)
-            # Notify parent to update project
-            if self.parent_grid.project:
-                self.parent_grid.project.set_card(self.slot, self.card)
-                self.parent_grid.card_selected.emit(self.slot)
+        if self.card is not None and self.parent_grid and self.parent_grid.main_window:
+            # Use undo command
+            from telligram.gui.main_window import FlipHorizontalCommand
+            command = FlipHorizontalCommand(self.parent_grid.main_window, self.slot)
+            self.parent_grid.main_window.undo_stack.push(command)
 
     def _flip_vertical(self):
         """Flip this card vertically"""
-        if self.card is not None and self.parent_grid:
-            self.card.flip_vertical()
-            self.set_card(self.card)
-            # Notify parent to update project
-            if self.parent_grid.project:
-                self.parent_grid.project.set_card(self.slot, self.card)
-                self.parent_grid.card_selected.emit(self.slot)
+        if self.card is not None and self.parent_grid and self.parent_grid.main_window:
+            # Use undo command
+            from telligram.gui.main_window import FlipVerticalCommand
+            command = FlipVerticalCommand(self.parent_grid.main_window, self.slot)
+            self.parent_grid.main_window.undo_stack.push(command)
 
 
 class CardGridWidget(QWidget):
@@ -348,8 +342,9 @@ class CardGridWidget(QWidget):
 
     card_selected = Signal(int)  # Emits slot number when card selected
 
-    def __init__(self):
+    def __init__(self, main_window=None):
         super().__init__()
+        self.main_window = main_window
         self.project = None
         self.thumbnails = []
         self.current_slot = 0
@@ -420,13 +415,15 @@ class CardGridWidget(QWidget):
         if self._card_clipboard is None or self.project is None:
             return
 
-        # Create new card from clipboard data
-        new_card = GramCard(data=self._card_clipboard)
-
-        # Update project and UI
-        self.project.set_card(slot, new_card)
-        self.thumbnails[slot].set_card(new_card)
-
-        # Notify parent (triggers on_card_changed in main window)
-        self.select_card(slot)
-        self.card_selected.emit(slot)
+        # Use undo command if main_window is available
+        if self.main_window:
+            from telligram.gui.main_window import PasteCardCommand
+            command = PasteCardCommand(self.main_window, slot, self._card_clipboard)
+            self.main_window.undo_stack.push(command)
+        else:
+            # Fallback for when main_window is not set
+            new_card = GramCard(data=self._card_clipboard)
+            self.project.set_card(slot, new_card)
+            self.thumbnails[slot].set_card(new_card)
+            self.select_card(slot)
+            self.card_selected.emit(slot)

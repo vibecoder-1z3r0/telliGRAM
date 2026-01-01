@@ -5,7 +5,7 @@ from PySide6.QtWidgets import (
     QLabel, QPushButton, QTabWidget, QApplication
 )
 from PySide6.QtCore import Qt
-from PySide6.QtGui import QAction
+from PySide6.QtGui import QAction, QUndoStack, QUndoCommand
 from pathlib import Path
 
 from telligram.core.project import Project
@@ -23,6 +23,7 @@ class MainWindow(QMainWindow):
         self.project = Project(name="Untitled")
         self.current_file = None
         self.current_card_slot = 0
+        self.undo_stack = QUndoStack(self)
 
         self.setWindowTitle("telliGRAM - Intellivision GRAM Card Creator")
         self.setMinimumSize(1200, 800)
@@ -94,6 +95,17 @@ class MainWindow(QMainWindow):
         # Edit menu
         edit_menu = menubar.addMenu("&Edit")
 
+        # Undo/Redo actions
+        undo_action = self.undo_stack.createUndoAction(self, "&Undo")
+        undo_action.setShortcut("Ctrl+Z")
+        edit_menu.addAction(undo_action)
+
+        redo_action = self.undo_stack.createRedoAction(self, "&Redo")
+        redo_action.setShortcut("Ctrl+Shift+Z")
+        edit_menu.addAction(redo_action)
+
+        edit_menu.addSeparator()
+
         clear_card_action = QAction("&Clear Card", self)
         clear_card_action.setShortcut("Ctrl+Shift+C")
         clear_card_action.triggered.connect(self.clear_current_card)
@@ -122,7 +134,7 @@ class MainWindow(QMainWindow):
         grid_layout = QVBoxLayout(grid_panel)
         grid_layout.addWidget(QLabel("<h3>GRAM Cards (64 slots)</h3>"))
 
-        self.card_grid = CardGridWidget()
+        self.card_grid = CardGridWidget(main_window=self)
         grid_layout.addWidget(self.card_grid)
 
         # Info label
@@ -289,7 +301,8 @@ class MainWindow(QMainWindow):
 
     def clear_current_card(self):
         """Clear current card"""
-        self.pixel_editor.clear_card()
+        command = ClearCardCommand(self, self.current_card_slot)
+        self.undo_stack.push(command)
 
     def flip_horizontal(self):
         """Flip current card horizontally"""
@@ -542,3 +555,93 @@ class MainWindow(QMainWindow):
         # TODO: Ask to save if project has unsaved changes
         event.accept()
         QApplication.quit()
+
+
+# Undo/Redo Command Classes
+
+class CardOperationCommand(QUndoCommand):
+    """Base class for card operation commands"""
+
+    def __init__(self, main_window, slot, description):
+        super().__init__(description)
+        self.main_window = main_window
+        self.slot = slot
+        self.old_data = None
+        self.new_data = None
+
+        # Store current card state
+        card = main_window.project.get_card(slot)
+        if card is not None:
+            self.old_data = card.to_bytes()
+
+    def undo(self):
+        """Restore old card state"""
+        if self.old_data is not None:
+            from telligram.core.card import GramCard
+            card = GramCard(data=self.old_data)
+            self.main_window.project.set_card(self.slot, card)
+            self.main_window.card_grid.update_card(self.slot, card)
+            # Update pixel editor if this is the current card
+            if self.main_window.current_card_slot == self.slot:
+                self.main_window.pixel_editor.set_card(card)
+
+    def redo(self):
+        """Apply new card state"""
+        if self.new_data is not None:
+            from telligram.core.card import GramCard
+            card = GramCard(data=self.new_data)
+            self.main_window.project.set_card(self.slot, card)
+            self.main_window.card_grid.update_card(self.slot, card)
+            # Update pixel editor if this is the current card
+            if self.main_window.current_card_slot == self.slot:
+                self.main_window.pixel_editor.set_card(card)
+
+
+class ClearCardCommand(CardOperationCommand):
+    """Command for clearing a card"""
+
+    def __init__(self, main_window, slot):
+        super().__init__(main_window, slot, f"Clear Card #{slot}")
+
+        # Perform the clear and store the result
+        from telligram.core.card import GramCard
+        card = main_window.project.get_card(slot)
+        if card is not None:
+            card.clear()
+            self.new_data = card.to_bytes()
+
+
+class FlipHorizontalCommand(CardOperationCommand):
+    """Command for flipping a card horizontally"""
+
+    def __init__(self, main_window, slot):
+        super().__init__(main_window, slot, f"Flip Horizontal Card #{slot}")
+
+        # Perform the flip and store the result
+        from telligram.core.card import GramCard
+        card = main_window.project.get_card(slot)
+        if card is not None:
+            card.flip_horizontal()
+            self.new_data = card.to_bytes()
+
+
+class FlipVerticalCommand(CardOperationCommand):
+    """Command for flipping a card vertically"""
+
+    def __init__(self, main_window, slot):
+        super().__init__(main_window, slot, f"Flip Vertical Card #{slot}")
+
+        # Perform the flip and store the result
+        from telligram.core.card import GramCard
+        card = main_window.project.get_card(slot)
+        if card is not None:
+            card.flip_vertical()
+            self.new_data = card.to_bytes()
+
+
+class PasteCardCommand(CardOperationCommand):
+    """Command for pasting a card"""
+
+    def __init__(self, main_window, slot, card_data):
+        super().__init__(main_window, slot, f"Paste Card #{slot}")
+        self.new_data = card_data
