@@ -932,11 +932,11 @@ class TimelineEditorWidget(QWidget):
                 frame_range = f"{current_frame + 1:03d}"
 
             self.playback_info_label.setText(
-                f"Card: {self.current_playback_frame + 1:02d} / {total_cards:02d} | "
-                f"Frame: {frame_range} / {total_frames:03d}"
+                f"C: {self.current_playback_frame + 1:02d}/{total_cards:02d} | "
+                f"F: {frame_range}/{total_frames:03d}"
             )
         else:
-            self.playback_info_label.setText("Card: 00 / 00 | Frame: 000 / 000")
+            self.playback_info_label.setText("C: 00/00 | F: 000/000")
 
     def _update_preview(self):
         """Update animation preview with current frame"""
