@@ -395,7 +395,14 @@ class TimelineEditorWidget(QWidget):
 
         playback_controls.addWidget(QLabel("|"))
 
-        playback_controls.addWidget(QLabel("S:"))
+        self.grid_checkbox = QCheckBox("Grid")
+        self.grid_checkbox.setChecked(True)
+        self.grid_checkbox.stateChanged.connect(self._on_grid_changed)
+        playback_controls.addWidget(self.grid_checkbox)
+
+        playback_controls.addWidget(QLabel("|"))
+
+        playback_controls.addWidget(QLabel("Speed:"))
         self.speed_slider = QSlider(Qt.Horizontal)
         self.speed_slider.setMinimum(1)
         self.speed_slider.setMaximum(60)
@@ -407,13 +414,6 @@ class TimelineEditorWidget(QWidget):
         self.speed_label = QLabel("60 fps")
         self.speed_label.setFixedWidth(50)
         playback_controls.addWidget(self.speed_label)
-
-        playback_controls.addWidget(QLabel("|"))
-
-        self.grid_checkbox = QCheckBox("Grid")
-        self.grid_checkbox.setChecked(True)
-        self.grid_checkbox.stateChanged.connect(self._on_grid_changed)
-        playback_controls.addWidget(self.grid_checkbox)
 
         playback_controls.addStretch()
 
