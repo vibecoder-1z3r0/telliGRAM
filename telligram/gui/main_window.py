@@ -449,10 +449,12 @@ class MainWindow(QMainWindow):
         QMessageBox.about(
             self,
             "About telliGRAM",
-            "<h2>telliGRAM v0.1.0</h2>"
-            "<p>Intellivision GRAM Card Creator</p>"
-            "<p>Create custom 8×8 graphics for Intellivision games</p>"
-            "<p>© 2025 Vibe-Coder 1.z3r0</p>"
+            "<h2>telliGRAM v0.1.0-alpha</h2>"
+            "<p>Intellivision GRAM Card Creator and Animator</p>"
+            "<p>Create custom 8×8 graphics and animations for Intellivision games</p>"
+            "<p>© 2025-2026 Andrew Potozniak (Tyraziel & 1.z3r0)</p>"
+            "<p>Licensed under the MIT License</p>"
+            "<p><i>Developed with AI assistance from Anthropic Claude</i></p>"
         )
 
     def export_all_intybasic_visual(self):
