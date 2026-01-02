@@ -86,7 +86,7 @@ class LayerControlWidget(QFrame):
 
         offset_layout.addWidget(QLabel("X Offset:"))
         self.x_offset_spin = QSpinBox()
-        self.x_offset_spin.setRange(-31, 31)  # Allow positioning anywhere in 32x32 grid
+        self.x_offset_spin.setRange(-8, 8)  # One card width in either direction
         self.x_offset_spin.setValue(0)
         self.x_offset_spin.setEnabled(False)
         self.x_offset_spin.valueChanged.connect(lambda: self.layer_changed.emit())
@@ -94,7 +94,7 @@ class LayerControlWidget(QFrame):
 
         offset_layout.addWidget(QLabel("Y Offset:"))
         self.y_offset_spin = QSpinBox()
-        self.y_offset_spin.setRange(-31, 31)  # Allow positioning anywhere in 32x32 grid
+        self.y_offset_spin.setRange(-8, 8)  # One card height in either direction
         self.y_offset_spin.setValue(0)
         self.y_offset_spin.setEnabled(False)
         self.y_offset_spin.valueChanged.connect(lambda: self.layer_changed.emit())
