@@ -201,6 +201,17 @@ class AnimationComposerWidget(QWidget):
             return self.timeline_editors[0].current_animation
         return None
 
+    @property
+    def animation_combo(self):
+        """
+        Get animation combo box from the primary timeline editor.
+
+        This maintains compatibility with undo/redo commands.
+        """
+        if self.timeline_editors:
+            return self.timeline_editors[0].animation_combo
+        return None
+
     def _load_animation(self, animation):
         """
         Load animation in the primary timeline editor.
