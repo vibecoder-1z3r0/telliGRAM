@@ -70,11 +70,11 @@ class AnimationComposerWidget(QWidget):
 
         # Layer management buttons (fixed at bottom)
         layer_btn_layout = QHBoxLayout()
-        self.add_layer_btn = QPushButton("+ Add Layer")
+        self.add_layer_btn = QPushButton("+ Add Animation Timeline")
         self.add_layer_btn.clicked.connect(self._add_layer)
         layer_btn_layout.addWidget(self.add_layer_btn)
 
-        self.remove_layer_btn = QPushButton("- Remove Layer")
+        self.remove_layer_btn = QPushButton("- Remove Animation Timeline")
         self.remove_layer_btn.clicked.connect(self._remove_layer)
         self.remove_layer_btn.setEnabled(False)
         layer_btn_layout.addWidget(self.remove_layer_btn)
