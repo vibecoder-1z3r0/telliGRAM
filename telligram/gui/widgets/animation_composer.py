@@ -39,6 +39,21 @@ class AnimationComposerWidget(QWidget):
         layout = QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
 
+        # Timeline management buttons (at top, below header)
+        from PySide6.QtWidgets import QLabel
+        btn_layout = QHBoxLayout()
+        self.add_layer_btn = QPushButton("Add Timeline")
+        self.add_layer_btn.clicked.connect(self._add_layer)
+        btn_layout.addWidget(self.add_layer_btn)
+
+        self.remove_layer_btn = QPushButton("Remove Timeline")
+        self.remove_layer_btn.clicked.connect(self._remove_layer)
+        self.remove_layer_btn.setEnabled(False)
+        btn_layout.addWidget(self.remove_layer_btn)
+
+        btn_layout.addStretch()
+        layout.addLayout(btn_layout)
+
         # Create vertically scrollable area for all content
         scroll_area = QScrollArea()
         scroll_area.setWidgetResizable(True)
@@ -67,20 +82,6 @@ class AnimationComposerWidget(QWidget):
 
         scroll_area.setWidget(scroll_widget)
         layout.addWidget(scroll_area, 1)
-
-        # Layer management buttons (fixed at bottom)
-        layer_btn_layout = QHBoxLayout()
-        self.add_layer_btn = QPushButton("+ Add Animation Timeline")
-        self.add_layer_btn.clicked.connect(self._add_layer)
-        layer_btn_layout.addWidget(self.add_layer_btn)
-
-        self.remove_layer_btn = QPushButton("- Remove Animation Timeline")
-        self.remove_layer_btn.clicked.connect(self._remove_layer)
-        self.remove_layer_btn.setEnabled(False)
-        layer_btn_layout.addWidget(self.remove_layer_btn)
-
-        layer_btn_layout.addStretch()
-        layout.addLayout(layer_btn_layout)
 
     def add_timeline_editor(self):
         """Add a new timeline editor for a layer"""
