@@ -84,7 +84,7 @@ class AnimationComposerWidget(QWidget):
         scroll_area.setWidget(scroll_widget)
         timeline_tab_layout.addWidget(scroll_area)
 
-        self.tab_widget.addTab(timeline_tab, "IntelliMation Station")
+        self.tab_widget.addTab(timeline_tab, "Animation Timelines")
 
         # Tab 2: Composite Preview
         self.composite_preview = CompositePreviewWidget(self.project)

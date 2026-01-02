@@ -209,12 +209,12 @@ class MainWindow(QMainWindow):
 
         main_layout.addWidget(left_panel, stretch=0)  # Don't stretch
 
-        # Right panel - Animation Timeline
+        # Right panel - IntelliMation Station
         right_panel = QWidget()
         right_layout = QVBoxLayout(right_panel)
         right_layout.setContentsMargins(0, 3, 0, 0)  # Add 3px top margin to align with other headers
 
-        right_layout.addWidget(QLabel("<h3>Animation Timeline</h3>"))
+        right_layout.addWidget(QLabel("<h3>IntelliMation Station</h3>"))
 
         self.timeline_editor = AnimationComposerWidget(project=self.project, main_window=self)
         right_layout.addWidget(self.timeline_editor)
