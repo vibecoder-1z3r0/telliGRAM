@@ -26,6 +26,8 @@ class LayerControlWidget(QFrame):
     """
 
     layer_changed = Signal()  # Emitted when any layer setting changes
+    move_up_requested = Signal(int)  # Emitted when move up clicked (layer_index)
+    move_down_requested = Signal(int)  # Emitted when move down clicked (layer_index)
 
     def __init__(self, layer_index: int, project: Project):
         super().__init__()
@@ -37,7 +39,7 @@ class LayerControlWidget(QFrame):
         layout = QVBoxLayout(self)
         layout.setContentsMargins(8, 8, 8, 8)
 
-        # Top row: checkbox and animation selector
+        # Top row: checkbox, animation selector, and move buttons
         top_layout = QHBoxLayout()
 
         # Name the first layer "Parent/Base Layer", others "Layer 1" through "Layer 7"
@@ -50,6 +52,19 @@ class LayerControlWidget(QFrame):
         self.visible_check.setChecked(False)
         self.visible_check.stateChanged.connect(lambda: self.layer_changed.emit())
         top_layout.addWidget(self.visible_check)
+
+        # Add move up/down buttons
+        self.move_up_btn = QPushButton("↑")
+        self.move_up_btn.setMaximumWidth(30)
+        self.move_up_btn.setToolTip("Move layer up")
+        self.move_up_btn.clicked.connect(lambda: self.move_up_requested.emit(self.layer_index))
+        top_layout.addWidget(self.move_up_btn)
+
+        self.move_down_btn = QPushButton("↓")
+        self.move_down_btn.setMaximumWidth(30)
+        self.move_down_btn.setToolTip("Move layer down")
+        self.move_down_btn.clicked.connect(lambda: self.move_down_requested.emit(self.layer_index))
+        top_layout.addWidget(self.move_down_btn)
 
         self.animation_combo = QComboBox()
         self.animation_combo.setEnabled(False)
@@ -430,6 +445,8 @@ class CompositePreviewWidget(QWidget):
         for i in range(8):
             layer_control = LayerControlWidget(i, self.project)
             layer_control.layer_changed.connect(self._on_layer_changed)
+            layer_control.move_up_requested.connect(self._move_layer_up)
+            layer_control.move_down_requested.connect(self._move_layer_down)
             self.layer_controls.append(layer_control)
             self.layer_layout.addWidget(layer_control)
             # Hide layers 2-7 initially (only show Parent/Base + Layer 1)
@@ -651,6 +668,48 @@ class CompositePreviewWidget(QWidget):
         """Update Add/Remove Layer button states"""
         self.add_layer_btn.setEnabled(self.num_visible_layers < 8)
         self.remove_layer_btn.setEnabled(self.num_visible_layers > 2)
+
+        # Update move up/down button states for each visible layer
+        for i in range(self.num_visible_layers):
+            layer_control = self.layer_controls[i]
+            # Parent/Base layer (index 0) can't move up
+            layer_control.move_up_btn.setEnabled(i > 0)
+            # Last visible layer can't move down
+            layer_control.move_down_btn.setEnabled(i < self.num_visible_layers - 1)
+
+        # Disable move buttons for hidden layers
+        for i in range(self.num_visible_layers, 8):
+            layer_control = self.layer_controls[i]
+            layer_control.move_up_btn.setEnabled(False)
+            layer_control.move_down_btn.setEnabled(False)
+
+    def _move_layer_up(self, layer_index: int):
+        """Move layer up (swap with layer above)"""
+        if layer_index <= 0 or not self.current_composite:
+            return
+
+        # Swap configurations
+        layers = self.current_composite.layers
+        if layer_index < len(layers) and layer_index - 1 < len(layers):
+            layers[layer_index], layers[layer_index - 1] = layers[layer_index - 1], layers[layer_index]
+
+            # Reload UI
+            self._load_composite_to_controls()
+            self._update_preview()
+
+    def _move_layer_down(self, layer_index: int):
+        """Move layer down (swap with layer below)"""
+        if layer_index >= self.num_visible_layers - 1 or not self.current_composite:
+            return
+
+        # Swap configurations
+        layers = self.current_composite.layers
+        if layer_index < len(layers) and layer_index + 1 < len(layers):
+            layers[layer_index], layers[layer_index + 1] = layers[layer_index + 1], layers[layer_index]
+
+            # Reload UI
+            self._load_composite_to_controls()
+            self._update_preview()
 
     def _update_composite_from_controls(self):
         """Update current composite from layer controls"""
