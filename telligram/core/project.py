@@ -4,6 +4,7 @@ from pathlib import Path
 from typing import List, Optional, Dict, Any
 from .card import GramCard
 from .animation import Animation
+from .composite import LayerComposite
 
 
 class Project:
@@ -41,6 +42,9 @@ class Project:
 
         # Initialize animations list
         self.animations: List[Animation] = []
+
+        # Initialize composites list
+        self.composites: List[LayerComposite] = []
 
     def get_card(self, slot: int) -> Optional[GramCard]:
         """
@@ -112,6 +116,45 @@ class Project:
         """
         self.animations.append(animation)
 
+    def get_animation(self, name: str) -> Optional[Animation]:
+        """
+        Get animation by name
+
+        Args:
+            name: Animation name
+
+        Returns:
+            Animation or None if not found
+        """
+        for anim in self.animations:
+            if anim.name == name:
+                return anim
+        return None
+
+    def add_composite(self, composite: LayerComposite) -> None:
+        """
+        Add composite to project
+
+        Args:
+            composite: LayerComposite to add
+        """
+        self.composites.append(composite)
+
+    def get_composite(self, name: str) -> Optional[LayerComposite]:
+        """
+        Get composite by name
+
+        Args:
+            name: Composite name
+
+        Returns:
+            LayerComposite or None if not found
+        """
+        for comp in self.composites:
+            if comp.name == name:
+                return comp
+        return None
+
     def to_dict(self) -> Dict[str, Any]:
         """
         Export project as dictionary for JSON serialization
@@ -130,6 +173,9 @@ class Project:
             ],
             "animations": [
                 anim.to_dict() for anim in self.animations
+            ],
+            "composites": [
+                comp.to_dict() for comp in self.composites
             ]
         }
 
@@ -161,6 +207,11 @@ class Project:
         animations_data = data.get("animations", [])
         for anim_data in animations_data:
             project.animations.append(Animation.from_dict(anim_data))
+
+        # Load composites
+        composites_data = data.get("composites", [])
+        for comp_data in composites_data:
+            project.composites.append(LayerComposite.from_dict(comp_data))
 
         return project
 
