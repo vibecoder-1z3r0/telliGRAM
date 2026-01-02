@@ -558,7 +558,26 @@ class CompositePreviewWidget(QWidget):
         self.speed_slider.setValue(self.current_composite.fps)
         self.loop_check.setChecked(self.current_composite.loop)
 
-        # Load layers
+        # Count how many layers are actually configured (visible or with animation)
+        num_configured_layers = 0
+        for i, layer_config in enumerate(self.current_composite.layers):
+            if layer_config.get("visible") or layer_config.get("animation_name"):
+                num_configured_layers = i + 1
+
+        # Ensure at least 2 layers are visible (Parent/Base + Layer 1)
+        num_layers_to_show = max(2, num_configured_layers)
+
+        # Show/hide layer controls as needed
+        for i in range(8):
+            if i < num_layers_to_show:
+                self.layer_controls[i].show()
+            else:
+                self.layer_controls[i].hide()
+
+        self.num_visible_layers = num_layers_to_show
+        self._update_layer_buttons()
+
+        # Load layer configurations
         for i in range(8):
             if i < len(self.current_composite.layers):
                 self.layer_controls[i].set_layer_config(self.current_composite.layers[i])
