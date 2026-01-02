@@ -15,6 +15,7 @@ from telligram.gui.widgets.grom_browser import GromBrowserWidget
 from telligram.gui.widgets.timeline_editor_new import TimelineEditorWidget
 from telligram.gui.widgets.animation_composer import AnimationComposerWidget
 from telligram.gui.widgets.color_palette import ColorPaletteWidget
+from telligram.__version__ import __version__
 
 
 class MainWindow(QMainWindow):
@@ -27,7 +28,7 @@ class MainWindow(QMainWindow):
         self.current_card_slot = 0
         self.undo_stack = QUndoStack(self)
 
-        self.setWindowTitle("telliGRAM v0.1.0-alpha - Intellivision GRAM Card Creator and Animator")
+        self.setWindowTitle(f"telliGRAM v{__version__} - Intellivision GRAM Card Creator and Animator")
         self.setMinimumSize(1200, 800)
         self.resize(1750, 880)  # Default window size with proper spacing
 
@@ -375,7 +376,7 @@ class MainWindow(QMainWindow):
 
     def update_title(self):
         """Update window title"""
-        title = "telliGRAM v0.1.0-alpha"
+        title = f"telliGRAM v{__version__}"
         if self.current_file:
             title += f" - {self.current_file.name}"
         else:
@@ -449,12 +450,12 @@ class MainWindow(QMainWindow):
         QMessageBox.about(
             self,
             "About telliGRAM",
-            "<h2>telliGRAM v0.1.0-alpha</h2>"
+            f"<h2>telliGRAM v{__version__}</h2>"
             "<p>Intellivision GRAM Card Creator and Animator</p>"
             "<p>Create custom 8×8 graphics and animations for Intellivision games</p>"
             "<p>© 2025-2026 Andrew Potozniak (Tyraziel & 1.z3r0)</p>"
             "<p>Licensed under the MIT License</p>"
-            "<p><i>Developed with AI assistance from Anthropic Claude</i></p>"
+            "<p><i>AIA PAI Nc Hin R <a href='https://aiattribution.github.io/statements/AIA-PAI-Nc-Hin-R-?model=Claude%20Code%20%5BSonnet%204.5%5D-v1.0'>Claude Code [Sonnet 4.5] v1.0</a></i></p>"
         )
 
     def export_all_intybasic_visual(self):
