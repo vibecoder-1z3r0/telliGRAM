@@ -119,6 +119,7 @@ class AnimationComposerWidget(QWidget):
 
         # Update button states
         self.remove_layer_btn.setEnabled(len(self.timeline_editors) > 1)
+        self.add_layer_btn.setEnabled(len(self.timeline_editors) < 8)
 
     def _remove_layer(self):
         """Remove the last layer"""
@@ -133,6 +134,7 @@ class AnimationComposerWidget(QWidget):
 
         # Update button states
         self.remove_layer_btn.setEnabled(len(self.timeline_editors) > 1)
+        self.add_layer_btn.setEnabled(len(self.timeline_editors) < 8)
 
     def _enable_multi_layer_mode(self):
         """Enable multi-layer mode - show composite preview"""
