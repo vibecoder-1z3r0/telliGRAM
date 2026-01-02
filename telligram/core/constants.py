@@ -27,6 +27,9 @@ INTELLIVISION_PALETTE = [
 # Default card color (White)
 DEFAULT_CARD_COLOR = 7
 
+# Color names list for easy dropdown population
+COLOR_NAMES = [color["name"] for color in INTELLIVISION_PALETTE]
+
 def get_color_hex(index: int) -> str:
     """Get hex color string for a palette index (0-15)"""
     if 0 <= index < len(INTELLIVISION_PALETTE):

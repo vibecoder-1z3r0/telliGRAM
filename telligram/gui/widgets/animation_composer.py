@@ -168,8 +168,7 @@ class AnimationComposerWidget(QWidget):
         self.project = project
 
         for editor in self.timeline_editors:
-            editor.project = project
-            editor.refresh()
+            editor.set_project(project)
 
         self.composite_preview.project = project
         self.composite_preview.update_animations()
@@ -178,7 +177,9 @@ class AnimationComposerWidget(QWidget):
     def refresh(self):
         """Refresh all editors"""
         for editor in self.timeline_editors:
-            editor.refresh()
+            if editor.current_animation:
+                editor._load_animation(editor.current_animation)
+            editor._refresh_animation_list()
 
         if self.is_multi_layer_mode:
             self.composite_preview.update_animations()
@@ -203,3 +204,21 @@ class AnimationComposerWidget(QWidget):
         if self.timeline_editors:
             return self.timeline_editors[0].current_animation
         return None
+
+    def _load_animation(self, animation):
+        """
+        Load animation in the primary timeline editor.
+
+        This maintains compatibility with undo/redo commands.
+        """
+        if self.timeline_editors:
+            self.timeline_editors[0]._load_animation(animation)
+
+    def _refresh_animation_list(self):
+        """
+        Refresh animation list in the primary timeline editor.
+
+        This maintains compatibility with undo/redo commands.
+        """
+        if self.timeline_editors:
+            self.timeline_editors[0]._refresh_animation_list()
