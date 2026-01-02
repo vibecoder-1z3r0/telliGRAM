@@ -50,9 +50,12 @@ After clicking "Add Layer", expand to show multiple layer editors plus composite
 
 ┌─ Combined Preview ────────────────────────────┐
 │ Layers to composite:                           │
-│ [✓] Layer 1 (walk_cycle)   When ends: [Loop▼]│
-│ [✓] Layer 2 (arms_swing)   When ends: [Hold▼]│
-│ [ ] Layer 3 (empty)        When ends: [Loop▼]│
+│ [✓] Layer 1 (walk_cycle)                      │
+│     Color: [Original▼] When ends: [Loop▼]    │
+│ [✓] Layer 2 (arms_swing)                      │
+│     Color: [Red     ▼] When ends: [Hold▼]    │
+│ [ ] Layer 3 (empty)                            │
+│     Color: [Original▼] When ends: [Loop▼]    │
 │ ... up to 8                                    │
 │                                                │
 │ [▶ Play] [⏹ Stop] [⏮ Rewind]                 │
@@ -60,7 +63,7 @@ After clicking "Add Layer", expand to show multiple layer editors plus composite
 │                                                │
 │ ┌─────────────────┐                           │
 │ │   Composite     │  ← Shows all checked     │
-│ │   Preview       │     layers composited     │
+│ │   Preview       │     layers with colors    │
 │ └─────────────────┘                           │
 │                                                │
 │ [Save as Composite...]                         │
@@ -110,6 +113,30 @@ When animations have different durations, each layer can specify what happens wh
 - No card is composited from this layer
 - **Example**: Effect that disappears after playing once
 
+## Layer Color Override
+
+Each layer in the composite can override the color of its animation's cards:
+
+### Original (No Override)
+- Uses the card's original color as designed
+- **Default behavior** when no override is selected
+- Animation looks exactly as it does in the timeline editor
+
+### Color Override Selected
+- Replaces all card pixels with the selected Intellivision color (0-15)
+- Maintains pixel on/off pattern from original card
+- Only changes the color, not the shape
+- **Example Uses**:
+  - Same walk animation in different colors for multiple characters
+  - Recolor effect animations to match different themes
+  - Create color variations without duplicating animations
+
+### Color Dropdown Options
+- "Original" - No override (default)
+- "Black" through "White" - All 16 Intellivision colors
+- Uses jzIntv accurate color palette
+- Preview updates immediately when color is changed
+
 ## Data Structures
 
 ### LayerComposite Class
@@ -131,7 +158,8 @@ class LayerComposite:
         # {
         #   "animation_name": str,      # Reference to existing animation
         #   "visible": bool,            # Include in composite
-        #   "end_behavior": str         # "loop", "hold", or "hide"
+        #   "end_behavior": str,        # "loop", "hold", or "hide"
+        #   "color_override": int|None  # Intellivision color index (0-15), None = original
         # }
         self.fps: int = 60              # Composite playback speed
         self.loop: bool = False         # Loop entire composite
@@ -195,10 +223,11 @@ At each frame position, composite visible layers from bottom to top:
 ```python
 def render_composite_frame(composite: LayerComposite, frame_num: int, project: Project):
     """
-    Render composite frame by layering cards.
+    Render composite frame by layering cards with color overrides.
 
     Draws layers in reverse order (index 7 to 0) so index 0 has top priority.
     Only draws non-transparent pixels, allowing layers to show through.
+    Applies color override if specified for the layer.
     """
     card_slots = composite.get_card_at_frame(frame_num, project)
 
@@ -211,12 +240,21 @@ def render_composite_frame(composite: LayerComposite, frame_num: int, project: P
         if card is None:
             continue
 
+        # Determine color to use
+        layer_config = composite.layers[i]
+        if layer_config.get("color_override") is not None:
+            # Use override color
+            color = layer_config["color_override"]
+        else:
+            # Use card's original color
+            color = card.color
+
         # Draw only non-transparent pixels
         for y in range(8):
             for x in range(8):
                 if card.get_pixel(x, y):
-                    # Draw pixel in card's color
-                    draw_pixel(x, y, card.color)
+                    # Draw pixel in determined color
+                    draw_pixel(x, y, color)
 ```
 
 ## Benefits of This Approach
@@ -228,6 +266,7 @@ def render_composite_frame(composite: LayerComposite, frame_num: int, project: P
 5. **Lightweight**: Composites are just references, no data duplication
 6. **Backward Compatible**: Existing animations work unchanged
 7. **No Complex Data Model**: No multi-track timeline format needed
+8. **Color Flexibility**: Recolor animations per-layer without duplication
 
 ## Implementation Plan
 
