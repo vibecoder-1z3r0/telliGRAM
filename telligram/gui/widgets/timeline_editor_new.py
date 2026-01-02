@@ -459,7 +459,6 @@ class TimelineEditorWidget(QWidget):
 
         frame_controls.addWidget(QLabel("|"))
 
-        frame_controls.addWidget(QLabel("Color:"))
         self.color_override_combo = QComboBox()
         self.color_override_combo.addItem("Original")
         for color_name in COLOR_NAMES:
