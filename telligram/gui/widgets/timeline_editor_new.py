@@ -927,16 +927,16 @@ class TimelineEditorWidget(QWidget):
             if self.current_playback_frame < total_cards:
                 current_card = self.current_animation.get_frame(self.current_playback_frame)
                 card_duration = current_card["duration"]
-                frame_range = f"{current_frame + 1}-{current_frame + card_duration}"
+                frame_range = f"{current_frame + 1:03d}-{current_frame + card_duration:03d}"
             else:
-                frame_range = str(current_frame + 1)
+                frame_range = f"{current_frame + 1:03d}"
 
             self.playback_info_label.setText(
-                f"Card: {self.current_playback_frame + 1} / {total_cards} | "
-                f"Frame: {frame_range} / {total_frames}"
+                f"Card: {self.current_playback_frame + 1:02d} / {total_cards:02d} | "
+                f"Frame: {frame_range} / {total_frames:03d}"
             )
         else:
-            self.playback_info_label.setText("Card: 0 / 0 | Frame: 0 / 0")
+            self.playback_info_label.setText("Card: 00 / 00 | Frame: 000 / 000")
 
     def _update_preview(self):
         """Update animation preview with current frame"""
