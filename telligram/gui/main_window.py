@@ -29,6 +29,7 @@ class MainWindow(QMainWindow):
 
         self.setWindowTitle("telliGRAM - Intellivision GRAM Card Creator")
         self.setMinimumSize(1200, 800)
+        self.resize(1750, 880)  # Default window size with proper spacing
 
         self._create_menu_bar()
         self._create_widgets()
@@ -203,8 +204,8 @@ class MainWindow(QMainWindow):
         left_panel_layout.addWidget(editor_panel, stretch=2)
 
         # Set left panel to a fixed/maximum width so it doesn't resize
-        # Card grid (8x8 cards ~50px each = ~400px) + editor (~350px) = ~750px
-        left_panel.setMaximumWidth(750)
+        # Provides proper spacing for GRAM card grid and pixel editor
+        left_panel.setMaximumWidth(1000)
 
         main_layout.addWidget(left_panel, stretch=0)  # Don't stretch
 
