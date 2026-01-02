@@ -73,7 +73,7 @@ class FrameThumbnail(QFrame):
         self.card_slot = card_slot
         self.project = project
         self.duration_spin.setValue(duration)
-        self.slot_label.setText(f"Slot {card_slot}")
+        self.slot_label.setText(f"Card {card_slot}")
         self.update()
 
     def set_frame_index(self, index: int):
@@ -864,9 +864,9 @@ class TimelineEditorWidget(QWidget):
             if self.current_playback_frame < total_cards:
                 current_card = self.current_animation.get_frame(self.current_playback_frame)
                 card_duration = current_card["duration"]
-                frame_range = f"{current_frame}-{current_frame + card_duration - 1}"
+                frame_range = f"{current_frame + 1}-{current_frame + card_duration}"
             else:
-                frame_range = str(current_frame)
+                frame_range = str(current_frame + 1)
 
             self.playback_info_label.setText(
                 f"Card: {self.current_playback_frame + 1} / {total_cards} | "
