@@ -39,7 +39,16 @@ class AnimationComposerWidget(QWidget):
         layout = QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
 
-        # Timeline management buttons (at top, above tabs)
+        # Create tab widget
+        self.tab_widget = QTabWidget()
+        layout.addWidget(self.tab_widget, 1)
+
+        # Tab 1: IntelliMation Station
+        timeline_tab = QWidget()
+        timeline_tab_layout = QVBoxLayout(timeline_tab)
+        timeline_tab_layout.setContentsMargins(5, 5, 5, 5)
+
+        # Timeline management buttons (inside the tab)
         btn_layout = QHBoxLayout()
         self.add_layer_btn = QPushButton("Add Timeline")
         self.add_layer_btn.clicked.connect(self._add_layer)
@@ -51,16 +60,7 @@ class AnimationComposerWidget(QWidget):
         btn_layout.addWidget(self.remove_layer_btn)
 
         btn_layout.addStretch()
-        layout.addLayout(btn_layout)
-
-        # Create tab widget
-        self.tab_widget = QTabWidget()
-        layout.addWidget(self.tab_widget, 1)
-
-        # Tab 1: Animation Timeline
-        timeline_tab = QWidget()
-        timeline_tab_layout = QVBoxLayout(timeline_tab)
-        timeline_tab_layout.setContentsMargins(0, 0, 0, 0)
+        timeline_tab_layout.addLayout(btn_layout)
 
         # Create vertically scrollable area for timeline editors
         scroll_area = QScrollArea()
@@ -84,7 +84,7 @@ class AnimationComposerWidget(QWidget):
         scroll_area.setWidget(scroll_widget)
         timeline_tab_layout.addWidget(scroll_area)
 
-        self.tab_widget.addTab(timeline_tab, "Animation Timeline")
+        self.tab_widget.addTab(timeline_tab, "IntelliMation Station")
 
         # Tab 2: Composite Preview
         self.composite_preview = CompositePreviewWidget(self.project)
