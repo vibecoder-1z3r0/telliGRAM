@@ -316,13 +316,11 @@ class CompositePreviewWidget(QWidget):
         speed_layout.addWidget(QLabel("Speed:"))
         self.speed_slider = QSlider(Qt.Horizontal)
         self.speed_slider.setMinimum(1)
-        self.speed_slider.setMaximum(120)
+        self.speed_slider.setMaximum(60)  # Cap at 60 FPS (Intellivision's refresh rate)
         self.speed_slider.setValue(60)
         speed_layout.addWidget(self.speed_slider)
         self.speed_label = QLabel("60 fps")
-        self.speed_slider.valueChanged.connect(
-            lambda v: self.speed_label.setText(f"{v} fps")
-        )
+        self.speed_slider.valueChanged.connect(self._on_speed_changed)
         speed_layout.addWidget(self.speed_label)
         playback_layout.addLayout(speed_layout)
 
@@ -471,6 +469,16 @@ class CompositePreviewWidget(QWidget):
             self._pause_playback()
         else:
             self._start_playback()
+
+    def _on_speed_changed(self, fps: int):
+        """Handle speed slider change"""
+        # Update label
+        self.speed_label.setText(f"{fps} fps")
+
+        # If currently playing, update timer interval
+        if self.is_playing:
+            interval = int(1000 / fps)  # milliseconds
+            self.timer.setInterval(interval)
 
     def _start_playback(self):
         """Start playback"""
