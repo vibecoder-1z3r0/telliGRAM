@@ -41,7 +41,7 @@ class LayerControlWidget(QFrame):
 
         self.visible_check = QCheckBox(f"Layer {layer_index + 1}")
         self.visible_check.setChecked(False)
-        self.visible_check.stateChanged.connect(self.layer_changed.emit)
+        self.visible_check.stateChanged.connect(lambda: self.layer_changed.emit())
         top_layout.addWidget(self.visible_check)
 
         self.animation_combo = QComboBox()
@@ -60,7 +60,7 @@ class LayerControlWidget(QFrame):
         for i, color_name in enumerate(COLOR_NAMES):
             self.color_combo.addItem(color_name, i)
         self.color_combo.setEnabled(False)
-        self.color_combo.currentIndexChanged.connect(self.layer_changed.emit)
+        self.color_combo.currentIndexChanged.connect(lambda: self.layer_changed.emit())
         bottom_layout.addWidget(self.color_combo)
 
         bottom_layout.addWidget(QLabel("When ends:"))
@@ -69,7 +69,7 @@ class LayerControlWidget(QFrame):
         self.end_behavior_combo.addItem("Hold", "hold")
         self.end_behavior_combo.addItem("Hide", "hide")
         self.end_behavior_combo.setEnabled(False)
-        self.end_behavior_combo.currentIndexChanged.connect(self.layer_changed.emit)
+        self.end_behavior_combo.currentIndexChanged.connect(lambda: self.layer_changed.emit())
         bottom_layout.addWidget(self.end_behavior_combo)
 
         layout.addLayout(bottom_layout)

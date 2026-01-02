@@ -202,7 +202,11 @@ class MainWindow(QMainWindow):
 
         left_panel_layout.addWidget(editor_panel, stretch=2)
 
-        main_layout.addWidget(left_panel, stretch=3)
+        # Set left panel to a fixed/maximum width so it doesn't resize
+        # Card grid (8x8 cards ~50px each = ~400px) + editor (~350px) = ~750px
+        left_panel.setMaximumWidth(750)
+
+        main_layout.addWidget(left_panel, stretch=0)  # Don't stretch
 
         # Right panel - Animation Timeline
         right_panel = QWidget()
@@ -214,7 +218,7 @@ class MainWindow(QMainWindow):
         self.timeline_editor = AnimationComposerWidget(project=self.project, main_window=self)
         right_layout.addWidget(self.timeline_editor)
 
-        main_layout.addWidget(right_panel, stretch=2)
+        main_layout.addWidget(right_panel, stretch=1)  # Takes remaining space
 
     def _create_status_bar(self):
         """Create status bar"""
