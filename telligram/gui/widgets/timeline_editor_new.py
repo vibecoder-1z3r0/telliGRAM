@@ -851,10 +851,29 @@ class TimelineEditorWidget(QWidget):
     def _update_playback_info(self):
         """Update playback info label"""
         if self.current_animation:
-            total = self.current_animation.frame_count
-            self.playback_info_label.setText(f"Frame: {self.current_playback_frame + 1} / {total}")
+            total_frames = self.current_animation.frame_count
+            total_ticks = self.current_animation.total_duration
+
+            # Calculate current tick position (sum of durations before current frame)
+            current_tick = 0
+            for i in range(self.current_playback_frame):
+                frame = self.current_animation.get_frame(i)
+                current_tick += frame["duration"]
+
+            # Get current frame duration for range display
+            if self.current_playback_frame < total_frames:
+                current_frame = self.current_animation.get_frame(self.current_playback_frame)
+                frame_duration = current_frame["duration"]
+                tick_range = f"{current_tick}-{current_tick + frame_duration - 1}"
+            else:
+                tick_range = str(current_tick)
+
+            self.playback_info_label.setText(
+                f"Frame: {self.current_playback_frame + 1} / {total_frames} | "
+                f"Ticks: {tick_range} / {total_ticks}"
+            )
         else:
-            self.playback_info_label.setText("Frame: 0 / 0")
+            self.playback_info_label.setText("Frame: 0 / 0 | Ticks: 0 / 0")
 
     def _update_preview(self):
         """Update animation preview with current frame"""
