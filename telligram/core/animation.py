@@ -51,6 +51,14 @@ class Animation:
         return len(self._layers)
 
     @property
+    def frame_count(self) -> int:
+        """Total frame count across all layers (for backward compatibility)"""
+        # Return max frame count from any single layer
+        if not self._layers:
+            return 0
+        return max((len(layer.get("frames", [])) for layer in self._layers), default=0)
+
+    @property
     def total_duration(self) -> int:
         """Total duration in frame ticks (longest layer)"""
         if not self._layers:
@@ -209,6 +217,27 @@ class Animation:
         for i in range(len(self._layers)):
             result.append(self.get_frame_at_time(i, time_ticks))
         return result
+
+    def get_frame(self, index: int) -> Dict[str, Any]:
+        """
+        Get frame from first layer (for backward compatibility).
+
+        Args:
+            index: Frame index
+
+        Returns:
+            Frame dict with 'card_slot', 'duration', and 'layers' for compatibility
+        """
+        if not self._layers or index >= len(self._layers[0].get("frames", [])):
+            return {"layers": [], "duration": 5}
+
+        frame = self._layers[0]["frames"][index]
+        # Return in old format for compatibility
+        return {
+            "card_slot": frame["card_slot"],
+            "duration": frame["duration"],
+            "layers": [{"card_slot": frame["card_slot"], "visible": True}]
+        }
 
     def to_dict(self) -> Dict[str, Any]:
         """
