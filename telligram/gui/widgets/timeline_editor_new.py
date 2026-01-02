@@ -27,6 +27,7 @@ class FrameThumbnail(QFrame):
         self.card_slot = None
         self.project = None
         self.is_current = False
+        self.show_grid = True
         self.drag_start_pos = None
 
         self.setFixedSize(90, 130)
@@ -220,15 +221,16 @@ class FrameThumbnail(QFrame):
                         QColor(card_color)
                     )
 
-        # Draw grid
-        painter.setPen(QPen(QColor("#333"), 1))
-        for i in range(9):
-            # Vertical lines
-            x = preview_x + i * pixel_size
-            painter.drawLine(x, preview_y, x, preview_y + preview_size)
-            # Horizontal lines
-            y = preview_y + i * pixel_size
-            painter.drawLine(preview_x, y, preview_x + preview_size, y)
+        # Draw grid (if enabled)
+        if self.show_grid:
+            painter.setPen(QPen(QColor("#333"), 1))
+            for i in range(9):
+                # Vertical lines
+                x = preview_x + i * pixel_size
+                painter.drawLine(x, preview_y, x, preview_y + preview_size)
+                # Horizontal lines
+                y = preview_y + i * pixel_size
+                painter.drawLine(preview_x, y, preview_x + preview_size, y)
 
 
 class AnimationPreviewWidget(QFrame):
@@ -239,6 +241,7 @@ class AnimationPreviewWidget(QFrame):
         self.project = None
         self.current_card_slot = None
         self.color_override = None  # None or color index 0-15
+        self.show_grid = True
         self.setFixedSize(200, 200)
         self.setFrameStyle(QFrame.Box | QFrame.Raised)
         self.setStyleSheet("background-color: #1a1a1a; border: 2px solid #3c3c3c;")
@@ -300,15 +303,16 @@ class AnimationPreviewWidget(QFrame):
                         QColor(card_color)
                     )
 
-        # Draw grid
-        painter.setPen(QPen(QColor("#444"), 1))
-        for i in range(9):
-            # Vertical lines
-            x = offset_x + i * pixel_size
-            painter.drawLine(x, offset_y, x, offset_y + preview_size)
-            # Horizontal lines
-            y = offset_y + i * pixel_size
-            painter.drawLine(offset_x, y, offset_x + preview_size, y)
+        # Draw grid (if enabled)
+        if self.show_grid:
+            painter.setPen(QPen(QColor("#444"), 1))
+            for i in range(9):
+                # Vertical lines
+                x = offset_x + i * pixel_size
+                painter.drawLine(x, offset_y, x, offset_y + preview_size)
+                # Horizontal lines
+                y = offset_y + i * pixel_size
+                painter.drawLine(offset_x, y, offset_x + preview_size, y)
 
 
 class TimelineEditorWidget(QWidget):
@@ -323,6 +327,7 @@ class TimelineEditorWidget(QWidget):
         self.current_animation = None
         self.current_card_slot = 0
         self.current_color_override = None  # None means use original colors
+        self.show_grid = True  # Grid enabled by default
         self.frame_thumbnails = []
         self.playback_timer = QTimer()
         self.playback_timer.timeout.connect(self._advance_frame)
@@ -390,18 +395,25 @@ class TimelineEditorWidget(QWidget):
 
         playback_controls.addWidget(QLabel("|"))
 
-        playback_controls.addWidget(QLabel("Speed:"))
+        playback_controls.addWidget(QLabel("S:"))
         self.speed_slider = QSlider(Qt.Horizontal)
         self.speed_slider.setMinimum(1)
         self.speed_slider.setMaximum(60)
         self.speed_slider.setValue(60)
-        self.speed_slider.setFixedWidth(150)
+        self.speed_slider.setFixedWidth(100)
         self.speed_slider.valueChanged.connect(self._on_speed_changed)
         playback_controls.addWidget(self.speed_slider)
 
         self.speed_label = QLabel("60 fps")
         self.speed_label.setFixedWidth(50)
         playback_controls.addWidget(self.speed_label)
+
+        playback_controls.addWidget(QLabel("|"))
+
+        self.grid_checkbox = QCheckBox("Grid")
+        self.grid_checkbox.setChecked(True)
+        self.grid_checkbox.stateChanged.connect(self._on_grid_changed)
+        playback_controls.addWidget(self.grid_checkbox)
 
         playback_controls.addStretch()
 
@@ -587,6 +599,7 @@ class TimelineEditorWidget(QWidget):
         frame_data = self.current_animation.get_frame(index)
         thumb = FrameThumbnail(index)
         thumb.set_frame_data(frame_data["card_slot"], frame_data["duration"], self.project)
+        thumb.show_grid = self.show_grid  # Inherit grid setting
         thumb.clicked.connect(self._on_frame_clicked)
         thumb.duration_changed.connect(self._on_frame_duration_changed)
         thumb.remove_requested.connect(self._remove_frame_at)
@@ -838,6 +851,19 @@ class TimelineEditorWidget(QWidget):
 
         # Update preview to show the new color
         self._update_preview_display()
+
+    def _on_grid_changed(self, state):
+        """Handle grid checkbox toggle"""
+        self.show_grid = (state == Qt.Checked)
+
+        # Update all frame thumbnails
+        for thumb in self.frame_thumbnails:
+            thumb.show_grid = self.show_grid
+            thumb.update()
+
+        # Update preview widget
+        self.preview_widget.show_grid = self.show_grid
+        self.preview_widget.update()
 
     def _toggle_playback(self):
         """Toggle play/pause"""
