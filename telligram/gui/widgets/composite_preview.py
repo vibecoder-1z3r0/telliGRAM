@@ -299,8 +299,8 @@ class CompositePreviewArea(QWidget):
                         # Independent: starts at origin
                         layer_positions[layer_idx] = (0, 0)
 
-            # Draw layers from bottom to top (reverse order for proper layering)
-            for layer_idx in reversed(range(8)):
+            # Draw layers from bottom to top (Parent/Base first, then Layer 1, 2, etc.)
+            for layer_idx in range(8):
                 card_slot = card_slots[layer_idx]
                 if card_slot is None:
                     continue
@@ -565,10 +565,45 @@ class CompositePreviewWidget(QWidget):
             else:
                 self.layer_controls[i].set_layer_config(None)
 
+        # Update stack/stitch states to prevent chaining
+        self._update_stack_stitch_states()
+
     def _on_layer_changed(self):
         """Handle layer control change"""
         self._update_composite_from_controls()
         self._update_preview()
+        self._update_stack_stitch_states()
+
+    def _update_stack_stitch_states(self):
+        """Update stack/stitch dropdown states to prevent chaining"""
+        for i in range(1, 8):  # Layers 1-7 (not Parent/Base)
+            layer_control = self.layer_controls[i]
+
+            # Skip if this layer doesn't have stack/stitch combo (shouldn't happen for i > 0)
+            if not layer_control.stack_stitch_combo:
+                continue
+
+            # Check if previous layer is stacked or stitched
+            prev_layer_control = self.layer_controls[i - 1]
+            prev_config = prev_layer_control.get_layer_config()
+
+            if prev_config:
+                prev_stack_stitch = prev_config.get("stack_stitch", "none")
+                is_prev_stacked_or_stitched = prev_stack_stitch in ("stack", "stitch")
+            else:
+                is_prev_stacked_or_stitched = False
+
+            # If previous layer is stacked/stitched, disable this layer's stack/stitch
+            # Also check if this layer is visible (checkbox enabled)
+            is_visible = layer_control.visible_check.isChecked()
+
+            if is_prev_stacked_or_stitched:
+                # Disable stack/stitch and reset to "Independent"
+                layer_control.stack_stitch_combo.setEnabled(False)
+                layer_control.stack_stitch_combo.setCurrentIndex(0)  # "Independent"
+            else:
+                # Enable if layer is visible
+                layer_control.stack_stitch_combo.setEnabled(is_visible)
 
     def _add_layer(self):
         """Add a new layer"""
