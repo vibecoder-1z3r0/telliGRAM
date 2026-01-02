@@ -24,7 +24,7 @@ class FrameThumbnail(QFrame):
     def __init__(self, frame_index: int):
         super().__init__()
         self.frame_index = frame_index
-        self.card_slot = None
+        self.layers = []  # List of {"card_slot": int, "visible": bool}
         self.project = None
         self.is_current = False
         self.drag_start_pos = None
@@ -68,12 +68,28 @@ class FrameThumbnail(QFrame):
 
         self._update_style()
 
-    def set_frame_data(self, card_slot: int, duration: int, project: Project):
-        """Set frame data"""
-        self.card_slot = card_slot
+    def set_frame_data(self, layers: list, duration: int, project: Project):
+        """
+        Set frame data with layers.
+
+        Args:
+            layers: List of layer dicts with 'card_slot' and 'visible' keys
+            duration: Frame duration
+            project: Project reference
+        """
+        self.layers = layers if layers else []
         self.project = project
         self.duration_spin.setValue(duration)
-        self.slot_label.setText(f"Slot {card_slot}")
+
+        # Update label to show layer count
+        visible_count = sum(1 for layer in self.layers if layer.get("visible", True))
+        if len(self.layers) == 0:
+            self.slot_label.setText("No layers")
+        elif len(self.layers) == 1:
+            self.slot_label.setText(f"Slot {self.layers[0]['card_slot']}")
+        else:
+            self.slot_label.setText(f"{visible_count}/{len(self.layers)} layers")
+
         self.update()
 
     def set_frame_index(self, index: int):
@@ -183,14 +199,10 @@ class FrameThumbnail(QFrame):
         menu.exec(event.globalPos())
 
     def paintEvent(self, event):
-        """Paint card preview"""
+        """Paint layered card preview"""
         super().paintEvent(event)
 
-        if self.project is None or self.card_slot is None:
-            return
-
-        card = self.project.get_card(self.card_slot)
-        if card is None:
+        if self.project is None:
             return
 
         # Draw card preview on preview_widget
@@ -205,22 +217,35 @@ class FrameThumbnail(QFrame):
         # Draw background
         painter.fillRect(preview_x, preview_y, preview_size, preview_size, QColor("#1a1a1a"))
 
-        # Get card color
-        card_color = get_color_hex(card.color) if hasattr(card, 'color') else "#FFFFFF"
+        # Draw layers from bottom to top (reverse order, since index 0 = top priority)
+        for layer in reversed(self.layers):
+            if not layer.get("visible", True):
+                continue  # Skip invisible layers
 
-        # Draw pixels
-        for y in range(8):
-            for x in range(8):
-                if card.get_pixel(x, y):
-                    painter.fillRect(
-                        preview_x + x * pixel_size,
-                        preview_y + y * pixel_size,
-                        pixel_size,
-                        pixel_size,
-                        QColor(card_color)
-                    )
+            card_slot = layer.get("card_slot")
+            if card_slot is None:
+                continue
 
-        # Draw grid
+            card = self.project.get_card(card_slot)
+            if card is None:
+                continue
+
+            # Get card color
+            card_color = get_color_hex(card.color) if hasattr(card, 'color') else "#FFFFFF"
+
+            # Draw pixels (only non-transparent pixels)
+            for y in range(8):
+                for x in range(8):
+                    if card.get_pixel(x, y):
+                        painter.fillRect(
+                            preview_x + x * pixel_size,
+                            preview_y + y * pixel_size,
+                            pixel_size,
+                            pixel_size,
+                            QColor(card_color)
+                        )
+
+        # Draw grid on top
         painter.setPen(QPen(QColor("#333"), 1))
         for i in range(9):
             # Vertical lines
@@ -232,43 +257,37 @@ class FrameThumbnail(QFrame):
 
 
 class AnimationPreviewWidget(QFrame):
-    """Preview widget showing the current animation frame"""
+    """Preview widget showing the current animation frame with layer compositing"""
 
     def __init__(self):
         super().__init__()
         self.project = None
-        self.current_card_slot = None
+        self.current_layers = []
         self.setFixedSize(200, 200)
         self.setFrameStyle(QFrame.Box | QFrame.Raised)
         self.setStyleSheet("background-color: #1a1a1a; border: 2px solid #3c3c3c;")
 
-    def set_card(self, card_slot: int, project):
-        """Set the card to display"""
-        self.current_card_slot = card_slot
+    def set_layers(self, layers: list, project):
+        """Set the layers to display"""
+        self.current_layers = layers if layers else []
         self.project = project
         self.update()
 
     def clear(self):
         """Clear the preview"""
-        self.current_card_slot = None
+        self.current_layers = []
         self.update()
 
     def paintEvent(self, event):
-        """Paint the card preview"""
+        """Paint the layered card preview"""
         super().paintEvent(event)
 
         painter = QPainter(self)
 
-        if self.project is None or self.current_card_slot is None:
+        if self.project is None or len(self.current_layers) == 0:
             # Draw "no animation" text
             painter.setPen(QColor("#888"))
             painter.drawText(self.rect(), Qt.AlignCenter, "No Preview")
-            return
-
-        card = self.project.get_card(self.current_card_slot)
-        if card is None:
-            painter.setPen(QColor("#888"))
-            painter.drawText(self.rect(), Qt.AlignCenter, f"Card {self.current_card_slot}\nEmpty")
             return
 
         # Draw card preview (160x160 centered)
@@ -280,20 +299,33 @@ class AnimationPreviewWidget(QFrame):
         # Draw background
         painter.fillRect(offset_x, offset_y, preview_size, preview_size, QColor("#1a1a1a"))
 
-        # Get card color
-        card_color = get_color_hex(card.color) if hasattr(card, 'color') else "#FFFFFF"
+        # Draw layers from bottom to top (reverse order, since index 0 = top priority)
+        for layer in reversed(self.current_layers):
+            if not layer.get("visible", True):
+                continue  # Skip invisible layers
 
-        # Draw pixels
-        for y in range(8):
-            for x in range(8):
-                if card.get_pixel(x, y):
-                    painter.fillRect(
-                        offset_x + x * pixel_size,
-                        offset_y + y * pixel_size,
-                        pixel_size,
-                        pixel_size,
-                        QColor(card_color)
-                    )
+            card_slot = layer.get("card_slot")
+            if card_slot is None:
+                continue
+
+            card = self.project.get_card(card_slot)
+            if card is None:
+                continue
+
+            # Get card color
+            card_color = get_color_hex(card.color) if hasattr(card, 'color') else "#FFFFFF"
+
+            # Draw pixels (only non-transparent pixels)
+            for y in range(8):
+                for x in range(8):
+                    if card.get_pixel(x, y):
+                        painter.fillRect(
+                            offset_x + x * pixel_size,
+                            offset_y + y * pixel_size,
+                            pixel_size,
+                            pixel_size,
+                            QColor(card_color)
+                        )
 
         # Draw grid
         painter.setPen(QPen(QColor("#444"), 1))
@@ -535,7 +567,9 @@ class TimelineEditorWidget(QWidget):
 
         frame_data = self.current_animation.get_frame(index)
         thumb = FrameThumbnail(index)
-        thumb.set_frame_data(frame_data["card_slot"], frame_data["duration"], self.project)
+        # Use layers from frame data
+        layers = frame_data.get("layers", [])
+        thumb.set_frame_data(layers, frame_data["duration"], self.project)
         thumb.clicked.connect(self._on_frame_clicked)
         thumb.duration_changed.connect(self._on_frame_duration_changed)
         thumb.remove_requested.connect(self._remove_frame_at)
@@ -860,6 +894,7 @@ class TimelineEditorWidget(QWidget):
         """Update animation preview with current frame"""
         if self.current_animation and self.current_playback_frame < self.current_animation.frame_count:
             frame = self.current_animation.get_frame(self.current_playback_frame)
-            self.preview_widget.set_card(frame["card_slot"], self.project)
+            layers = frame.get("layers", [])
+            self.preview_widget.set_layers(layers, self.project)
         else:
             self.preview_widget.clear()
