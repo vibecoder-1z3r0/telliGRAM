@@ -6,7 +6,7 @@ Manages multiple timeline editors and composite preview for layered animations.
 
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QPushButton,
-    QSplitter, QScrollArea, QFrame
+    QScrollArea, QFrame
 )
 from PySide6.QtCore import Qt, Signal
 
@@ -39,30 +39,36 @@ class AnimationComposerWidget(QWidget):
         layout = QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
 
-        # Create splitter for timeline editors and composite preview
-        self.splitter = QSplitter(Qt.Horizontal)
+        # Create vertically scrollable area for all content
+        scroll_area = QScrollArea()
+        scroll_area.setWidgetResizable(True)
+        scroll_area.setFrameShape(QFrame.NoFrame)
+        scroll_area.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        scroll_area.setVerticalScrollBarPolicy(Qt.ScrollBarAsNeeded)
 
-        # Left side: Timeline editors container
-        self.timeline_container = QWidget()
-        self.timeline_layout = QVBoxLayout(self.timeline_container)
-        self.timeline_layout.setContentsMargins(0, 0, 0, 0)
+        # Container widget for scrollable content
+        scroll_widget = QWidget()
+        self.scroll_layout = QVBoxLayout(scroll_widget)
+        self.scroll_layout.setContentsMargins(0, 0, 0, 0)
 
-        # Scroll area for timeline editors
-        self.timeline_scroll = QScrollArea()
-        self.timeline_scroll.setWidgetResizable(True)
-        self.timeline_scroll.setFrameShape(QFrame.NoFrame)
-
-        self.timeline_scroll_widget = QWidget()
-        self.timeline_scroll_layout = QVBoxLayout(self.timeline_scroll_widget)
+        # Timeline editors will be added here
+        self.timeline_scroll_layout = self.scroll_layout
 
         # Create initial timeline editor
         self.add_timeline_editor()
 
-        self.timeline_scroll_layout.addStretch()
-        self.timeline_scroll.setWidget(self.timeline_scroll_widget)
-        self.timeline_layout.addWidget(self.timeline_scroll, 1)
+        # Composite preview (initially hidden, will be added at bottom)
+        self.composite_preview = CompositePreviewWidget(self.project)
+        self.composite_preview.setVisible(False)
+        self.scroll_layout.addWidget(self.composite_preview)
 
-        # Layer management buttons
+        # Add stretch at the end so content stays at top
+        self.scroll_layout.addStretch()
+
+        scroll_area.setWidget(scroll_widget)
+        layout.addWidget(scroll_area, 1)
+
+        # Layer management buttons (fixed at bottom)
         layer_btn_layout = QHBoxLayout()
         self.add_layer_btn = QPushButton("+ Add Layer")
         self.add_layer_btn.clicked.connect(self._add_layer)
@@ -74,19 +80,7 @@ class AnimationComposerWidget(QWidget):
         layer_btn_layout.addWidget(self.remove_layer_btn)
 
         layer_btn_layout.addStretch()
-        self.timeline_layout.addLayout(layer_btn_layout)
-
-        self.splitter.addWidget(self.timeline_container)
-
-        # Right side: Composite preview (initially hidden)
-        self.composite_preview = CompositePreviewWidget(self.project)
-        self.composite_preview.setVisible(False)
-        self.splitter.addWidget(self.composite_preview)
-
-        # Set initial splitter sizes (timeline takes most space)
-        self.splitter.setSizes([700, 400])
-
-        layout.addWidget(self.splitter)
+        layout.addLayout(layer_btn_layout)
 
     def add_timeline_editor(self):
         """Add a new timeline editor for a layer"""
@@ -95,7 +89,8 @@ class AnimationComposerWidget(QWidget):
         editor.animation_changed.connect(self.animation_changed.emit)
         editor.animation_changed.connect(self._update_composite_preview)
 
-        # Add to layout
+        # Add to layout - insert BEFORE the composite preview
+        # The layout order is: timeline1, timeline2, ..., composite_preview, stretch
         insert_pos = len(self.timeline_editors)
         self.timeline_scroll_layout.insertWidget(insert_pos, editor)
 
