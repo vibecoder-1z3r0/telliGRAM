@@ -174,14 +174,13 @@ class LayerEditorDialog(QDialog):
 
 
 class FrameThumbnail(QFrame):
-    """Visual thumbnail for a single frame in the timeline"""
+    """Visual thumbnail for a single frame in the timeline with inline layer display"""
 
     clicked = Signal(int)  # Emits frame index when clicked
     duration_changed = Signal(int, int)  # Emits (frame_index, new_duration)
     remove_requested = Signal(int)  # Emits frame index to remove
     reorder_requested = Signal(int, int)  # Emits (from_index, to_index)
     duplicate_requested = Signal(int)  # Emits frame index to duplicate
-    edit_layers_requested = Signal(int)  # Emits frame index to edit layers
 
     def __init__(self, frame_index: int):
         super().__init__()
@@ -191,13 +190,13 @@ class FrameThumbnail(QFrame):
         self.is_current = False
         self.drag_start_pos = None
 
-        self.setFixedSize(90, 130)
+        self.setFixedSize(90, 200)  # Made taller for layers
         self.setFrameStyle(QFrame.Box | QFrame.Plain)
         self.setAcceptDrops(True)
 
         layout = QVBoxLayout(self)
         layout.setContentsMargins(3, 3, 3, 3)
-        layout.setSpacing(3)
+        layout.setSpacing(2)
 
         # Frame number label
         self.index_label = QLabel(f"#{frame_index + 1}")
@@ -205,25 +204,32 @@ class FrameThumbnail(QFrame):
         self.index_label.setStyleSheet("color: #888; font-size: 10px;")
         layout.addWidget(self.index_label)
 
-        # Card preview (rendered in paintEvent)
+        # Composite preview (rendered in paintEvent)
         self.preview_widget = QWidget()
         self.preview_widget.setFixedSize(70, 70)
         layout.addWidget(self.preview_widget, alignment=Qt.AlignCenter)
 
-        # Card slot label
-        self.slot_label = QLabel("Slot 0")
-        self.slot_label.setAlignment(Qt.AlignCenter)
-        self.slot_label.setStyleSheet("color: #aaa; font-size: 10px;")
-        layout.addWidget(self.slot_label)
+        # Layers section label
+        layers_label = QLabel("Layers:")
+        layers_label.setStyleSheet("color: #888; font-size: 9px;")
+        layout.addWidget(layers_label)
+
+        # Layers container (horizontal layout for layer thumbnails)
+        self.layers_container = QWidget()
+        self.layers_container.setFixedHeight(40)
+        self.layers_layout = QHBoxLayout(self.layers_container)
+        self.layers_layout.setContentsMargins(0, 0, 0, 0)
+        self.layers_layout.setSpacing(2)
+        layout.addWidget(self.layers_container)
 
         # Duration spinbox
         dur_layout = QHBoxLayout()
-        dur_layout.addWidget(QLabel("Dur:"))
+        dur_layout.addWidget(QLabel("Dur:", styleSheet="font-size: 9px;"))
         self.duration_spin = QSpinBox()
         self.duration_spin.setMinimum(1)
         self.duration_spin.setMaximum(99)
         self.duration_spin.setValue(5)
-        self.duration_spin.setFixedWidth(50)
+        self.duration_spin.setFixedWidth(40)
         self.duration_spin.valueChanged.connect(self._on_duration_changed)
         dur_layout.addWidget(self.duration_spin)
         layout.addLayout(dur_layout)
@@ -243,16 +249,152 @@ class FrameThumbnail(QFrame):
         self.project = project
         self.duration_spin.setValue(duration)
 
-        # Update label to show layer count
-        visible_count = sum(1 for layer in self.layers if layer.get("visible", True))
-        if len(self.layers) == 0:
-            self.slot_label.setText("No layers")
-        elif len(self.layers) == 1:
-            self.slot_label.setText(f"Slot {self.layers[0]['card_slot']}")
-        else:
-            self.slot_label.setText(f"{visible_count}/{len(self.layers)} layers")
+        # Clear existing layer widgets
+        while self.layers_layout.count():
+            item = self.layers_layout.takeAt(0)
+            if item.widget():
+                item.widget().deleteLater()
+
+        # Create layer thumbnails
+        for i, layer in enumerate(self.layers):
+            layer_widget = self._create_layer_widget(i, layer)
+            self.layers_layout.addWidget(layer_widget)
+
+        # Add "+" button to add new layer
+        if len(self.layers) < MAX_LAYERS:
+            add_btn = QPushButton("+")
+            add_btn.setFixedSize(30, 30)
+            add_btn.setStyleSheet("font-size: 16px; font-weight: bold;")
+            add_btn.clicked.connect(self._add_layer)
+            self.layers_layout.addWidget(add_btn)
+
+        self.layers_layout.addStretch()
 
         self.update()
+
+    def _create_layer_widget(self, layer_index: int, layer: dict) -> QFrame:
+        """Create a small thumbnail widget for a layer"""
+        frame = QFrame()
+        frame.setFixedSize(30, 30)
+        frame.setFrameStyle(QFrame.Box | QFrame.Plain)
+        frame.setStyleSheet("background-color: #2b2b2b; border: 1px solid #3c3c3c;")
+
+        # Store layer index for context menu
+        frame.layer_index = layer_index
+
+        # Make it clickable
+        frame.mousePressEvent = lambda event: self._on_layer_clicked(event, layer_index)
+
+        # Paint the layer card preview
+        card_slot = layer.get("card_slot", 0)
+        visible = layer.get("visible", True)
+
+        # Create a simple label showing layer info
+        label = QLabel(str(card_slot), frame)
+        label.setAlignment(Qt.AlignCenter)
+        label.setStyleSheet(f"color: {'#fff' if visible else '#666'}; font-size: 9px; background: transparent; border: none;")
+        label.setGeometry(0, 0, 30, 30)
+
+        return frame
+
+    def _on_layer_clicked(self, event, layer_index: int):
+        """Handle layer thumbnail click"""
+        if event.button() == Qt.RightButton:
+            self._show_layer_context_menu(event.globalPos(), layer_index)
+
+    def _show_layer_context_menu(self, pos: QPoint, layer_index: int):
+        """Show context menu for a layer"""
+        from PySide6.QtWidgets import QMenu
+        from PySide6.QtGui import QAction
+
+        menu = QMenu(self)
+
+        layer = self.layers[layer_index]
+        is_visible = layer.get("visible", True)
+
+        # Toggle visibility
+        vis_action = QAction("Hide Layer" if is_visible else "Show Layer", self)
+        vis_action.triggered.connect(lambda: self._toggle_layer_visibility(layer_index))
+        menu.addAction(vis_action)
+
+        menu.addSeparator()
+
+        # Move up/down
+        if layer_index > 0:
+            up_action = QAction("Move Up (Higher Priority)", self)
+            up_action.triggered.connect(lambda: self._move_layer_up(layer_index))
+            menu.addAction(up_action)
+
+        if layer_index < len(self.layers) - 1:
+            down_action = QAction("Move Down (Lower Priority)", self)
+            down_action.triggered.connect(lambda: self._move_layer_down(layer_index))
+            menu.addAction(down_action)
+
+        menu.addSeparator()
+
+        # Duplicate
+        if len(self.layers) < MAX_LAYERS:
+            dup_action = QAction("Duplicate Layer", self)
+            dup_action.triggered.connect(lambda: self._duplicate_layer(layer_index))
+            menu.addAction(dup_action)
+
+        # Remove
+        remove_action = QAction("Remove Layer", self)
+        remove_action.triggered.connect(lambda: self._remove_layer(layer_index))
+        menu.addAction(remove_action)
+
+        menu.exec(pos)
+
+    def _add_layer(self):
+        """Add a new layer to this frame"""
+        if len(self.layers) >= MAX_LAYERS:
+            return
+
+        # Ask for card slot - simple implementation using current card slot
+        # TODO: Make this smarter or ask user
+        new_layer = {"card_slot": 0, "visible": True}
+        self.layers.append(new_layer)
+        self._notify_layer_change()
+
+    def _remove_layer(self, layer_index: int):
+        """Remove a layer"""
+        if 0 <= layer_index < len(self.layers):
+            self.layers.pop(layer_index)
+            self._notify_layer_change()
+
+    def _toggle_layer_visibility(self, layer_index: int):
+        """Toggle layer visibility"""
+        if 0 <= layer_index < len(self.layers):
+            self.layers[layer_index]["visible"] = not self.layers[layer_index].get("visible", True)
+            self._notify_layer_change()
+
+    def _move_layer_up(self, layer_index: int):
+        """Move layer up"""
+        if layer_index > 0:
+            self.layers[layer_index], self.layers[layer_index - 1] = \
+                self.layers[layer_index - 1], self.layers[layer_index]
+            self._notify_layer_change()
+
+    def _move_layer_down(self, layer_index: int):
+        """Move layer down"""
+        if layer_index < len(self.layers) - 1:
+            self.layers[layer_index], self.layers[layer_index + 1] = \
+                self.layers[layer_index + 1], self.layers[layer_index]
+            self._notify_layer_change()
+
+    def _duplicate_layer(self, layer_index: int):
+        """Duplicate a layer"""
+        if 0 <= layer_index < len(self.layers) and len(self.layers) < MAX_LAYERS:
+            new_layer = self.layers[layer_index].copy()
+            self.layers.insert(layer_index + 1, new_layer)
+            self._notify_layer_change()
+
+    def _notify_layer_change(self):
+        """Notify that layers have changed - needs to update animation and refresh"""
+        # For now, just refresh the UI
+        # TODO: Add proper signal/command for undo support
+        if self.project:
+            self.set_frame_data(self.layers, self.duration_spin.value(), self.project)
 
     def set_frame_index(self, index: int):
         """Update frame index label"""
@@ -354,21 +496,11 @@ class FrameThumbnail(QFrame):
 
         menu.addSeparator()
 
-        edit_layers_action = QAction("Edit Layers...", self)
-        edit_layers_action.triggered.connect(self._edit_layers)
-        menu.addAction(edit_layers_action)
-
-        menu.addSeparator()
-
         remove_action = QAction("Remove Frame", self)
         remove_action.triggered.connect(lambda: self.remove_requested.emit(self.frame_index))
         menu.addAction(remove_action)
 
         menu.exec(event.globalPos())
-
-    def _edit_layers(self):
-        """Emit signal to edit layers"""
-        self.edit_layers_requested.emit(self.frame_index)
 
     def paintEvent(self, event):
         """Paint layered card preview"""
@@ -747,7 +879,6 @@ class TimelineEditorWidget(QWidget):
         thumb.remove_requested.connect(self._remove_frame_at)
         thumb.reorder_requested.connect(self._reorder_frames)
         thumb.duplicate_requested.connect(self._duplicate_frame)
-        thumb.edit_layers_requested.connect(self._edit_frame_layers)
 
         # Insert before stretch
         self.timeline_layout.insertWidget(index, thumb)
@@ -951,32 +1082,6 @@ class TimelineEditorWidget(QWidget):
             self._load_animation(self.current_animation)
             self._refresh_animation_list()
             self.animation_changed.emit()
-
-    def _edit_frame_layers(self, frame_index: int):
-        """Open layer editor dialog for a frame"""
-        if not self.current_animation or frame_index >= self.current_animation.frame_count:
-            return
-
-        if not self.project:
-            return
-
-        # Open layer editor dialog
-        dialog = LayerEditorDialog(frame_index, self.current_animation, self.project, self)
-
-        if dialog.exec() == QDialog.Accepted:
-            # Get modified layers
-            new_layers = dialog.get_layers()
-
-            # Update the frame's layers
-            frame = self.current_animation.get_frame(frame_index)
-            old_layers = frame.get("layers", []).copy()
-
-            # Only update if changed
-            if new_layers != old_layers:
-                frame["layers"] = new_layers
-                # Reload animation to refresh UI
-                self._load_animation(self.current_animation)
-                self.animation_changed.emit()
 
     def _move_selected_left(self):
         """Move currently selected/playing frame left"""
