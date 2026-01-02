@@ -13,6 +13,7 @@ from telligram.gui.widgets.card_grid import CardGridWidget
 from telligram.gui.widgets.pixel_editor import PixelEditorWidget
 from telligram.gui.widgets.grom_browser import GromBrowserWidget
 from telligram.gui.widgets.timeline_editor_new import TimelineEditorWidget
+from telligram.gui.widgets.animation_composer import AnimationComposerWidget
 from telligram.gui.widgets.color_palette import ColorPaletteWidget
 
 
@@ -210,7 +211,7 @@ class MainWindow(QMainWindow):
 
         right_layout.addWidget(QLabel("<h3>Animation Timeline</h3>"))
 
-        self.timeline_editor = TimelineEditorWidget(main_window=self)
+        self.timeline_editor = AnimationComposerWidget(project=self.project, main_window=self)
         right_layout.addWidget(self.timeline_editor)
 
         main_layout.addWidget(right_panel, stretch=2)

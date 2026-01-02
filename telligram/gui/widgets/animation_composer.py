@@ -183,3 +183,23 @@ class AnimationComposerWidget(QWidget):
         if self.is_multi_layer_mode:
             self.composite_preview.update_animations()
             self.composite_preview.refresh_composite_list()
+
+    def set_current_card_slot(self, slot: int):
+        """
+        Set current card slot for the primary (first) timeline editor.
+
+        This maintains compatibility with single-layer workflow.
+        """
+        if self.timeline_editors:
+            self.timeline_editors[0].set_current_card_slot(slot)
+
+    @property
+    def current_animation(self):
+        """
+        Get current animation from the primary (first) timeline editor.
+
+        This maintains compatibility with animation export functionality.
+        """
+        if self.timeline_editors:
+            return self.timeline_editors[0].current_animation
+        return None
