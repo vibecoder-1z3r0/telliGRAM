@@ -9,7 +9,7 @@ from PySide6.QtGui import QPainter, QColor, QPen, QPixmap, QDrag
 
 from telligram.core.project import Project
 from telligram.core.animation import Animation
-from telligram.core.constants import get_color_hex
+from telligram.core.constants import get_color_hex, COLOR_NAMES
 
 
 class FrameThumbnail(QFrame):
@@ -238,14 +238,16 @@ class AnimationPreviewWidget(QFrame):
         super().__init__()
         self.project = None
         self.current_card_slot = None
+        self.color_override = None  # None or color index 0-15
         self.setFixedSize(200, 200)
         self.setFrameStyle(QFrame.Box | QFrame.Raised)
         self.setStyleSheet("background-color: #1a1a1a; border: 2px solid #3c3c3c;")
 
-    def set_card(self, card_slot: int, project):
+    def set_card(self, card_slot: int, project, color_override=None):
         """Set the card to display"""
         self.current_card_slot = card_slot
         self.project = project
+        self.color_override = color_override
         self.update()
 
     def clear(self):
@@ -280,8 +282,11 @@ class AnimationPreviewWidget(QFrame):
         # Draw background
         painter.fillRect(offset_x, offset_y, preview_size, preview_size, QColor("#1a1a1a"))
 
-        # Get card color
-        card_color = get_color_hex(card.color) if hasattr(card, 'color') else "#FFFFFF"
+        # Get card color - use override if set
+        if self.color_override is not None:
+            card_color = get_color_hex(self.color_override)
+        else:
+            card_color = get_color_hex(card.color) if hasattr(card, 'color') else "#FFFFFF"
 
         # Draw pixels
         for y in range(8):
@@ -317,6 +322,7 @@ class TimelineEditorWidget(QWidget):
         self.project = None
         self.current_animation = None
         self.current_card_slot = 0
+        self.current_color_override = None  # None means use original colors
         self.frame_thumbnails = []
         self.playback_timer = QTimer()
         self.playback_timer.timeout.connect(self._advance_frame)
@@ -451,6 +457,17 @@ class TimelineEditorWidget(QWidget):
         self.move_right_btn.clicked.connect(self._move_selected_right)
         frame_controls.addWidget(self.move_right_btn)
 
+        frame_controls.addWidget(QLabel("|"))
+
+        frame_controls.addWidget(QLabel("Color:"))
+        self.color_override_combo = QComboBox()
+        self.color_override_combo.addItem("Original")
+        for color_name in COLOR_NAMES:
+            self.color_override_combo.addItem(color_name)
+        self.color_override_combo.setCurrentIndex(0)
+        self.color_override_combo.currentIndexChanged.connect(self._on_color_override_changed)
+        frame_controls.addWidget(self.color_override_combo)
+
         frame_controls.addStretch()
 
         timeline_section.addLayout(frame_controls)
@@ -555,6 +572,7 @@ class TimelineEditorWidget(QWidget):
         self.insert_frame_btn.setEnabled(has_animation)
         self.move_left_btn.setEnabled(has_animation)
         self.move_right_btn.setEnabled(has_animation)
+        self.color_override_combo.setEnabled(has_animation)
 
         # Animation management controls
         self.rename_anim_btn.setEnabled(has_animation)
@@ -810,6 +828,18 @@ class TimelineEditorWidget(QWidget):
             self.current_animation.loop = (state == Qt.Checked)
             self.animation_changed.emit()
 
+    def _on_color_override_changed(self, index):
+        """Handle color override selection"""
+        if index == 0:
+            # "Original" selected
+            self.current_color_override = None
+        else:
+            # Color index is index - 1 (accounting for "Original" at index 0)
+            self.current_color_override = index - 1
+
+        # Update preview to show the new color
+        self._update_preview_display()
+
     def _toggle_playback(self):
         """Toggle play/pause"""
         if self.is_playing:
@@ -913,6 +943,16 @@ class TimelineEditorWidget(QWidget):
         """Update animation preview with current frame"""
         if self.current_animation and self.current_playback_frame < self.current_animation.frame_count:
             frame = self.current_animation.get_frame(self.current_playback_frame)
-            self.preview_widget.set_card(frame["card_slot"], self.project)
+            self.preview_widget.set_card(frame["card_slot"], self.project, self.current_color_override)
         else:
             self.preview_widget.clear()
+
+    def _update_preview_display(self):
+        """Update preview display (for color override changes)"""
+        # Re-render the current frame with the new color
+        if self.is_playing:
+            self._update_preview()
+        else:
+            # When not playing, just update the widget
+            self.preview_widget.color_override = self.current_color_override
+            self.preview_widget.update()
