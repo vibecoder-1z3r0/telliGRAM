@@ -184,12 +184,12 @@ class AnimationComposerWidget(QWidget):
 
     def set_current_card_slot(self, slot: int):
         """
-        Set current card slot for the primary (first) timeline editor.
+        Set current card slot for ALL timeline editors.
 
-        This maintains compatibility with single-layer workflow.
+        When user selects a card, all timelines should know about it.
         """
-        if self.timeline_editors:
-            self.timeline_editors[0].set_current_card_slot(slot)
+        for editor in self.timeline_editors:
+            editor.set_current_card_slot(slot)
 
     @property
     def current_animation(self):
