@@ -2,14 +2,175 @@
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QScrollArea,
     QPushButton, QLabel, QSlider, QCheckBox, QSpinBox, QFrame, QComboBox,
-    QLineEdit, QMessageBox, QInputDialog
+    QLineEdit, QMessageBox, QInputDialog, QDialog, QListWidget, QListWidgetItem
 )
 from PySide6.QtCore import Qt, Signal, QTimer, QSize, QMimeData, QPoint
 from PySide6.QtGui import QPainter, QColor, QPen, QPixmap, QDrag
 
 from telligram.core.project import Project
-from telligram.core.animation import Animation
+from telligram.core.animation import Animation, MAX_LAYERS
 from telligram.core.constants import get_color_hex
+
+
+class LayerEditorDialog(QDialog):
+    """Dialog for editing layers in an animation frame"""
+
+    def __init__(self, frame_index: int, animation: Animation, project: Project, parent=None):
+        super().__init__(parent)
+        self.frame_index = frame_index
+        self.animation = animation
+        self.project = project
+        self.frame_data = animation.get_frame(frame_index)
+        self.layers = self.frame_data.get("layers", []).copy()  # Work with a copy
+
+        self.setWindowTitle(f"Edit Layers - Frame #{frame_index + 1}")
+        self.setMinimumSize(400, 500)
+        self._create_ui()
+
+    def _create_ui(self):
+        """Create UI"""
+        layout = QVBoxLayout(self)
+
+        # Header
+        header = QLabel(f"<h3>Frame #{self.frame_index + 1} Layers</h3>")
+        layout.addWidget(header)
+
+        info = QLabel(f"Manage up to {MAX_LAYERS} layers (0 = top priority)")
+        info.setStyleSheet("color: #888;")
+        layout.addWidget(info)
+
+        # Layer list
+        self.layer_list = QListWidget()
+        self.layer_list.setSelectionMode(QListWidget.SingleSelection)
+        layout.addWidget(self.layer_list)
+
+        # Layer controls
+        controls = QHBoxLayout()
+
+        self.add_btn = QPushButton("Add Layer")
+        self.add_btn.clicked.connect(self._add_layer)
+        controls.addWidget(self.add_btn)
+
+        self.remove_btn = QPushButton("Remove")
+        self.remove_btn.clicked.connect(self._remove_layer)
+        controls.addWidget(self.remove_btn)
+
+        self.move_up_btn = QPushButton("Move Up")
+        self.move_up_btn.clicked.connect(self._move_layer_up)
+        controls.addWidget(self.move_up_btn)
+
+        self.move_down_btn = QPushButton("Move Down")
+        self.move_down_btn.clicked.connect(self._move_layer_down)
+        controls.addWidget(self.move_down_btn)
+
+        self.toggle_vis_btn = QPushButton("Toggle Visibility")
+        self.toggle_vis_btn.clicked.connect(self._toggle_visibility)
+        controls.addWidget(self.toggle_vis_btn)
+
+        self.duplicate_btn = QPushButton("Duplicate")
+        self.duplicate_btn.clicked.connect(self._duplicate_layer)
+        controls.addWidget(self.duplicate_btn)
+
+        layout.addLayout(controls)
+
+        # Dialog buttons
+        button_layout = QHBoxLayout()
+        ok_btn = QPushButton("OK")
+        ok_btn.clicked.connect(self.accept)
+        button_layout.addWidget(ok_btn)
+
+        cancel_btn = QPushButton("Cancel")
+        cancel_btn.clicked.connect(self.reject)
+        button_layout.addWidget(cancel_btn)
+
+        layout.addLayout(button_layout)
+
+        self._update_layer_list()
+
+    def _update_layer_list(self):
+        """Update the layer list display"""
+        self.layer_list.clear()
+
+        for i, layer in enumerate(self.layers):
+            card_slot = layer.get("card_slot", 0)
+            visible = layer.get("visible", True)
+            vis_text = "👁" if visible else "🚫"
+            item_text = f"Layer {i}: Slot {card_slot} {vis_text}"
+
+            item = QListWidgetItem(item_text)
+            self.layer_list.addItem(item)
+
+        # Update button states
+        has_selection = self.layer_list.currentRow() >= 0
+        can_add = len(self.layers) < MAX_LAYERS
+
+        self.add_btn.setEnabled(can_add)
+        self.remove_btn.setEnabled(has_selection)
+        self.move_up_btn.setEnabled(has_selection and self.layer_list.currentRow() > 0)
+        self.move_down_btn.setEnabled(has_selection and self.layer_list.currentRow() < len(self.layers) - 1)
+        self.toggle_vis_btn.setEnabled(has_selection)
+        self.duplicate_btn.setEnabled(has_selection and can_add)
+
+    def _add_layer(self):
+        """Add a new layer"""
+        if len(self.layers) >= MAX_LAYERS:
+            return
+
+        # Ask user for card slot
+        card_slot, ok = QInputDialog.getInt(
+            self,
+            "Add Layer",
+            "Enter card slot (0-63):",
+            0, 0, 63
+        )
+
+        if ok:
+            self.layers.append({"card_slot": card_slot, "visible": True})
+            self._update_layer_list()
+
+    def _remove_layer(self):
+        """Remove selected layer"""
+        row = self.layer_list.currentRow()
+        if 0 <= row < len(self.layers):
+            self.layers.pop(row)
+            self._update_layer_list()
+
+    def _move_layer_up(self):
+        """Move selected layer up (higher priority)"""
+        row = self.layer_list.currentRow()
+        if row > 0:
+            self.layers[row], self.layers[row - 1] = self.layers[row - 1], self.layers[row]
+            self._update_layer_list()
+            self.layer_list.setCurrentRow(row - 1)
+
+    def _move_layer_down(self):
+        """Move selected layer down (lower priority)"""
+        row = self.layer_list.currentRow()
+        if 0 <= row < len(self.layers) - 1:
+            self.layers[row], self.layers[row + 1] = self.layers[row + 1], self.layers[row]
+            self._update_layer_list()
+            self.layer_list.setCurrentRow(row + 1)
+
+    def _toggle_visibility(self):
+        """Toggle visibility of selected layer"""
+        row = self.layer_list.currentRow()
+        if 0 <= row < len(self.layers):
+            self.layers[row]["visible"] = not self.layers[row].get("visible", True)
+            self._update_layer_list()
+            self.layer_list.setCurrentRow(row)
+
+    def _duplicate_layer(self):
+        """Duplicate selected layer"""
+        row = self.layer_list.currentRow()
+        if 0 <= row < len(self.layers) and len(self.layers) < MAX_LAYERS:
+            new_layer = self.layers[row].copy()
+            self.layers.insert(row + 1, new_layer)
+            self._update_layer_list()
+            self.layer_list.setCurrentRow(row + 1)
+
+    def get_layers(self):
+        """Get the modified layers list"""
+        return self.layers
 
 
 class FrameThumbnail(QFrame):
@@ -20,6 +181,7 @@ class FrameThumbnail(QFrame):
     remove_requested = Signal(int)  # Emits frame index to remove
     reorder_requested = Signal(int, int)  # Emits (from_index, to_index)
     duplicate_requested = Signal(int)  # Emits frame index to duplicate
+    edit_layers_requested = Signal(int)  # Emits frame index to edit layers
 
     def __init__(self, frame_index: int):
         super().__init__()
@@ -192,11 +354,21 @@ class FrameThumbnail(QFrame):
 
         menu.addSeparator()
 
+        edit_layers_action = QAction("Edit Layers...", self)
+        edit_layers_action.triggered.connect(self._edit_layers)
+        menu.addAction(edit_layers_action)
+
+        menu.addSeparator()
+
         remove_action = QAction("Remove Frame", self)
         remove_action.triggered.connect(lambda: self.remove_requested.emit(self.frame_index))
         menu.addAction(remove_action)
 
         menu.exec(event.globalPos())
+
+    def _edit_layers(self):
+        """Emit signal to edit layers"""
+        self.edit_layers_requested.emit(self.frame_index)
 
     def paintEvent(self, event):
         """Paint layered card preview"""
@@ -575,6 +747,7 @@ class TimelineEditorWidget(QWidget):
         thumb.remove_requested.connect(self._remove_frame_at)
         thumb.reorder_requested.connect(self._reorder_frames)
         thumb.duplicate_requested.connect(self._duplicate_frame)
+        thumb.edit_layers_requested.connect(self._edit_frame_layers)
 
         # Insert before stretch
         self.timeline_layout.insertWidget(index, thumb)
@@ -778,6 +951,32 @@ class TimelineEditorWidget(QWidget):
             self._load_animation(self.current_animation)
             self._refresh_animation_list()
             self.animation_changed.emit()
+
+    def _edit_frame_layers(self, frame_index: int):
+        """Open layer editor dialog for a frame"""
+        if not self.current_animation or frame_index >= self.current_animation.frame_count:
+            return
+
+        if not self.project:
+            return
+
+        # Open layer editor dialog
+        dialog = LayerEditorDialog(frame_index, self.current_animation, self.project, self)
+
+        if dialog.exec() == QDialog.Accepted:
+            # Get modified layers
+            new_layers = dialog.get_layers()
+
+            # Update the frame's layers
+            frame = self.current_animation.get_frame(frame_index)
+            old_layers = frame.get("layers", []).copy()
+
+            # Only update if changed
+            if new_layers != old_layers:
+                frame["layers"] = new_layers
+                # Reload animation to refresh UI
+                self._load_animation(self.current_animation)
+                self.animation_changed.emit()
 
     def _move_selected_left(self):
         """Move currently selected/playing frame left"""
