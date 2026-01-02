@@ -472,12 +472,8 @@ class TimelineEditorWidget(QWidget):
         """Set project"""
         self.project = project
         self._refresh_animation_list()
-        if len(project.animations) > 0:
-            self.animation_combo.setCurrentIndex(0)
-            # Manually load the first animation since signals are blocked during refresh
-            self._load_animation(project.animations[0])
-        else:
-            self._load_animation(None)
+        # Don't auto-select an animation - user should choose explicitly
+        self._load_animation(None)
 
     def set_current_card_slot(self, slot: int):
         """Set currently selected card slot"""
@@ -489,20 +485,33 @@ class TimelineEditorWidget(QWidget):
         current_name = self.current_animation.name if self.current_animation else None
         self.animation_combo.clear()
 
+        # Add placeholder for "no selection"
+        self.animation_combo.addItem("(Select Animation)")
+
         if self.project:
             for i, anim in enumerate(self.project.animations):
                 self.animation_combo.addItem(f"{anim.name} ({anim.frame_count} frames)")
                 if self.current_animation and anim.name == current_name:
-                    self.animation_combo.setCurrentIndex(i)
+                    self.animation_combo.setCurrentIndex(i + 1)  # +1 for placeholder
+
+        # If no current animation, select placeholder
+        if not self.current_animation:
+            self.animation_combo.setCurrentIndex(0)
 
         self.animation_combo.blockSignals(False)
 
     def _on_animation_selected(self, index):
         """Handle animation selection"""
-        if self.project and 0 <= index < len(self.project.animations):
-            self._load_animation(self.project.animations[index])
-        else:
+        # Index 0 is the placeholder "(Select Animation)"
+        if index == 0 or not self.project:
             self._load_animation(None)
+        else:
+            # Adjust for placeholder offset
+            anim_index = index - 1
+            if 0 <= anim_index < len(self.project.animations):
+                self._load_animation(self.project.animations[anim_index])
+            else:
+                self._load_animation(None)
 
     def _load_animation(self, animation: Animation):
         """Load animation into timeline"""
@@ -517,6 +526,7 @@ class TimelineEditorWidget(QWidget):
 
         if animation is None:
             self._update_playback_info()
+            self._update_button_states()
             return
 
         # Create thumbnails for each frame
@@ -527,6 +537,30 @@ class TimelineEditorWidget(QWidget):
         self.loop_checkbox.setChecked(animation.loop)
         self.speed_slider.setValue(animation.fps)
         self._update_playback_info()
+        self._update_button_states()
+
+    def _update_button_states(self):
+        """Enable/disable buttons based on whether an animation is loaded"""
+        has_animation = self.current_animation is not None
+
+        # Playback controls
+        self.play_btn.setEnabled(has_animation)
+        self.stop_btn.setEnabled(has_animation)
+        self.rewind_btn.setEnabled(has_animation)
+        self.loop_checkbox.setEnabled(has_animation)
+        self.speed_slider.setEnabled(has_animation)
+
+        # Frame manipulation controls
+        self.add_frame_btn.setEnabled(has_animation)
+        self.insert_frame_btn.setEnabled(has_animation)
+        self.move_left_btn.setEnabled(has_animation)
+        self.move_right_btn.setEnabled(has_animation)
+
+        # Animation management controls
+        self.rename_anim_btn.setEnabled(has_animation)
+        self.delete_anim_btn.setEnabled(has_animation)
+
+        # New button and combo are always enabled (no change needed)
 
     def _create_frame_thumbnail(self, index):
         """Create a single frame thumbnail"""
