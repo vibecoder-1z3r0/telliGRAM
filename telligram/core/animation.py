@@ -160,6 +160,35 @@ class Animation:
             fps=data.get("fps", 10),
             loop=data.get("loop", False)
         )
-        for frame in data.get("frames", []):
-            anim.add_frame(frame["card_slot"], frame["duration"])
+
+        # Handle new multi-track format with layers
+        if "layers" in data:
+            # Convert from multi-track to single track (use first visible layer)
+            for layer in data["layers"]:
+                if layer.get("visible", True):
+                    # Found first visible layer, use its frames
+                    for frame in layer.get("frames", []):
+                        anim.add_frame(frame["card_slot"], frame["duration"])
+                    break
+            # If no visible layers, use first layer anyway
+            if anim.frame_count == 0 and len(data["layers"]) > 0:
+                for frame in data["layers"][0].get("frames", []):
+                    anim.add_frame(frame["card_slot"], frame["duration"])
+        # Handle old single-track format
+        elif "frames" in data:
+            for frame in data.get("frames", []):
+                # Check if this is intermediate format (frames with layers)
+                if "layers" in frame:
+                    # Use first layer only
+                    layers_list = frame.get("layers", [])
+                    if layers_list:
+                        card_slot = layers_list[0].get("card_slot", 0)
+                    else:
+                        card_slot = 0
+                    duration = frame.get("duration", 5)
+                    anim.add_frame(card_slot, duration)
+                else:
+                    # Standard old format
+                    anim.add_frame(frame["card_slot"], frame["duration"])
+
         return anim
