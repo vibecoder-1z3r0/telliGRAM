@@ -1,24 +1,19 @@
 """
-Animation module for sequencing GRAM cards with multi-track layering.
+Animation module for sequencing GRAM cards.
 
-Animations consist of multiple layer tracks (up to 8, matching Intellivision MOBs).
-Each layer track has its own timeline with independent frames and durations.
-Layers composite together during playback based on priority (0=top, 7=bottom).
+Animations are sequences of GRAM card slots with timing information.
+Used for sprite animations, UI effects, and other dynamic graphics.
 """
 
 from typing import List, Dict, Any, Optional
 
-# Maximum number of layer tracks (matches Intellivision's 8 MOBs)
-MAX_LAYERS = 8
-
 
 class Animation:
     """
-    GRAM card animation with multi-track layering.
+    GRAM card animation sequence.
 
-    Each animation has up to 8 independent layer tracks.
-    Each layer track contains its own sequence of frames with durations.
-    Layers composite together during playback (layer 0 = top priority).
+    Stores a sequence of card slots with frame durations.
+    Supports playback calculations and serialization.
     """
 
     def __init__(self, name: str, fps: int = 60, loop: bool = False):
@@ -39,205 +34,101 @@ class Animation:
         self.name = name
         self.fps = fps
         self.loop = loop
-        self._layers: List[Dict[str, Any]] = []
-        # Each layer: {
-        #   "visible": bool,
-        #   "frames": [{"card_slot": int, "duration": int}, ...]
-        # }
-
-    @property
-    def layer_count(self) -> int:
-        """Number of layer tracks in animation"""
-        return len(self._layers)
+        self._frames: List[Dict[str, int]] = []
 
     @property
     def frame_count(self) -> int:
-        """Total frame count across all layers (for backward compatibility)"""
-        # Return max frame count from any single layer
-        if not self._layers:
-            return 0
-        return max((len(layer.get("frames", [])) for layer in self._layers), default=0)
+        """Number of frames in animation"""
+        return len(self._frames)
 
     @property
     def total_duration(self) -> int:
-        """Total duration in frame ticks (longest layer)"""
-        if not self._layers:
-            return 0
-        max_duration = 0
-        for layer in self._layers:
-            layer_duration = sum(f["duration"] for f in layer.get("frames", []))
-            max_duration = max(max_duration, layer_duration)
-        return max_duration
+        """Total duration in frame counts"""
+        return sum(frame["duration"] for frame in self._frames)
 
     @property
     def duration_seconds(self) -> float:
         """Total duration in seconds"""
         return self.total_duration / self.fps
 
-    def add_layer(self, visible: bool = True) -> int:
+    def add_frame(self, card_slot: int, duration: int) -> None:
         """
-        Add a new layer track.
+        Add frame to end of animation.
 
         Args:
-            visible: Whether layer is visible
-
-        Returns:
-            Index of new layer, or -1 if at max layers
+            card_slot: GRAM card slot number (0-63)
+            duration: How many frames to display this card
         """
-        if len(self._layers) >= MAX_LAYERS:
-            return -1
-
-        self._layers.append({
-            "visible": visible,
-            "frames": []
+        self._frames.append({
+            "card_slot": card_slot,
+            "duration": duration
         })
-        return len(self._layers) - 1
 
-    def remove_layer(self, layer_index: int) -> None:
+    def insert_frame(self, index: int, card_slot: int, duration: int) -> None:
         """
-        Remove a layer track.
+        Insert frame at specific position.
 
         Args:
-            layer_index: Index of layer to remove
-        """
-        if 0 <= layer_index < len(self._layers):
-            del self._layers[layer_index]
-
-    def get_layer(self, layer_index: int) -> Optional[Dict[str, Any]]:
-        """
-        Get layer data.
-
-        Args:
-            layer_index: Layer index
-
-        Returns:
-            Layer dict or None if invalid index
-        """
-        if 0 <= layer_index < len(self._layers):
-            return self._layers[layer_index]
-        return None
-
-    def set_layer_visibility(self, layer_index: int, visible: bool) -> None:
-        """
-        Set layer visibility.
-
-        Args:
-            layer_index: Layer index
-            visible: Visibility state
-        """
-        if 0 <= layer_index < len(self._layers):
-            self._layers[layer_index]["visible"] = visible
-
-    def add_frame_to_layer(self, layer_index: int, card_slot: int, duration: int = 5) -> None:
-        """
-        Add frame to end of layer track.
-
-        Args:
-            layer_index: Layer index
-            card_slot: GRAM card slot (0-63)
-            duration: Frame duration in ticks
-        """
-        if 0 <= layer_index < len(self._layers):
-            self._layers[layer_index]["frames"].append({
-                "card_slot": card_slot,
-                "duration": duration
-            })
-
-    def insert_frame_to_layer(self, layer_index: int, frame_index: int,
-                             card_slot: int, duration: int = 5) -> None:
-        """
-        Insert frame at specific position in layer track.
-
-        Args:
-            layer_index: Layer index
-            frame_index: Position to insert
-            card_slot: GRAM card slot
+            index: Position to insert at
+            card_slot: GRAM card slot number
             duration: Frame duration
         """
-        if 0 <= layer_index < len(self._layers):
-            frames = self._layers[layer_index]["frames"]
-            frames.insert(frame_index, {
-                "card_slot": card_slot,
-                "duration": duration
-            })
+        self._frames.insert(index, {
+            "card_slot": card_slot,
+            "duration": duration
+        })
 
-    def remove_frame_from_layer(self, layer_index: int, frame_index: int) -> None:
+    def get_frame(self, index: int) -> Dict[str, int]:
         """
-        Remove frame from layer track.
-
-        Args:
-            layer_index: Layer index
-            frame_index: Frame index to remove
-        """
-        if 0 <= layer_index < len(self._layers):
-            frames = self._layers[layer_index]["frames"]
-            if 0 <= frame_index < len(frames):
-                del frames[frame_index]
-
-    def get_frame_at_time(self, layer_index: int, time_ticks: int) -> Optional[int]:
-        """
-        Get which card is showing in a layer at a specific time.
-
-        Args:
-            layer_index: Layer index
-            time_ticks: Time position in ticks
-
-        Returns:
-            Card slot number, or None if no card at that time
-        """
-        if not (0 <= layer_index < len(self._layers)):
-            return None
-
-        layer = self._layers[layer_index]
-        if not layer.get("visible", True):
-            return None
-
-        frames = layer.get("frames", [])
-        current_time = 0
-
-        for frame in frames:
-            duration = frame["duration"]
-            if current_time <= time_ticks < current_time + duration:
-                return frame["card_slot"]
-            current_time += duration
-
-        return None
-
-    def get_all_cards_at_time(self, time_ticks: int) -> List[Optional[int]]:
-        """
-        Get all visible cards at a specific time (one per layer).
-
-        Args:
-            time_ticks: Time position in ticks
-
-        Returns:
-            List of card slots (one per layer, None if no card visible)
-        """
-        result = []
-        for i in range(len(self._layers)):
-            result.append(self.get_frame_at_time(i, time_ticks))
-        return result
-
-    def get_frame(self, index: int) -> Dict[str, Any]:
-        """
-        Get frame from first layer (for backward compatibility).
+        Get frame data by index.
 
         Args:
             index: Frame index
 
         Returns:
-            Frame dict with 'card_slot', 'duration', and 'layers' for compatibility
+            Dictionary with card_slot and duration
         """
-        if not self._layers or index >= len(self._layers[0].get("frames", [])):
-            return {"layers": [], "duration": 5}
+        return self._frames[index]
 
-        frame = self._layers[0]["frames"][index]
-        # Return in old format for compatibility
-        return {
-            "card_slot": frame["card_slot"],
-            "duration": frame["duration"],
-            "layers": [{"card_slot": frame["card_slot"], "visible": True}]
-        }
+    def remove_frame(self, index: int) -> None:
+        """
+        Remove frame from animation.
+
+        Args:
+            index: Frame index to remove
+        """
+        del self._frames[index]
+
+    def clear_frames(self) -> None:
+        """Remove all frames from animation"""
+        self._frames.clear()
+
+    def get_card_at_frame(self, frame_num: int, loop: bool = False) -> Optional[int]:
+        """
+        Get which card slot is showing at given frame number.
+
+        Args:
+            frame_num: Frame number in animation timeline
+            loop: Whether to loop past end
+
+        Returns:
+            Card slot number, or None if past end and not looping
+        """
+        if self.frame_count == 0:
+            return None
+
+        # Handle looping
+        if loop and self.total_duration > 0:
+            frame_num = frame_num % self.total_duration
+
+        # Find which animation frame contains this timeline frame
+        current_frame = 0
+        for anim_frame in self._frames:
+            current_frame += anim_frame["duration"]
+            if frame_num < current_frame:
+                return anim_frame["card_slot"]
+
+        return None  # Past end of animation
 
     def to_dict(self) -> Dict[str, Any]:
         """
@@ -250,7 +141,7 @@ class Animation:
             "name": self.name,
             "fps": self.fps,
             "loop": self.loop,
-            "layers": [layer.copy() for layer in self._layers]
+            "frames": self._frames.copy()
         }
 
     @classmethod
@@ -266,31 +157,9 @@ class Animation:
         """
         anim = cls(
             name=data["name"],
-            fps=data.get("fps", 60),
+            fps=data.get("fps", 10),
             loop=data.get("loop", False)
         )
-
-        # Load layers if present (new format)
-        if "layers" in data:
-            anim._layers = [layer.copy() for layer in data["layers"]]
-        # Backward compatibility: old single-track format
-        elif "frames" in data:
-            # Convert old format to single-layer format
-            anim.add_layer(visible=True)
-            for old_frame in data["frames"]:
-                # Handle both old formats
-                if "layers" in old_frame:
-                    # Old format that had layers per frame - use first layer only
-                    layers_list = old_frame.get("layers", [])
-                    if layers_list:
-                        card_slot = layers_list[0].get("card_slot", 0)
-                    else:
-                        card_slot = 0
-                else:
-                    # Very old format with direct card_slot
-                    card_slot = old_frame.get("card_slot", 0)
-
-                duration = old_frame.get("duration", 5)
-                anim.add_frame_to_layer(0, card_slot, duration)
-
+        for frame in data.get("frames", []):
+            anim.add_frame(frame["card_slot"], frame["duration"])
         return anim
