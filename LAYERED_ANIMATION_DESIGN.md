@@ -49,6 +49,8 @@ After clicking "Add Layer", expand to show multiple layer editors plus composite
 ... (up to 8 layers total)
 
 ┌─ Combined Preview ────────────────────────────┐
+│ Composite: [(new) ▼] [Save] [Delete]         │
+│                                                │
 │ Layers to composite:                           │
 │ [✓] Layer 1 (walk_cycle)                      │
 │     Color: [Original▼] When ends: [Loop▼]    │
@@ -65,12 +67,36 @@ After clicking "Add Layer", expand to show multiple layer editors plus composite
 │ │   Composite     │  ← Shows all checked     │
 │ │   Preview       │     layers with colors    │
 │ └─────────────────┘                           │
-│                                                │
-│ [Save as Composite...]                         │
 └────────────────────────────────────────────────┘
 
 [+ Add Layer] [- Remove Layer]
 ```
+
+## Managing Multiple Composites
+
+Projects can save **multiple composite configurations**:
+
+### Composite Selector Dropdown
+- Shows all saved composites in the project
+- Plus "(new)" option for creating new composites
+- Selecting a composite loads its layer configuration
+- **Example composites**:
+  - "Character Walk + Attack"
+  - "Character Run + Jump"
+  - "Enemy Patrol + Idle"
+  - "Boss Battle - Phase 1"
+
+### Workflow
+1. **Create**: Configure layers, click [Save], enter name
+2. **Load**: Select from dropdown, layers auto-configure
+3. **Edit**: Load composite, modify layers, click [Save] to update
+4. **Delete**: Select composite, click [Delete] button
+
+### Benefits
+- Quickly switch between different layer combinations
+- Test multiple character/enemy configurations
+- Save variations for different game states
+- Reuse layer setups across sessions
 
 ## Playback Behavior
 
