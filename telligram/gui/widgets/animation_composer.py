@@ -86,9 +86,9 @@ class AnimationComposerWidget(QWidget):
 
         self.tab_widget.addTab(timeline_tab, "Animation Timelines")
 
-        # Tab 2: Composite Preview
+        # Tab 2: Composite Sprite Animator
         self.composite_preview = CompositePreviewWidget(self.project)
-        self.tab_widget.addTab(self.composite_preview, "Composite Preview")
+        self.tab_widget.addTab(self.composite_preview, "Composite Sprite Animator")
 
     def add_timeline_editor(self):
         """Add a new timeline editor for a layer"""

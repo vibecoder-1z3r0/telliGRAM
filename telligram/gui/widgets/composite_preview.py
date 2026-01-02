@@ -7,7 +7,8 @@ controls for visibility, color override, and end behavior.
 
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, QPushButton,
-    QComboBox, QCheckBox, QSlider, QFrame, QGroupBox, QScrollArea
+    QComboBox, QCheckBox, QSlider, QFrame, QGroupBox, QScrollArea,
+    QInputDialog, QMessageBox, QSpinBox
 )
 from PySide6.QtCore import Qt, Signal, QTimer
 from PySide6.QtGui import QPainter, QColor
@@ -39,7 +40,13 @@ class LayerControlWidget(QFrame):
         # Top row: checkbox and animation selector
         top_layout = QHBoxLayout()
 
-        self.visible_check = QCheckBox(f"Layer {layer_index + 1}")
+        # Name the first layer "Parent/Base Layer", others "Layer 1" through "Layer 7"
+        if layer_index == 0:
+            layer_name = "Parent/Base Layer"
+        else:
+            layer_name = f"Layer {layer_index}"
+
+        self.visible_check = QCheckBox(layer_name)
         self.visible_check.setChecked(False)
         self.visible_check.stateChanged.connect(lambda: self.layer_changed.emit())
         top_layout.addWidget(self.visible_check)
@@ -74,6 +81,46 @@ class LayerControlWidget(QFrame):
 
         layout.addLayout(bottom_layout)
 
+        # Offset row: X and Y offsets
+        offset_layout = QHBoxLayout()
+
+        offset_layout.addWidget(QLabel("X Offset:"))
+        self.x_offset_spin = QSpinBox()
+        self.x_offset_spin.setRange(-31, 31)  # Allow positioning anywhere in 32x32 grid
+        self.x_offset_spin.setValue(0)
+        self.x_offset_spin.setEnabled(False)
+        self.x_offset_spin.valueChanged.connect(lambda: self.layer_changed.emit())
+        offset_layout.addWidget(self.x_offset_spin)
+
+        offset_layout.addWidget(QLabel("Y Offset:"))
+        self.y_offset_spin = QSpinBox()
+        self.y_offset_spin.setRange(-31, 31)  # Allow positioning anywhere in 32x32 grid
+        self.y_offset_spin.setValue(0)
+        self.y_offset_spin.setEnabled(False)
+        self.y_offset_spin.valueChanged.connect(lambda: self.layer_changed.emit())
+        offset_layout.addWidget(self.y_offset_spin)
+
+        layout.addLayout(offset_layout)
+
+        # Stack/Stitch row (only for layers 1-7, not Parent/Base)
+        if layer_index > 0:
+            stack_stitch_layout = QHBoxLayout()
+            stack_stitch_layout.addWidget(QLabel("Position:"))
+
+            self.stack_stitch_combo = QComboBox()
+            self.stack_stitch_combo.addItem("Independent", "none")
+            self.stack_stitch_combo.addItem("Stack Below", "stack")
+            self.stack_stitch_combo.addItem("Stitch Below", "stitch")
+            self.stack_stitch_combo.setEnabled(False)
+            self.stack_stitch_combo.currentIndexChanged.connect(lambda: self.layer_changed.emit())
+            stack_stitch_layout.addWidget(self.stack_stitch_combo)
+            stack_stitch_layout.addStretch()
+
+            layout.addLayout(stack_stitch_layout)
+        else:
+            # Parent/Base layer doesn't have stack/stitch option
+            self.stack_stitch_combo = None
+
         # Connect visible checkbox to enable/disable controls
         self.visible_check.stateChanged.connect(self._on_visible_changed)
 
@@ -83,6 +130,10 @@ class LayerControlWidget(QFrame):
         self.animation_combo.setEnabled(enabled)
         self.color_combo.setEnabled(enabled)
         self.end_behavior_combo.setEnabled(enabled)
+        self.x_offset_spin.setEnabled(enabled)
+        self.y_offset_spin.setEnabled(enabled)
+        if self.stack_stitch_combo:
+            self.stack_stitch_combo.setEnabled(enabled)
 
     def _on_animation_changed(self):
         """Handle animation selection change"""
@@ -110,12 +161,22 @@ class LayerControlWidget(QFrame):
         if self.animation_combo.currentIndex() < 0:
             return None
 
-        return {
+        config = {
             "animation_name": self.animation_combo.currentText(),
             "visible": True,
             "end_behavior": self.end_behavior_combo.currentData(),
-            "color_override": self.color_combo.currentData()
+            "color_override": self.color_combo.currentData(),
+            "x_offset": self.x_offset_spin.value(),
+            "y_offset": self.y_offset_spin.value()
         }
+
+        # Add stack_stitch mode if available (layers 1-7)
+        if self.stack_stitch_combo:
+            config["stack_stitch"] = self.stack_stitch_combo.currentData()
+        else:
+            config["stack_stitch"] = "none"
+
+        return config
 
     def set_layer_config(self, config: dict):
         """Set layer configuration"""
@@ -146,12 +207,24 @@ class LayerControlWidget(QFrame):
         if index >= 0:
             self.end_behavior_combo.setCurrentIndex(index)
 
+        # Set offsets
+        self.x_offset_spin.setValue(config.get("x_offset", 0))
+        self.y_offset_spin.setValue(config.get("y_offset", 0))
+
+        # Set stack/stitch mode if available
+        if self.stack_stitch_combo:
+            stack_stitch = config.get("stack_stitch", "none")
+            index = self.stack_stitch_combo.findData(stack_stitch)
+            if index >= 0:
+                self.stack_stitch_combo.setCurrentIndex(index)
+
 
 class CompositePreviewArea(QWidget):
     """
     Preview area showing the composited animation result.
 
     Renders all visible layers composited together.
+    Displays 32x32 card pixels (4x4 cards) to accommodate stacking/stitching/offsets.
     """
 
     def __init__(self):
@@ -159,10 +232,12 @@ class CompositePreviewArea(QWidget):
         self.project = None
         self.composite = None
         self.current_frame = 0
-        self.pixel_size = 30
+        self.pixel_size = 8  # Smaller pixels to fit 32x32 in same space
+        self.show_grid = True  # Grid enabled by default
 
-        # Calculate size (8x8 grid)
-        total_size = self.pixel_size * 8
+        # Calculate size (32x32 grid = 4 cards x 4 cards)
+        # 8 * 32 = 256x256 (close to original 240x240)
+        total_size = self.pixel_size * 32
         self.setFixedSize(total_size, total_size)
 
     def set_composite(self, composite: LayerComposite, project: Project):
@@ -184,45 +259,98 @@ class CompositePreviewArea(QWidget):
 
     def paintEvent(self, event):
         """Draw the composited frame"""
+        from PySide6.QtGui import QPen
+
         painter = QPainter(self)
         painter.fillRect(self.rect(), QColor(40, 40, 40))
 
-        if not self.composite or not self.project:
-            return
+        # Center the 8x8 sprite in the 32x32 space (offset by 12 card pixels)
+        offset_x = 12 * self.pixel_size
+        offset_y = 12 * self.pixel_size
 
-        # Get card slots for all layers at current frame
-        card_slots = self.composite.get_card_at_frame(self.current_frame, self.project)
+        if self.composite and self.project:
+            # Get card slots for all layers at current frame
+            card_slots = self.composite.get_card_at_frame(self.current_frame, self.project)
 
-        # Draw layers from bottom to top (reverse order for proper layering)
-        for layer_idx in reversed(range(8)):
-            card_slot = card_slots[layer_idx]
-            if card_slot is None:
-                continue
+            # Calculate cumulative stack/stitch positions for each layer
+            # Each layer's base position is determined by stack/stitch relative to layer below
+            layer_positions = {}  # layer_idx -> (base_x_cards, base_y_cards)
 
-            card = self.project.get_card(card_slot)
-            if card is None:
-                continue
+            for layer_idx in range(8):
+                layer_config = self.composite.layers[layer_idx] if layer_idx < len(self.composite.layers) else None
 
-            # Determine color to use
-            layer_config = self.composite.layers[layer_idx] if layer_idx < len(self.composite.layers) else None
-            if layer_config and layer_config.get("color_override") is not None:
-                color_index = layer_config["color_override"]
-            else:
-                color_index = card.color
+                if layer_idx == 0:
+                    # Parent/Base layer starts at origin
+                    layer_positions[layer_idx] = (0, 0)
+                else:
+                    # Check if this layer is stacked/stitched to layer below
+                    stack_stitch = layer_config.get("stack_stitch", "none") if layer_config else "none"
 
-            color = QColor(get_color_hex(color_index))
+                    # Get position of layer below
+                    prev_x, prev_y = layer_positions.get(layer_idx - 1, (0, 0))
 
-            # Draw each pixel
-            for y in range(8):
-                for x in range(8):
-                    if card.get_pixel(x, y):
-                        painter.fillRect(
-                            x * self.pixel_size,
-                            y * self.pixel_size,
-                            self.pixel_size,
-                            self.pixel_size,
-                            color
-                        )
+                    if stack_stitch == "stack":
+                        # Stack below: same X, Y + 8
+                        layer_positions[layer_idx] = (prev_x, prev_y + 8)
+                    elif stack_stitch == "stitch":
+                        # Stitch to right: X + 8, same Y
+                        layer_positions[layer_idx] = (prev_x + 8, prev_y)
+                    else:
+                        # Independent: starts at origin
+                        layer_positions[layer_idx] = (0, 0)
+
+            # Draw layers from bottom to top (reverse order for proper layering)
+            for layer_idx in reversed(range(8)):
+                card_slot = card_slots[layer_idx]
+                if card_slot is None:
+                    continue
+
+                card = self.project.get_card(card_slot)
+                if card is None:
+                    continue
+
+                # Determine color to use
+                layer_config = self.composite.layers[layer_idx] if layer_idx < len(self.composite.layers) else None
+                if layer_config and layer_config.get("color_override") is not None:
+                    color_index = layer_config["color_override"]
+                else:
+                    color_index = card.color
+
+                color = QColor(get_color_hex(color_index))
+
+                # Get base position from stack/stitch
+                base_x_cards, base_y_cards = layer_positions.get(layer_idx, (0, 0))
+
+                # Get additional offsets
+                x_offset_cards = layer_config.get("x_offset", 0) if layer_config else 0
+                y_offset_cards = layer_config.get("y_offset", 0) if layer_config else 0
+
+                # Draw each pixel (centered in preview + stack/stitch position + layer offset)
+                for y in range(8):
+                    for x in range(8):
+                        if card.get_pixel(x, y):
+                            # Apply all offsets in card pixels
+                            final_x = offset_x + (base_x_cards + x + x_offset_cards) * self.pixel_size
+                            final_y = offset_y + (base_y_cards + y + y_offset_cards) * self.pixel_size
+                            painter.fillRect(
+                                final_x,
+                                final_y,
+                                self.pixel_size,
+                                self.pixel_size,
+                                color
+                            )
+
+        # Draw grid if enabled
+        if self.show_grid:
+            painter.setPen(QPen(QColor(60, 60, 60), 1))
+            # Draw 32x32 grid
+            for i in range(33):
+                # Vertical lines
+                x = i * self.pixel_size
+                painter.drawLine(x, 0, x, 32 * self.pixel_size)
+                # Horizontal lines
+                y = i * self.pixel_size
+                painter.drawLine(0, y, 32 * self.pixel_size, y)
 
 
 class CompositePreviewWidget(QWidget):
@@ -260,9 +388,13 @@ class CompositePreviewWidget(QWidget):
         self.composite_combo.currentIndexChanged.connect(self._on_composite_selected)
         selector_layout.addWidget(self.composite_combo, 1)
 
-        self.save_btn = QPushButton("Save")
-        self.save_btn.clicked.connect(self._save_composite)
-        selector_layout.addWidget(self.save_btn)
+        self.new_btn = QPushButton("New")
+        self.new_btn.clicked.connect(self._new_composite)
+        selector_layout.addWidget(self.new_btn)
+
+        self.rename_btn = QPushButton("Rename")
+        self.rename_btn.clicked.connect(self._rename_composite)
+        selector_layout.addWidget(self.rename_btn)
 
         self.delete_btn = QPushButton("Delete")
         self.delete_btn.clicked.connect(self._delete_composite)
@@ -276,20 +408,41 @@ class CompositePreviewWidget(QWidget):
         scroll.setFrameShape(QFrame.StyledPanel)
 
         layer_container = QWidget()
-        layer_layout = QVBoxLayout(layer_container)
+        self.layer_layout = QVBoxLayout(layer_container)
 
-        layer_layout.addWidget(QLabel("Layers to composite:"))
+        # Header with layer management buttons
+        layer_header_layout = QHBoxLayout()
+        layer_header_layout.addWidget(QLabel("Layers to composite:"))
+        layer_header_layout.addStretch()
 
-        # Create 8 layer controls
+        self.add_layer_btn = QPushButton("Add Layer")
+        self.add_layer_btn.clicked.connect(self._add_layer)
+        layer_header_layout.addWidget(self.add_layer_btn)
+
+        self.remove_layer_btn = QPushButton("Remove Layer")
+        self.remove_layer_btn.clicked.connect(self._remove_layer)
+        self.remove_layer_btn.setEnabled(False)  # Start with only 2 layers
+        layer_header_layout.addWidget(self.remove_layer_btn)
+
+        self.layer_layout.addLayout(layer_header_layout)
+
+        # Create 8 layer controls (initially hidden except first 2)
         for i in range(8):
             layer_control = LayerControlWidget(i, self.project)
             layer_control.layer_changed.connect(self._on_layer_changed)
             self.layer_controls.append(layer_control)
-            layer_layout.addWidget(layer_control)
+            self.layer_layout.addWidget(layer_control)
+            # Hide layers 2-7 initially (only show Parent/Base + Layer 1)
+            if i >= 2:
+                layer_control.hide()
 
-        layer_layout.addStretch()
+        self.layer_layout.addStretch()
         scroll.setWidget(layer_container)
         layout.addWidget(scroll, 1)
+
+        # Track number of visible layers (start with 2: Parent/Base + Layer 1)
+        self.num_visible_layers = 2
+        self._update_layer_buttons()
 
         # Playback controls
         playback_group = QGroupBox("Playback")
@@ -329,6 +482,12 @@ class CompositePreviewWidget(QWidget):
         self.loop_check.setChecked(False)
         playback_layout.addWidget(self.loop_check)
 
+        # Grid checkbox
+        self.grid_check = QCheckBox("Grid")
+        self.grid_check.setChecked(True)
+        self.grid_check.stateChanged.connect(self._on_grid_changed)
+        playback_layout.addWidget(self.grid_check)
+
         layout.addWidget(playback_group)
 
         # Preview area
@@ -349,15 +508,21 @@ class CompositePreviewWidget(QWidget):
         current = self.composite_combo.currentText()
 
         self.composite_combo.clear()
-        self.composite_combo.addItem("(new)", None)
 
         for comp in self.project.composites:
             self.composite_combo.addItem(comp.name, comp)
 
-        # Restore selection
+        # Restore selection or select first if available
         index = self.composite_combo.findText(current)
         if index >= 0:
             self.composite_combo.setCurrentIndex(index)
+        elif self.composite_combo.count() > 0:
+            self.composite_combo.setCurrentIndex(0)
+
+        # Enable/disable buttons based on selection
+        has_composite = self.composite_combo.count() > 0
+        self.rename_btn.setEnabled(has_composite)
+        self.delete_btn.setEnabled(has_composite)
 
     def update_animations(self):
         """Update all layer controls with current animations"""
@@ -368,16 +533,16 @@ class CompositePreviewWidget(QWidget):
         """Handle composite selection"""
         composite = self.composite_combo.currentData()
 
-        if composite is None:
-            # New composite
-            self.current_composite = LayerComposite("New Composite")
-            self._clear_layer_controls()
-        else:
+        if composite:
             # Load existing composite
             self.current_composite = composite
             self._load_composite_to_controls()
-
-        self._update_preview()
+            self._update_preview()
+        else:
+            # No composite selected
+            self.current_composite = None
+            self._clear_layer_controls()
+            self._update_preview()
 
     def _clear_layer_controls(self):
         """Clear all layer controls"""
@@ -405,6 +570,34 @@ class CompositePreviewWidget(QWidget):
         self._update_composite_from_controls()
         self._update_preview()
 
+    def _add_layer(self):
+        """Add a new layer"""
+        if self.num_visible_layers >= 8:
+            return
+
+        # Show the next hidden layer
+        self.layer_controls[self.num_visible_layers].show()
+        self.num_visible_layers += 1
+        self._update_layer_buttons()
+
+    def _remove_layer(self):
+        """Remove the last layer"""
+        if self.num_visible_layers <= 2:  # Keep at least Parent/Base + Layer 1
+            return
+
+        # Hide the last visible layer
+        self.num_visible_layers -= 1
+        layer_control = self.layer_controls[self.num_visible_layers]
+        layer_control.hide()
+        layer_control.set_layer_config(None)  # Clear its configuration
+        self._update_layer_buttons()
+        self._on_layer_changed()  # Update preview
+
+    def _update_layer_buttons(self):
+        """Update Add/Remove Layer button states"""
+        self.add_layer_btn.setEnabled(self.num_visible_layers < 8)
+        self.remove_layer_btn.setEnabled(self.num_visible_layers > 2)
+
     def _update_composite_from_controls(self):
         """Update current composite from layer controls"""
         if not self.current_composite:
@@ -423,7 +616,10 @@ class CompositePreviewWidget(QWidget):
                     "animation_name": "",
                     "visible": False,
                     "end_behavior": "loop",
-                    "color_override": None
+                    "color_override": None,
+                    "x_offset": 0,
+                    "y_offset": 0,
+                    "stack_stitch": "none"
                 })
 
         # Update playback settings
@@ -438,29 +634,73 @@ class CompositePreviewWidget(QWidget):
         else:
             self.preview_area.clear()
 
-    def _save_composite(self):
-        """Save current composite to project"""
-        # TODO: Show dialog to get name
-        # For now, just add/update composite
-        if self.current_composite:
-            # Check if already exists
-            existing = self.project.get_composite(self.current_composite.name)
-            if existing:
-                # Update existing
-                existing.layers = self.current_composite.layers.copy()
-                existing.fps = self.current_composite.fps
-                existing.loop = self.current_composite.loop
-            else:
-                # Add new
-                self.project.add_composite(self.current_composite)
+    def _new_composite(self):
+        """Create a new composite"""
+        name, ok = QInputDialog.getText(self, "New Composite", "Enter composite name:")
 
+        if ok and name:
+            # Check if name already exists
+            if self.project.get_composite(name):
+                QMessageBox.warning(self, "Name Exists", f"A composite named '{name}' already exists.")
+                return
+
+            # Create new composite
+            new_composite = LayerComposite(name)
+            new_composite.fps = 60
+            new_composite.loop = False
+
+            # Add to project
+            self.project.add_composite(new_composite)
             self.refresh_composite_list()
+
+            # Select the new composite
+            index = self.composite_combo.findText(name)
+            if index >= 0:
+                self.composite_combo.setCurrentIndex(index)
+
+    def _rename_composite(self):
+        """Rename current composite"""
+        if not self.current_composite:
+            return
+
+        current_name = self.current_composite.name
+        name, ok = QInputDialog.getText(
+            self, "Rename Composite", "Enter new name:", text=current_name
+        )
+
+        if ok and name and name != current_name:
+            # Check if name already exists
+            if self.project.get_composite(name):
+                QMessageBox.warning(self, "Name Exists", f"A composite named '{name}' already exists.")
+                return
+
+            # Rename
+            self.current_composite.name = name
+            self.refresh_composite_list()
+
+            # Select the renamed composite
+            index = self.composite_combo.findText(name)
+            if index >= 0:
+                self.composite_combo.setCurrentIndex(index)
 
     def _delete_composite(self):
         """Delete current composite"""
         composite = self.composite_combo.currentData()
-        if composite and composite in self.project.composites:
+        if not composite or composite not in self.project.composites:
+            return
+
+        # Confirm deletion
+        result = QMessageBox.question(
+            self,
+            "Delete Composite",
+            f"Are you sure you want to delete '{composite.name}'?",
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+            QMessageBox.StandardButton.No
+        )
+
+        if result == QMessageBox.StandardButton.Yes:
             self.project.composites.remove(composite)
+            self.current_composite = None
             self.refresh_composite_list()
 
     def _toggle_playback(self):
@@ -479,6 +719,11 @@ class CompositePreviewWidget(QWidget):
         if self.is_playing:
             interval = int(1000 / fps)  # milliseconds
             self.timer.setInterval(interval)
+
+    def _on_grid_changed(self, state):
+        """Handle grid checkbox change"""
+        self.preview_area.show_grid = (state == Qt.CheckState.Checked)
+        self.preview_area.update()
 
     def _start_playback(self):
         """Start playback"""
