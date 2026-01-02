@@ -1217,7 +1217,7 @@ class RemoveFrameCommand(QUndoCommand):
 
     def __init__(self, main_window, animation, index):
         frame = animation.get_frame(index)
-        super().__init__(f"Remove Frame {index}")
+        super().__init__(f"Remove Card {index}")
         self.main_window = main_window
         self.animation = animation
         self.index = index
@@ -1241,7 +1241,7 @@ class ChangeFrameDurationCommand(QUndoCommand):
     """Command for changing a frame's duration"""
 
     def __init__(self, main_window, animation, frame_index, old_duration, new_duration):
-        super().__init__(f"Change Frame {frame_index} Duration")
+        super().__init__(f"Change Card {frame_index} Duration")
         self.main_window = main_window
         self.animation = animation
         self.frame_index = frame_index
@@ -1265,7 +1265,7 @@ class ReorderFrameCommand(QUndoCommand):
     """Command for reordering a frame in the timeline"""
 
     def __init__(self, main_window, animation, from_index, to_index):
-        super().__init__(f"Reorder Frame {from_index} to {to_index}")
+        super().__init__(f"Reorder Card {from_index} to {to_index}")
         self.main_window = main_window
         self.animation = animation
         self.from_index = from_index
@@ -1291,7 +1291,7 @@ class DuplicateFrameCommand(QUndoCommand):
 
     def __init__(self, main_window, animation, index):
         frame = animation.get_frame(index)
-        super().__init__(f"Duplicate Frame {index}")
+        super().__init__(f"Duplicate Card {index}")
         self.main_window = main_window
         self.animation = animation
         self.index = index

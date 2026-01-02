@@ -170,13 +170,13 @@ class FrameThumbnail(QFrame):
 
         menu.addSeparator()
 
-        duplicate_action = QAction("Duplicate Frame", self)
+        duplicate_action = QAction("Duplicate Card", self)
         duplicate_action.triggered.connect(lambda: self.duplicate_requested.emit(self.frame_index))
         menu.addAction(duplicate_action)
 
         menu.addSeparator()
 
-        remove_action = QAction("Remove Frame", self)
+        remove_action = QAction("Remove Card", self)
         remove_action.triggered.connect(lambda: self.remove_requested.emit(self.frame_index))
         menu.addAction(remove_action)
 
