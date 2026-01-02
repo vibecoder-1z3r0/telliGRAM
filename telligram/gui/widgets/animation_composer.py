@@ -90,7 +90,8 @@ class AnimationComposerWidget(QWidget):
 
     def add_timeline_editor(self):
         """Add a new timeline editor for a layer"""
-        editor = TimelineEditorWidget(self.project, self.main_window)
+        editor = TimelineEditorWidget(main_window=self.main_window)
+        editor.set_project(self.project)
         editor.animation_changed.connect(self.animation_changed.emit)
         editor.animation_changed.connect(self._update_composite_preview)
 
