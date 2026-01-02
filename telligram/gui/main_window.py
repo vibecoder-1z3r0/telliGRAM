@@ -454,7 +454,8 @@ class MainWindow(QMainWindow):
             "<p>Intellivision GRAM Card Creator and Animator</p>"
             "<p>Create custom 8×8 graphics and animations for Intellivision games</p>"
             "<p>© 2025-2026 Andrew Potozniak (Tyraziel & 1.z3r0)</p>"
-            "<p>Licensed under the MIT License</p>"
+            "<p>Dual licensed under the <a href='https://opensource.org/licenses/MIT'>MIT License</a> "
+            "and <a href='https://github.com/tyraziel/vibe-coder-license'>VCL-0.1-Experimental</a></p>"
             "<p><i>AIA PAI Nc Hin R <a href='https://aiattribution.github.io/statements/AIA-PAI-Nc-Hin-R-?model=Claude%20Code%20%5BSonnet%204.5%5D-v1.0'>Claude Code [Sonnet 4.5] v1.0</a></i></p>"
         )
 

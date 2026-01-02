@@ -11,7 +11,7 @@ authors = [
     {name = "Tyraziel", email = "tyraziel@gmail.com"},
     {name = "1.z3r0", email = "vibecoder.1.z3r0@gmail.com"}
 ]
-license = {file = "LICENSE"}
+license = {text = "MIT OR VCL-0.1-Experimental"}
 readme = "README.md"
 requires-python = ">=3.8"
 classifiers = [
