@@ -456,6 +456,8 @@ class MainWindow(QMainWindow):
             "<p>© 2025-2026 Andrew Potozniak (Tyraziel & 1.z3r0)</p>"
             "<p>Dual licensed under the <a href='https://opensource.org/licenses/MIT'>MIT License</a> "
             "and <a href='https://github.com/tyraziel/vibe-coder-license'>VCL-0.1-Experimental</a></p>"
+            "<p><small>Intellivision and GROM are property of Intellivision Entertainment. "
+            "GROM graphics used for educational and development purposes.</small></p>"
             "<p><i><a href='https://aiattribution.github.io/statements/AIA-PAI-Nc-Hin-R-?model=Claude%20Code%20%5BSonnet%204.5%5D-v1.0'>AIA PAI Nc Hin R Claude Code [Sonnet 4.5] v1.0</a></i></p>"
         )
 
