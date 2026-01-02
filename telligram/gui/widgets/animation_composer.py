@@ -6,7 +6,7 @@ Manages multiple timeline editors and composite preview for layered animations.
 
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QPushButton,
-    QScrollArea, QFrame
+    QScrollArea, QFrame, QTabWidget, QLabel
 )
 from PySide6.QtCore import Qt, Signal
 
@@ -39,8 +39,7 @@ class AnimationComposerWidget(QWidget):
         layout = QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
 
-        # Timeline management buttons (at top, below header)
-        from PySide6.QtWidgets import QLabel
+        # Timeline management buttons (at top, above tabs)
         btn_layout = QHBoxLayout()
         self.add_layer_btn = QPushButton("Add Timeline")
         self.add_layer_btn.clicked.connect(self._add_layer)
@@ -54,7 +53,16 @@ class AnimationComposerWidget(QWidget):
         btn_layout.addStretch()
         layout.addLayout(btn_layout)
 
-        # Create vertically scrollable area for all content
+        # Create tab widget
+        self.tab_widget = QTabWidget()
+        layout.addWidget(self.tab_widget, 1)
+
+        # Tab 1: Animation Timeline
+        timeline_tab = QWidget()
+        timeline_tab_layout = QVBoxLayout(timeline_tab)
+        timeline_tab_layout.setContentsMargins(0, 0, 0, 0)
+
+        # Create vertically scrollable area for timeline editors
         scroll_area = QScrollArea()
         scroll_area.setWidgetResizable(True)
         scroll_area.setFrameShape(QFrame.NoFrame)
@@ -63,25 +71,24 @@ class AnimationComposerWidget(QWidget):
 
         # Container widget for scrollable content
         scroll_widget = QWidget()
-        self.scroll_layout = QVBoxLayout(scroll_widget)
-        self.scroll_layout.setContentsMargins(0, 0, 0, 0)
+        self.timeline_scroll_layout = QVBoxLayout(scroll_widget)
+        self.timeline_scroll_layout.setContentsMargins(0, 0, 0, 0)
 
         # Timeline editors will be added here
-        self.timeline_scroll_layout = self.scroll_layout
-
         # Create initial timeline editor
         self.add_timeline_editor()
 
-        # Composite preview (initially hidden, will be added at bottom)
-        self.composite_preview = CompositePreviewWidget(self.project)
-        self.composite_preview.setVisible(False)
-        self.scroll_layout.addWidget(self.composite_preview)
-
         # Add stretch at the end so content stays at top
-        self.scroll_layout.addStretch()
+        self.timeline_scroll_layout.addStretch()
 
         scroll_area.setWidget(scroll_widget)
-        layout.addWidget(scroll_area, 1)
+        timeline_tab_layout.addWidget(scroll_area)
+
+        self.tab_widget.addTab(timeline_tab, "Animation Timeline")
+
+        # Tab 2: Composite Preview
+        self.composite_preview = CompositePreviewWidget(self.project)
+        self.tab_widget.addTab(self.composite_preview, "Composite Preview")
 
     def add_timeline_editor(self):
         """Add a new timeline editor for a layer"""
@@ -137,29 +144,24 @@ class AnimationComposerWidget(QWidget):
         self.add_layer_btn.setEnabled(len(self.timeline_editors) < 8)
 
     def _enable_multi_layer_mode(self):
-        """Enable multi-layer mode - show composite preview"""
+        """Enable multi-layer mode - update composite preview"""
         if self.is_multi_layer_mode:
             return
 
         self.is_multi_layer_mode = True
-        self.composite_preview.setVisible(True)
         self.composite_preview.update_animations()
         self._update_composite_preview()
 
     def _disable_multi_layer_mode(self):
-        """Disable multi-layer mode - hide composite preview"""
+        """Disable multi-layer mode (composite preview stays available in tab)"""
         if not self.is_multi_layer_mode:
             return
 
         self.is_multi_layer_mode = False
-        self.composite_preview.setVisible(False)
 
     def _update_composite_preview(self):
         """Update composite preview when animations change"""
-        if not self.is_multi_layer_mode:
-            return
-
-        # Update animation list in composite preview
+        # Always update - composite preview is always available in its tab
         self.composite_preview.update_animations()
 
     def set_project(self, project: Project):
