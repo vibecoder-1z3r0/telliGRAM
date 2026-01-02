@@ -851,29 +851,29 @@ class TimelineEditorWidget(QWidget):
     def _update_playback_info(self):
         """Update playback info label"""
         if self.current_animation:
-            total_frames = self.current_animation.frame_count
-            total_ticks = self.current_animation.total_duration
+            total_cards = self.current_animation.frame_count
+            total_frames = self.current_animation.total_duration
 
-            # Calculate current tick position (sum of durations before current frame)
-            current_tick = 0
+            # Calculate current frame position (sum of durations before current card)
+            current_frame = 0
             for i in range(self.current_playback_frame):
-                frame = self.current_animation.get_frame(i)
-                current_tick += frame["duration"]
+                card_data = self.current_animation.get_frame(i)
+                current_frame += card_data["duration"]
 
-            # Get current frame duration for range display
-            if self.current_playback_frame < total_frames:
-                current_frame = self.current_animation.get_frame(self.current_playback_frame)
-                frame_duration = current_frame["duration"]
-                tick_range = f"{current_tick}-{current_tick + frame_duration - 1}"
+            # Get current card duration for frame range display
+            if self.current_playback_frame < total_cards:
+                current_card = self.current_animation.get_frame(self.current_playback_frame)
+                card_duration = current_card["duration"]
+                frame_range = f"{current_frame}-{current_frame + card_duration - 1}"
             else:
-                tick_range = str(current_tick)
+                frame_range = str(current_frame)
 
             self.playback_info_label.setText(
-                f"Frame: {self.current_playback_frame + 1} / {total_frames} | "
-                f"Ticks: {tick_range} / {total_ticks}"
+                f"Card: {self.current_playback_frame + 1} / {total_cards} | "
+                f"Frame: {frame_range} / {total_frames}"
             )
         else:
-            self.playback_info_label.setText("Frame: 0 / 0 | Ticks: 0 / 0")
+            self.playback_info_label.setText("Card: 0 / 0 | Frame: 0 / 0")
 
     def _update_preview(self):
         """Update animation preview with current frame"""
