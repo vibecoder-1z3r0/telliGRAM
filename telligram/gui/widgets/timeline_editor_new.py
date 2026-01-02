@@ -439,11 +439,11 @@ class TimelineEditorWidget(QWidget):
         frame_controls = QHBoxLayout()
         frame_controls.setSpacing(5)
 
-        self.add_frame_btn = QPushButton("Add Current Card")
+        self.add_frame_btn = QPushButton("Add Card")
         self.add_frame_btn.clicked.connect(self._add_current_card)
         frame_controls.addWidget(self.add_frame_btn)
 
-        self.insert_frame_btn = QPushButton("Insert Before Selected")
+        self.insert_frame_btn = QPushButton("Insert Card")
         self.insert_frame_btn.clicked.connect(self._insert_frame)
         frame_controls.addWidget(self.insert_frame_btn)
 
