@@ -27,7 +27,7 @@ class MainWindow(QMainWindow):
         self.current_card_slot = 0
         self.undo_stack = QUndoStack(self)
 
-        self.setWindowTitle("telliGRAM - Intellivision GRAM Card Creator")
+        self.setWindowTitle("telliGRAM v0.1.0-alpha - Intellivision GRAM Card Creator and Animator")
         self.setMinimumSize(1200, 800)
         self.resize(1750, 880)  # Default window size with proper spacing
 
@@ -375,7 +375,7 @@ class MainWindow(QMainWindow):
 
     def update_title(self):
         """Update window title"""
-        title = "telliGRAM"
+        title = "telliGRAM v0.1.0-alpha"
         if self.current_file:
             title += f" - {self.current_file.name}"
         else:
