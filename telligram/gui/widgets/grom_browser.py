@@ -296,20 +296,13 @@ class GromBrowserWidget(QWidget):
 
         # Right side: Preview panel
         preview_panel = QWidget()
-        preview_panel.setStyleSheet("background-color: #1e1e1e;")
+        # No explicit background - use default to match GRAM editor
         preview_layout = QVBoxLayout(preview_panel)
         preview_layout.setContentsMargins(12, 12, 12, 12)
         preview_layout.setSpacing(12)
 
-        # Card info label
-        self.card_info_label = QLabel("Card #0 $00")
-        self.card_info_label.setStyleSheet("""
-            QLabel {
-                color: #cccccc;
-                font-size: 12px;
-                font-weight: bold;
-            }
-        """)
+        # Card info label (match GRAM editor style)
+        self.card_info_label = QLabel("<h3>GROM Card #0 $00</h3>")
         preview_layout.addWidget(self.card_info_label)
 
         # Preview widget
@@ -361,11 +354,11 @@ class GromBrowserWidget(QWidget):
         card_data = self.grom.get_card(card_num)
         card_label = self.grom.get_label(card_num)
 
-        # Update card info label
-        info_text = f"Card #{card_num} ${card_num:02X}"
+        # Update card info label (match GRAM editor format)
+        info_text = f"GROM Card #{card_num} ${card_num:02X}"
         if card_label:
             info_text += f" - {card_label}"
-        self.card_info_label.setText(info_text)
+        self.card_info_label.setText(f"<h3>{info_text}</h3>")
 
         # Update preview
         self.preview_widget.set_card(card_num, card_data)
