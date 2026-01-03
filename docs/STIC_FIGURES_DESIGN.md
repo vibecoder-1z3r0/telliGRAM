@@ -620,6 +620,64 @@ To be defined based on MBCC syntax requirements.
 
 ---
 
+## Critical Architecture Issues
+
+### **STIC Figures Not Integrated with Project Model**
+
+**Current State:**
+- STIC Figures are saved/loaded separately as `.sticfig` files
+- NOT part of the main `.telligram` project file
+- Project model has `animations` and `composites` lists, but NO `stic_figures` list
+
+**Problems:**
+- Figures are disconnected from project
+- Risk of losing figures when moving/sharing projects
+- Inconsistent with how animations work
+- Cannot have multiple figures per project easily
+
+**Required Changes:**
+1. Add `stic_figures: List[SticFigure]` to Project model
+2. Create `SticFigure` class (similar to Animation class)
+3. Update Project.to_dict() / from_dict() to serialize figures
+4. Migrate existing save_figure/load_figure to use project model
+
+### **No Undo/Redo Integration**
+
+**Current State:**
+- STIC Figures changes bypass the undo/redo system
+- Tile edits, color changes, etc. are NOT undoable
+- Main window has `undo_stack`, but STIC Figures widget doesn't use it
+
+**Problems:**
+- Inconsistent with rest of application (card edits, animations are undoable)
+- Cannot undo mistakes when designing BACKTAB layouts
+- Poor user experience for complex editing
+
+**Required Changes:**
+1. Create undo commands for tile operations (SetTileCommand, etc.)
+2. Integrate with MainWindow.undo_stack
+3. Make all tile/color/stack changes go through undo system
+
+### **UI/UX Issues**
+
+**Current State:**
+- "File" group with "Save Figure..." / "Load Figure..." buttons
+- No way to manage multiple figures
+- Inconsistent with Timeline Editor pattern (which has dropdown + New/Rename/Delete)
+
+**Required Changes:**
+1. Replace "File" group with figure management UI:
+   - **Dropdown**: Select current STIC figure (like animation dropdown)
+   - **New button**: Create new figure
+   - **Rename button**: Rename current figure
+   - **Delete button**: Delete current figure
+   - **Import button**: Import figure from .sticfig file (placeholder for now)
+   - **Export button**: Export current figure using unified ExportDialog (placeholder for now)
+
+2. Match Timeline Editor pattern for consistency
+
+---
+
 ## Current Status
 
 **Phase 1 (Basic BACKTAB Designer):** ✅ Complete with enhancements
@@ -639,14 +697,35 @@ To be defined based on MBCC syntax requirements.
 - Visual color swatches in all dropdowns
 - Robust project synchronization
 
-**Next Recommended Work:**
-1. Complete Phase 2: Add stack position visualization
-2. Complete Phase 3: Add coordinate display on hover, border mask UI
-3. Begin Phase 4: MOB editor
-4. Begin Phase 5: Export to IntyBASIC/Assembly
+**Next Recommended Work (Priority Order):**
+
+**HIGH PRIORITY - Architecture Fixes:**
+1. **Integrate STIC Figures with Project model**
+   - Create SticFigure class
+   - Add to Project.stic_figures list
+   - Update serialization (to_dict/from_dict)
+   - Migrate from separate .sticfig files
+
+2. **Add Undo/Redo support**
+   - Create undo commands for tile operations
+   - Integrate with MainWindow.undo_stack
+   - Make all changes undoable
+
+3. **Redesign figure management UI**
+   - Replace File group with dropdown + buttons
+   - Match Timeline Editor pattern
+   - Add Import/Export buttons (can be placeholders initially)
+
+**MEDIUM PRIORITY - Feature Completion:**
+4. Complete Phase 2: Add stack position visualization
+5. Complete Phase 3: Add coordinate display on hover, border mask UI
+
+**LOW PRIORITY - New Features:**
+6. Begin Phase 4: MOB editor
+7. Begin Phase 5: STIC Figure export to IntyBASIC/Assembly
 
 ---
 
-**Document Version:** 1.1
+**Document Version:** 1.2
 **Last Updated:** 2026-01-03
-**Status:** Phase 1 Complete (Enhanced), Phases 2-3 Partial
+**Status:** Phase 1 Complete (Enhanced), Phases 2-3 Partial, Architecture Issues Identified
