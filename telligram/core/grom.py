@@ -29,6 +29,7 @@ class GromData:
             grom_json_path: Optional path to GROM.json file. If not provided,
                           looks for GROM.json in current directory, then uses built-in defaults.
         """
+        self._labels = {}  # Custom labels from GROM.json
         self._data = self._load_grom_data(grom_json_path)
 
     @property
@@ -102,8 +103,13 @@ class GromData:
             card_num: GROM card number (0-255)
 
         Returns:
-            Label string (e.g., "'A'" for letter A, "Extended 95" for card 95)
+            Label string (e.g., "'A'" for letter A, "Extended 95" for card 95, or custom label)
         """
+        # Check for custom label first
+        if card_num in self._labels:
+            return self._labels[card_num]
+
+        # Fall back to auto-generated labels
         if card_num <= 94:
             # ASCII range - return the character in quotes
             char = self.grom_to_ascii(card_num)
@@ -191,19 +197,37 @@ class GromData:
                         print(f"WARNING: Ignoring out-of-bounds card number: {card_num} (must be 0-255)")
                         continue
 
+                    # Handle both old (array) and new (object) formats
+                    card_data = None
+                    card_label = None
+
+                    if isinstance(value, dict):
+                        # New format: {"data": [...], "label": "..."}
+                        card_data = value.get("data")
+                        card_label = value.get("label")
+                        if card_data is None:
+                            print(f"WARNING: Ignoring card {card_num}: missing 'data' field")
+                            continue
+                    elif isinstance(value, list):
+                        # Old format: [...]
+                        card_data = value
+                    else:
+                        print(f"WARNING: Ignoring card {card_num}: value must be array or object")
+                        continue
+
                     # Validate card data is a list of 8 bytes
-                    if not isinstance(value, list):
+                    if not isinstance(card_data, list):
                         print(f"WARNING: Ignoring card {card_num}: data must be an array")
                         continue
 
-                    if len(value) != 8:
-                        print(f"WARNING: Ignoring card {card_num}: expected 8 bytes, got {len(value)}")
+                    if len(card_data) != 8:
+                        print(f"WARNING: Ignoring card {card_num}: expected 8 bytes, got {len(card_data)}")
                         continue
 
-                    # Parse and validate each byte (supports hex, decimal, binary)
+                    # Parse and validate each byte
                     parsed_bytes = []
                     valid = True
-                    for i, byte_val in enumerate(value):
+                    for i, byte_val in enumerate(card_data):
                         parsed = self._parse_byte(byte_val)
                         if parsed is None:
                             print(f"WARNING: Ignoring card {card_num}: invalid byte at index {i}: {byte_val}")
@@ -216,6 +240,11 @@ class GromData:
 
                     # Load the card
                     cards[card_num] = parsed_bytes
+
+                    # Store custom label if provided
+                    if card_label:
+                        self._labels[card_num] = card_label
+
                     loaded_count += 1
 
                 print(f"Loaded {loaded_count} GROM cards from {grom_json_path}")

@@ -2,7 +2,7 @@
 from PySide6.QtWidgets import (
     QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
     QMenuBar, QMenu, QFileDialog, QMessageBox, QStatusBar,
-    QLabel, QPushButton, QTabWidget, QApplication
+    QLabel, QPushButton, QTabWidget, QApplication, QInputDialog
 )
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QAction, QUndoStack, QUndoCommand
