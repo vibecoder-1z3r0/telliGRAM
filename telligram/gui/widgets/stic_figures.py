@@ -11,10 +11,10 @@ Allows visual design of complete Intellivision screens including:
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, QScrollArea, QFrame,
     QPushButton, QComboBox, QCheckBox, QTabWidget, QGridLayout, QGroupBox,
-    QSpinBox, QFileDialog, QMessageBox
+    QSpinBox, QFileDialog, QMessageBox, QMenu
 )
 from PySide6.QtCore import Qt, Signal
-from PySide6.QtGui import QPainter, QColor, QPen, QBrush, QPixmap
+from PySide6.QtGui import QPainter, QColor, QPen, QBrush, QPixmap, QAction
 
 from telligram.core.constants import get_color_hex, INTELLIVISION_PALETTE
 from telligram.core.grom import GromData
@@ -56,6 +56,7 @@ class BacktabCanvas(QWidget):
     """
 
     tile_clicked = Signal(int, int)  # Emits (row, col) when clicked
+    tile_ctrl_clicked = Signal(int, int)  # Emits (row, col) when Ctrl+clicked
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -130,18 +131,52 @@ class BacktabCanvas(QWidget):
 
     def mousePressEvent(self, event):
         """Handle mouse clicks on canvas"""
-        if event.button() == Qt.LeftButton:
-            # Convert screen position to grid position
-            x = event.position().x() - self.border_size
-            y = event.position().y() - self.border_size
+        # Convert screen position to grid position
+        x = event.position().x() - self.border_size
+        y = event.position().y() - self.border_size
 
-            if x >= 0 and y >= 0:
-                col = int(x // self.tile_size)
-                row = int(y // self.tile_size)
+        if x >= 0 and y >= 0:
+            col = int(x // self.tile_size)
+            row = int(y // self.tile_size)
 
-                if 0 <= row < self.grid_rows and 0 <= col < self.grid_cols:
-                    self.tile_clicked.emit(row, col)
+            if 0 <= row < self.grid_rows and 0 <= col < self.grid_cols:
+                if event.button() == Qt.LeftButton:
+                    # Check for Ctrl modifier
+                    modifiers = event.modifiers()
+                    if modifiers & Qt.ControlModifier:
+                        # Ctrl+Click: paint current card
+                        self.tile_ctrl_clicked.emit(row, col)
+                    else:
+                        # Normal click: select tile
+                        self.tile_clicked.emit(row, col)
                     self.set_selected(row, col)
+
+    def contextMenuEvent(self, event):
+        """Handle right-click context menu"""
+        # Convert screen position to grid position
+        x = event.pos().x() - self.border_size
+        y = event.pos().y() - self.border_size
+
+        if x >= 0 and y >= 0:
+            col = int(x // self.tile_size)
+            row = int(y // self.tile_size)
+
+            if 0 <= row < self.grid_rows and 0 <= col < self.grid_cols:
+                # Create context menu
+                menu = QMenu(self)
+                clear_action = QAction("Set to GROM 0 (Blank)", self)
+                clear_action.triggered.connect(lambda: self._clear_tile(row, col))
+                menu.addAction(clear_action)
+
+                # Show menu at cursor position
+                menu.exec(event.globalPos())
+
+    def _clear_tile(self, row, col):
+        """Clear tile to GROM card 0 (blank)"""
+        self.set_tile(row, col, card=0, fg_color=7, advance_stack=False)
+        # Select the cleared tile to show it in properties
+        self.set_selected(row, col)
+        self.tile_clicked.emit(row, col)
 
     def paintEvent(self, event):
         """Render the BACKTAB canvas"""
@@ -426,6 +461,7 @@ class SticFiguresWidget(QWidget):
 
         self.canvas = BacktabCanvas()
         self.canvas.tile_clicked.connect(self._on_tile_clicked)
+        self.canvas.tile_ctrl_clicked.connect(self._on_tile_ctrl_clicked)
         center_layout.addWidget(self.canvas, alignment=Qt.AlignCenter)
 
         center_layout.addStretch()
@@ -626,6 +662,17 @@ class SticFiguresWidget(QWidget):
         self.selected_col = col
 
         # Update properties panel to show tile's current state
+        self._update_properties_from_tile(row, col)
+
+    def _on_tile_ctrl_clicked(self, row, col):
+        """Handle Ctrl+Click on tile - paint current card"""
+        self.selected_row = row
+        self.selected_col = col
+
+        # Paint the current card immediately
+        self._apply_current_to_selected()
+
+        # Update properties panel to show what was just painted
         self._update_properties_from_tile(row, col)
 
     def _apply_current_to_selected(self):
