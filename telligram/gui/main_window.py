@@ -12,6 +12,7 @@ from telligram.core.project import Project
 from telligram.gui.widgets.card_grid import CardGridWidget
 from telligram.gui.widgets.pixel_editor import PixelEditorWidget
 from telligram.gui.widgets.grom_browser import GromBrowserWidget
+from telligram.gui.widgets.stic_figures import SticFiguresWidget
 from telligram.gui.widgets.timeline_editor_new import TimelineEditorWidget
 from telligram.gui.widgets.animation_composer import AnimationComposerWidget
 from telligram.gui.widgets.color_palette import ColorPaletteWidget
@@ -155,11 +156,9 @@ class MainWindow(QMainWindow):
         else:
             self.grom_browser = None
 
-        # Tab 3: STIC Figures (placeholder for now)
-        stic_tab = QWidget()
-        stic_layout = QVBoxLayout(stic_tab)
-        stic_layout.addWidget(QLabel("STIC Figures - Coming Soon"))
-        self.main_tabs.addTab(stic_tab, "STIC Figures")
+        # Tab 3: STIC Figures
+        self.stic_figures = SticFiguresWidget(project=self.project, grom_path=self.grom_path)
+        self.main_tabs.addTab(self.stic_figures, "STIC Figures")
 
     def _create_intellimation_station_tab(self):
         """Create the IntelliMation Station tab content (GRAM + Animations)"""
