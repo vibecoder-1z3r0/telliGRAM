@@ -151,7 +151,6 @@ class MainWindow(QMainWindow):
         # Tab 2: GROM Viewer (only if --grom provided)
         if self.grom_path:
             self.grom_browser = GromBrowserWidget(grom_path=self.grom_path)
-            self.grom_browser.copy_to_gram_requested.connect(self.on_copy_grom_to_gram)
             self.main_tabs.addTab(self.grom_browser, "GROM Viewer")
         else:
             self.grom_browser = None
@@ -257,8 +256,6 @@ class MainWindow(QMainWindow):
         self.undo_stack.cleanChanged.connect(self.update_title)
         self.timeline_editor.animation_changed.connect(self.on_animation_changed)
         self.color_palette.color_selected.connect(self.on_color_selected)
-        if self.grom_browser:
-            self.grom_browser.copy_to_gram_requested.connect(self.on_copy_grom_to_gram)
 
     def _initialize_widgets(self):
         """Initialize widgets with default project data"""
@@ -382,44 +379,6 @@ class MainWindow(QMainWindow):
                 self.project.set_card(self.current_card_slot, card)
                 self.card_grid.update_card(self.current_card_slot, card)
             self.update_cards_info()
-
-    def on_copy_grom_to_gram(self, grom_card_num: int):
-        """Handle copy GROM card to GRAM slot"""
-        # Ask user which GRAM slot to copy to
-        slot, ok = QInputDialog.getInt(
-            self,
-            "Copy GROM to GRAM",
-            f"Copy GROM #{grom_card_num} to which GRAM slot?",
-            0,      # value
-            0,      # minValue
-            63,     # maxValue
-            1       # step
-        )
-
-        if ok:
-            # Get GROM card data
-            grom_data = self.grom_browser.get_card_data(grom_card_num)
-
-            # Create a GramCard from the GROM data
-            from telligram.core.gram_card import GramCard
-            card = GramCard()
-            for row_idx, row_byte in enumerate(grom_data):
-                card.data[row_idx] = row_byte
-
-            # Save to project
-            self.project.set_card(slot, card)
-
-            # Update UI
-            self.card_grid.update_card(slot, card)
-            self.update_cards_info()
-
-            # Select the newly copied card
-            self.card_grid.select_card(slot)
-
-            # Switch to IntelliMation Station tab to see the result
-            self.main_tabs.setCurrentIndex(0)
-
-            self.status_bar.showMessage(f"Copied GROM #{grom_card_num} to GRAM slot {slot}", 3000)
 
     def clear_current_card(self):
         """Clear current card"""

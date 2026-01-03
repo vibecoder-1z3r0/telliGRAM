@@ -26,7 +26,6 @@ class GromThumbnail(QFrame):
     """
 
     clicked = Signal(int)  # Emits card number when clicked
-    copy_to_gram_requested = Signal(int)  # Emits GROM card number to copy
 
     def __init__(self, card_num: int, grom: GromData, parent=None):
         super().__init__(parent)
@@ -135,14 +134,6 @@ class GromThumbnail(QFrame):
         """Handle mouse click"""
         if event.button() == Qt.LeftButton:
             self.clicked.emit(self.card_num)
-
-    def contextMenuEvent(self, event):
-        """Handle right-click context menu"""
-        menu = QMenu(self)
-        copy_action = QAction(f"Copy GROM #{self.card_num} to GRAM...", self)
-        copy_action.triggered.connect(lambda: self.copy_to_gram_requested.emit(self.card_num))
-        menu.addAction(copy_action)
-        menu.exec(event.globalPos())
 
 
 class GromPreviewWidget(QWidget):
@@ -263,7 +254,6 @@ class GromBrowserWidget(QWidget):
     """
 
     card_selected = Signal(int)  # Emits when a card is clicked
-    copy_to_gram_requested = Signal(int)  # Emits GROM card number to copy to GRAM
 
     def __init__(self, grom_path=None, parent=None):
         super().__init__(parent)
@@ -322,7 +312,6 @@ class GromBrowserWidget(QWidget):
         for i in range(256):
             thumb = GromThumbnail(i, self.grom)
             thumb.clicked.connect(self._on_thumbnail_clicked)
-            thumb.copy_to_gram_requested.connect(self._on_copy_to_gram_requested)
             self.thumbnails.append(thumb)
 
             row = i // 16
@@ -402,10 +391,6 @@ class GromBrowserWidget(QWidget):
         self.selected_card = card_num
         self._update_preview(card_num)
         self.card_selected.emit(card_num)
-
-    def _on_copy_to_gram_requested(self, grom_card_num: int):
-        """Handle copy to GRAM request"""
-        self.copy_to_gram_requested.emit(grom_card_num)
 
     def _on_color_selected(self, color_index: int):
         """Handle color selection"""
