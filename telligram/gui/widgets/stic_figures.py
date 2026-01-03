@@ -542,6 +542,13 @@ class SticFiguresWidget(QWidget):
         self.selected_row = None
         self.selected_col = None
 
+    def showEvent(self, event):
+        """Refresh palette when tab becomes visible"""
+        super().showEvent(event)
+        # Refresh GRAM palette to show any cards created/edited in other tabs
+        self._update_palette()
+        self._update_canvas_data()
+
     def _update_palette(self):
         """Update card palette with GRAM/GROM data"""
         if self.project:
