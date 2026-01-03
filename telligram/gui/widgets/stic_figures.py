@@ -541,7 +541,6 @@ class SticFiguresWidget(QWidget):
         self.current_fg_color = 7
         self.selected_row = None
         self.selected_col = None
-        self.paint_on_click = False  # Track if we should paint on next click
 
     def _update_palette(self):
         """Update card palette with GRAM/GROM data"""
@@ -573,19 +572,18 @@ class SticFiguresWidget(QWidget):
     def _on_card_selected(self, card_num):
         """Handle card selection from palette"""
         self.current_card = card_num
-        self.paint_on_click = True  # Enable painting on next canvas click
 
-        # If tile is already selected, paint immediately
+        # Only paint if a tile is already selected
+        # This prevents accidental painting when clicking card first
         if self.selected_row is not None and self.selected_col is not None:
             self._apply_current_to_selected()
             # Update UI to show what was just painted
             self._update_properties_from_tile(self.selected_row, self.selected_col)
-            # Reset paint mode since we already painted
-            self.paint_on_click = False
 
     def _on_card_deselected(self):
         """Handle card deselection (clicking empty palette area)"""
-        self.paint_on_click = False  # Disable paint mode
+        # Reset to default card (blank)
+        self.current_card = 0
 
     def _update_properties_from_tile(self, row, col):
         """Update properties panel to show tile's current state"""
@@ -610,14 +608,9 @@ class SticFiguresWidget(QWidget):
             self.current_fg_color = tile['fg_color']
 
     def _on_tile_clicked(self, row, col):
-        """Handle tile click on canvas"""
+        """Handle tile click on canvas - just selects the tile"""
         self.selected_row = row
         self.selected_col = col
-
-        # If paint mode is active, paint first then show new properties
-        if self.paint_on_click:
-            self._apply_current_to_selected()
-            self.paint_on_click = False  # Disable paint mode after one click
 
         # Update properties panel to show tile's current state
         self._update_properties_from_tile(row, col)
