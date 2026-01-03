@@ -13,6 +13,12 @@ This document tracks known bugs and issues that need to be addressed in future u
 
 - **Frame counter label (F: 000/000)**: Question whether this label is necessary in the CSA playback controls
 
+## GROM Viewer
+
+### High Priority
+
+- **Copy GROM to GRAM popup appears twice**: When right-clicking a GROM card and selecting "Copy to GRAM slot", the dialog appears twice and nothing happens when a GRAM number is selected
+
 ## Future Enhancements
 
 _(Items to be added as needed)_
