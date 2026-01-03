@@ -167,14 +167,6 @@ class TestGromByteParsing:
         card = grom.get_card(0)
         assert card == [0x18, 0x24, 0x42, 0x42, 0x7E, 0x42, 0x42, 0x00]
 
-    def test_parse_hex_without_prefix(self, grom_with_test_file):
-        """Should parse hex strings without prefix (must contain A-F to distinguish from decimal)"""
-        grom = grom_with_test_file({
-            "0": ["1F", "2A", "FF", "AB", "7E", "CD", "EF", "00"]
-        })
-        card = grom.get_card(0)
-        assert card == [0x1F, 0x2A, 0xFF, 0xAB, 0x7E, 0xCD, 0xEF, 0x00]
-
     def test_parse_binary_with_prefix(self, grom_with_test_file):
         """Should parse binary strings with 0b prefix"""
         grom = grom_with_test_file({
@@ -204,10 +196,10 @@ class TestGromByteParsing:
     def test_parse_mixed_formats(self, grom_with_test_file):
         """Should handle mixed formats in same card"""
         grom = grom_with_test_file({
-            "0": [24, "0x24", "42", "0b01000010", "7E", "0x42", 66, "0x00"]
+            "0": [24, "0x24", "42", "0b01000010", "0x7E", "0x42", 66, "0x00"]
         })
         card = grom.get_card(0)
-        # "42" is decimal 42, "7E" is hex 0x7E = 126
+        # Mix of integer, hex, decimal string, binary
         assert card == [24, 0x24, 42, 0x42, 0x7E, 0x42, 66, 0x00]
 
     def test_sparse_cards(self, grom_with_test_file):

@@ -229,10 +229,10 @@ class GromData:
         Parse a byte value from various formats.
 
         Supports:
-        - Decimal int: 24
-        - Hex string: "0x18", "FF" (hex letters A-F)
-        - Binary string: "0b00011000"
-        - Visual string: "..XXX..." where '0', '_', ' ', '.' = 0 and everything else = 1
+        - Integer: 24
+        - Hex: "0x18" (4 chars: 0x + 2 hex digits)
+        - Binary: "0b00110011" (10 chars: 0b + 8 binary digits)
+        - BITMAP: "00110011" (8 chars: '0'/_/./space = 0, else = 1)
         - Decimal string: "24"
 
         Args:
@@ -241,51 +241,39 @@ class GromData:
         Returns:
             Integer 0-255, or None if invalid
         """
-        # Already an integer
+        # Integer - use as-is
         if isinstance(value, int):
             return value if 0 <= value <= 255 else None
 
         if not isinstance(value, str):
             return None
 
-        # Check for visual format FIRST (8 chars, uses original with spaces)
+        # BITMAP format: exactly 8 characters
         # '0', '_', ' ', '.' = pixel OFF (0), everything else = pixel ON (1)
         if len(value) == 8:
             binary_str = "".join("0" if c in "0_. " else "1" for c in value)
             result = int(binary_str, 2)
             return result if 0 <= result <= 255 else None
 
-        # Strip whitespace for other formats
-        value = value.strip()
-
-        # Hex with 0x prefix
-        if value.startswith(("0x", "0X")):
+        # Hex: 4 characters starting with "0x" or "0X"
+        if len(value) == 4 and value.startswith(("0x", "0X")):
             try:
                 result = int(value, 16)
                 return result if 0 <= result <= 255 else None
             except ValueError:
                 return None
 
-        # Binary with 0b prefix
-        if value.startswith(("0b", "0B")):
+        # Binary: 10 characters starting with "0b" or "0B"
+        if len(value) == 10 and value.startswith(("0b", "0B")):
             try:
                 result = int(value, 2)
                 return result if 0 <= result <= 255 else None
             except ValueError:
                 return None
 
-        # Hex without prefix (must contain A-F to distinguish from decimal)
-        if len(value) <= 2 and any(c in "ABCDEFabcdef" for c in value):
-            if all(c in "0123456789ABCDEFabcdef" for c in value):
-                try:
-                    result = int(value, 16)
-                    return result if 0 <= result <= 255 else None
-                except ValueError:
-                    return None
-
-        # Try decimal (catches pure digit strings like "24", "126")
+        # Decimal string: anything else, try to parse as decimal
         try:
-            result = int(value)
+            result = int(value.strip())
             return result if 0 <= result <= 255 else None
         except ValueError:
             return None
