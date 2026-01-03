@@ -107,7 +107,7 @@ class GromThumbnail(QFrame):
                         y * self.pixel_size,
                         self.pixel_size,
                         self.pixel_size,
-                        QColor(200, 200, 200)
+                        QColor(255, 255, 255)  # White to match GRAM thumbnails
                     )
 
         painter.end()
