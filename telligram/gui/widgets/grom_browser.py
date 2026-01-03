@@ -128,9 +128,9 @@ class GromBrowserWidget(QWidget):
     card_selected = Signal(int)  # Emits when a card is clicked
     copy_to_gram_requested = Signal(int)  # Emits GROM card number to copy to GRAM
 
-    def __init__(self, parent=None):
+    def __init__(self, grom_path=None, parent=None):
         super().__init__(parent)
-        self.grom = GromData()
+        self.grom = GromData(grom_path)
         self.thumbnails = []
         self._create_ui()
 

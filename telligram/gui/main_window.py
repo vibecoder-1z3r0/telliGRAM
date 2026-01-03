@@ -157,18 +157,8 @@ class MainWindow(QMainWindow):
 
         # Tab 2: GROM Viewer (only if --grom provided)
         if self.grom_path:
-            from telligram.core.grom import GromData
-            self.grom_browser = GromBrowserWidget()
-            # Initialize with specified GROM data
-            self.grom_browser.grom = GromData(self.grom_path)
-            # Refresh thumbnails with new GROM data
-            for thumb in self.grom_browser.thumbnails:
-                thumb.grom = self.grom_browser.grom
-                thumb.card_data = thumb.grom.get_card(thumb.card_num)
-                thumb.label_text = thumb.grom.get_label(thumb.card_num)
-                thumb.char_label.setText(thumb.label_text[:10])
-                pixmap = thumb._render_character()
-                thumb.preview_label.setPixmap(pixmap)
+            self.grom_browser = GromBrowserWidget(grom_path=self.grom_path)
+            self.grom_browser.copy_to_gram_requested.connect(self.on_copy_grom_to_gram)
             self.main_tabs.addTab(self.grom_browser, "GROM Viewer")
         else:
             self.grom_browser = None
