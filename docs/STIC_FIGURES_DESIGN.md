@@ -526,42 +526,66 @@ To be defined based on MBCC syntax requirements.
 
 ## Implementation Phases
 
-### Phase 1: Basic BACKTAB Designer
-- 20×12 grid canvas
-- GRAM/GROM palette
-- Click to place cards
-- Foreground color selection
-- Save/load STIC figures
-- Color Stack mode only
+### ✅ Phase 1: Basic BACKTAB Designer - **COMPLETE (Enhanced)**
+- ✅ 20×12 grid canvas (implemented at 6× scale, 48px tiles)
+- ✅ GRAM/GROM palette (with auto-refresh on tab switch)
+- ✅ Click to place cards (enhanced with eyedropper effect)
+- ✅ Foreground color selection (with visual color swatches)
+- ✅ Save/load STIC figures (.sticfig format)
+- ✅ Color Stack mode only
 
-### Phase 2: Color Stack
-- Color stack UI (4 dropdowns)
-- Advance stack checkbox per tile
-- Visual stack preview mini-grid
-- Stack position indicators on tiles
+**Bonus features implemented beyond Phase 1 scope:**
+- ✅ Right-click context menu to clear tiles to GROM 0
+- ✅ Ctrl+Click brush painting for rapid tile placement
+- ✅ Eyedropper workflow (click tile to copy its card)
+- ✅ Border color control (from Phase 3)
+- ✅ Grid toggle (from Phase 3)
+- ✅ Visual color swatches in all color dropdowns
+- ✅ Palette deselection support (click off to deselect)
+- ✅ Project synchronization (GRAM palette updates with project changes)
 
-### Phase 3: Border & Display
-- Border settings (visible, color, masks)
-- Grid toggle
-- Selection highlighting
-- Coordinate display
+**Enhanced Interaction Model:**
+1. **Select from palette**: Click GRAM/GROM card → sets current_card
+2. **Click tile (Eyedropper)**: Click BACKTAB tile → inspects and copies tile's card
+3. **Ctrl+Click (Paint)**: Ctrl+Click tile → paints current_card immediately
+4. **Right-click (Clear)**: Right-click tile → menu to clear to GROM 0
+5. **Properties panel**: Live editing of selected tile's card/colors/flags
 
-### Phase 4: MOBs
-- 8 MOB table view
-- MOB editor dialog
-- MOB overlay on canvas
-- Position, size, transforms
+### ⚠️ Phase 2: Color Stack - **MOSTLY COMPLETE**
+- ✅ Color stack UI (4 dropdowns) - implemented in Phase 1
+- ✅ Advance stack checkbox per tile - implemented in Phase 1
+- ❌ Visual stack preview mini-grid - **TODO**
+- ❌ Stack position indicators on tiles - **TODO**
 
-### Phase 5: Export
-- IntyBASIC export
-- Assembly export
-- Binary layout view
+**Status:** Core color stack functionality works. Visual aids for understanding stack positions remain to be implemented.
 
-### Phase 6: Advanced
-- FG/BG mode support
-- Multiple figure management
-- Import BACKTAB data
-- MOB animations
+### ⚠️ Phase 3: Border & Display - **PARTIALLY COMPLETE**
+- ⚠️ Border settings:
+  - ✅ Visible toggle
+  - ✅ Color selection
+  - ⚠️ Left/top border masks (flags exist in data model, UI not implemented)
+- ✅ Grid toggle - implemented in Phase 1
+- ✅ Selection highlighting - implemented in Phase 1
+- ❌ Coordinate display on hover - **TODO**
+
+**Status:** Basic border and display features complete. Border masks and coordinate display remain.
+
+### ❌ Phase 4: MOBs - **NOT STARTED**
+- ❌ 8 MOB table view
+- ❌ MOB editor dialog
+- ❌ MOB overlay on canvas
+- ❌ Position, size, transforms
+
+### ❌ Phase 5: Export - **NOT STARTED**
+- ❌ IntyBASIC export
+- ❌ Assembly export
+- ❌ Binary layout view
+
+### ❌ Phase 6: Advanced - **NOT STARTED**
+- ❌ FG/BG mode support
+- ❌ Multiple figure management
+- ❌ Import BACKTAB data
+- ❌ MOB animations
 
 ---
 
@@ -596,6 +620,33 @@ To be defined based on MBCC syntax requirements.
 
 ---
 
-**Document Version:** 1.0
+## Current Status
+
+**Phase 1 (Basic BACKTAB Designer):** ✅ Complete with enhancements
+**Phase 2 (Color Stack Visualization):** ⚠️ Core complete, visual aids TODO
+**Phase 3 (Border & Display):** ⚠️ Partial, coordinate display TODO
+**Phase 4 (MOBs):** ❌ Not started
+**Phase 5 (Export):** ❌ Not started
+**Phase 6 (Advanced):** ❌ Not started
+
+**Overall Progress:** ~60% of Phases 1-3 complete
+
+**Recent Additions (2026-01-03):**
+- Right-click context menu for clearing tiles
+- Ctrl+Click brush painting workflow
+- Eyedropper tile copying
+- Enhanced interaction model with comprehensive documentation
+- Visual color swatches in all dropdowns
+- Robust project synchronization
+
+**Next Recommended Work:**
+1. Complete Phase 2: Add stack position visualization
+2. Complete Phase 3: Add coordinate display on hover, border mask UI
+3. Begin Phase 4: MOB editor
+4. Begin Phase 5: Export to IntyBASIC/Assembly
+
+---
+
+**Document Version:** 1.1
 **Last Updated:** 2026-01-03
-**Status:** Design Phase
+**Status:** Phase 1 Complete (Enhanced), Phases 2-3 Partial
