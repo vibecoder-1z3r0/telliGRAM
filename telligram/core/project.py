@@ -5,6 +5,7 @@ from typing import List, Optional, Dict, Any
 from .card import GramCard
 from .animation import Animation
 from .composite import LayerComposite
+from .stic_figure import SticFigure
 
 
 class Project:
@@ -45,6 +46,9 @@ class Project:
 
         # Initialize composites list
         self.composites: List[LayerComposite] = []
+
+        # Initialize STIC figures list
+        self.stic_figures: List[SticFigure] = []
 
     def get_card(self, slot: int) -> Optional[GramCard]:
         """
@@ -155,6 +159,30 @@ class Project:
                 return comp
         return None
 
+    def add_stic_figure(self, figure: SticFigure) -> None:
+        """
+        Add STIC figure to project
+
+        Args:
+            figure: SticFigure to add
+        """
+        self.stic_figures.append(figure)
+
+    def get_stic_figure(self, name: str) -> Optional[SticFigure]:
+        """
+        Get STIC figure by name
+
+        Args:
+            name: Figure name
+
+        Returns:
+            SticFigure or None if not found
+        """
+        for figure in self.stic_figures:
+            if figure.name == name:
+                return figure
+        return None
+
     def to_dict(self) -> Dict[str, Any]:
         """
         Export project as dictionary for JSON serialization
@@ -176,6 +204,9 @@ class Project:
             ],
             "composites": [
                 comp.to_dict() for comp in self.composites
+            ],
+            "stic_figures": [
+                figure.to_dict() for figure in self.stic_figures
             ]
         }
 
@@ -212,6 +243,11 @@ class Project:
         composites_data = data.get("composites", [])
         for comp_data in composites_data:
             project.composites.append(LayerComposite.from_dict(comp_data))
+
+        # Load STIC figures
+        figures_data = data.get("stic_figures", [])
+        for figure_data in figures_data:
+            project.stic_figures.append(SticFigure.from_dict(figure_data))
 
         return project
 
