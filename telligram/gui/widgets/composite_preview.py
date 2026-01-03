@@ -170,15 +170,12 @@ class LayerControlWidget(QFrame):
 
     def get_layer_config(self) -> dict:
         """Get current layer configuration"""
-        if not self.visible_check.isChecked():
-            return None
+        is_visible = self.visible_check.isChecked()
 
-        if self.animation_combo.currentIndex() < 0:
-            return None
-
+        # Always return a config dict to preserve settings even when layer is unchecked
         config = {
-            "animation_name": self.animation_combo.currentText(),
-            "visible": True,
+            "animation_name": self.animation_combo.currentText() if self.animation_combo.currentIndex() >= 0 else "",
+            "visible": is_visible,
             "end_behavior": self.end_behavior_combo.currentData(),
             "color_override": self.color_combo.currentData(),
             "x_offset": self.x_offset_spin.value(),
@@ -571,6 +568,10 @@ class CompositePreviewWidget(QWidget):
         if not self.current_composite:
             return
 
+        # Block signals while loading to prevent premature updates
+        for layer_control in self.layer_controls:
+            layer_control.blockSignals(True)
+
         # Update playback settings
         self.speed_slider.setValue(self.current_composite.fps)
         self.loop_check.setChecked(self.current_composite.loop)
@@ -600,6 +601,10 @@ class CompositePreviewWidget(QWidget):
                 self.layer_controls[i].set_layer_config(self.current_composite.layers[i])
             else:
                 self.layer_controls[i].set_layer_config(None)
+
+        # Unblock signals after all configs are loaded
+        for layer_control in self.layer_controls:
+            layer_control.blockSignals(False)
 
         # Update stack/stitch states to prevent chaining
         self._update_stack_stitch_states()
@@ -721,19 +726,8 @@ class CompositePreviewWidget(QWidget):
 
         for layer_control in self.layer_controls:
             config = layer_control.get_layer_config()
-            if config:
-                self.current_composite.layers.append(config)
-            else:
-                # Add placeholder for empty layer
-                self.current_composite.layers.append({
-                    "animation_name": "",
-                    "visible": False,
-                    "end_behavior": "loop",
-                    "color_override": None,
-                    "x_offset": 0,
-                    "y_offset": 0,
-                    "stack_stitch": "none"
-                })
+            # get_layer_config() now always returns a dict, so just append it
+            self.current_composite.layers.append(config)
 
         # Update playback settings
         self.current_composite.fps = self.speed_slider.value()
