@@ -579,7 +579,8 @@ class CompositePreviewWidget(QWidget):
         # Count how many layers are actually configured (visible or with animation)
         num_configured_layers = 0
         for i, layer_config in enumerate(self.current_composite.layers):
-            if layer_config.get("visible") or layer_config.get("animation_name"):
+            # Only count layers that are visible or have a non-empty animation name
+            if layer_config.get("visible") or (layer_config.get("animation_name") and layer_config.get("animation_name").strip()):
                 num_configured_layers = i + 1
 
         # Ensure at least 2 layers are visible (Parent/Base + Layer 1)
@@ -724,9 +725,9 @@ class CompositePreviewWidget(QWidget):
         # Clear and rebuild layers
         self.current_composite.layers.clear()
 
-        for layer_control in self.layer_controls:
-            config = layer_control.get_layer_config()
-            # get_layer_config() now always returns a dict, so just append it
+        # Only save configs for visible layers (up to num_visible_layers)
+        for i in range(self.num_visible_layers):
+            config = self.layer_controls[i].get_layer_config()
             self.current_composite.layers.append(config)
 
         # Update playback settings
