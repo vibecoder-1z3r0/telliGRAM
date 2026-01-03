@@ -125,13 +125,6 @@ class MainWindow(QMainWindow):
         redo_action.setShortcut("Ctrl+Shift+Z")
         edit_menu.addAction(redo_action)
 
-        edit_menu.addSeparator()
-
-        clear_card_action = QAction("&Clear Card", self)
-        clear_card_action.setShortcut("Ctrl+Shift+C")
-        clear_card_action.triggered.connect(self.clear_current_card)
-        edit_menu.addAction(clear_card_action)
-
         # Help menu
         help_menu = menubar.addMenu("&Help")
 
