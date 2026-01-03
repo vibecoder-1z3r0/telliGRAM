@@ -7,7 +7,7 @@ Helps users reference available characters and avoid wasting GRAM slots.
 
 from PySide6.QtWidgets import (
     QWidget, QGridLayout, QLabel, QVBoxLayout, QHBoxLayout, QScrollArea, QFrame,
-    QMenu, QInputDialog, QCheckBox
+    QMenu, QInputDialog, QCheckBox, QPushButton
 )
 from PySide6.QtCore import Qt, Signal
 from PySide6.QtGui import QPainter, QColor, QPen, QFont, QPixmap, QAction
@@ -143,6 +143,8 @@ class GromPreviewWidget(QWidget):
         self.pixel_size = 40  # Match GRAM editor size
         self.grid_size = 8
         self.show_grid = True  # Grid visible by default
+        self.flip_h = False  # Horizontal flip transform
+        self.flip_v = False  # Vertical flip transform
 
         # Calculate total size (same as GRAM pixel editor)
         total_size = self.pixel_size * self.grid_size
@@ -164,6 +166,22 @@ class GromPreviewWidget(QWidget):
         self.show_grid = visible
         self.update()
 
+    def toggle_flip_horizontal(self):
+        """Toggle horizontal flip"""
+        self.flip_h = not self.flip_h
+        self.update()
+
+    def toggle_flip_vertical(self):
+        """Toggle vertical flip"""
+        self.flip_v = not self.flip_v
+        self.update()
+
+    def clear_transforms(self):
+        """Clear all transformations (flip H/V)"""
+        self.flip_h = False
+        self.flip_v = False
+        self.update()
+
     def paintEvent(self, event):
         """Paint the grid and pixels"""
         painter = QPainter(self)
@@ -178,12 +196,16 @@ class GromPreviewWidget(QWidget):
         # Get preview color
         card_color = get_color_hex(self.preview_color)
 
-        # Draw pixels
+        # Draw pixels (with optional flip transformations)
         for y in range(self.grid_size):
             row_byte = self.card_data[y]
             for x in range(self.grid_size):
-                px = x * self.pixel_size
-                py = y * self.pixel_size
+                # Apply flip transformations to display coordinates
+                display_x = (7 - x) if self.flip_h else x
+                display_y = (7 - y) if self.flip_v else y
+
+                px = display_x * self.pixel_size
+                py = display_y * self.pixel_size
 
                 # Check if pixel is on (bit 7-x in row_byte)
                 bit = 7 - x
@@ -312,9 +334,25 @@ class GromBrowserWidget(QWidget):
         # Grid toggle checkbox
         self.grid_checkbox = QCheckBox("Show Grid")
         self.grid_checkbox.setChecked(True)
-        self.grid_checkbox.setStyleSheet("color: #cccccc; font-size: 11px;")
         self.grid_checkbox.stateChanged.connect(self._on_grid_toggled)
         preview_layout.addWidget(self.grid_checkbox)
+
+        # Transform buttons
+        button_layout = QHBoxLayout()
+
+        flip_h_btn = QPushButton("Flip H")
+        flip_h_btn.clicked.connect(self._on_flip_horizontal)
+        button_layout.addWidget(flip_h_btn)
+
+        flip_v_btn = QPushButton("Flip V")
+        flip_v_btn.clicked.connect(self._on_flip_vertical)
+        button_layout.addWidget(flip_v_btn)
+
+        clear_btn = QPushButton("Clear")
+        clear_btn.clicked.connect(self._on_clear_transforms)
+        button_layout.addWidget(clear_btn)
+
+        preview_layout.addLayout(button_layout)
 
         # Color palette
         palette_label = QLabel("Preview Color:")
@@ -348,6 +386,18 @@ class GromBrowserWidget(QWidget):
     def _on_grid_toggled(self, state: int):
         """Handle grid toggle checkbox"""
         self.preview_widget.set_grid_visible(state == Qt.Checked)
+
+    def _on_flip_horizontal(self):
+        """Handle flip horizontal button"""
+        self.preview_widget.toggle_flip_horizontal()
+
+    def _on_flip_vertical(self):
+        """Handle flip vertical button"""
+        self.preview_widget.toggle_flip_vertical()
+
+    def _on_clear_transforms(self):
+        """Handle clear transforms button"""
+        self.preview_widget.clear_transforms()
 
     def _update_preview(self, card_num: int):
         """Update preview panel with selected card"""
