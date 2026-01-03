@@ -143,7 +143,31 @@ class MainWindow(QMainWindow):
         central_widget = QWidget()
         self.setCentralWidget(central_widget)
 
-        main_layout = QHBoxLayout(central_widget)
+        # Create top-level tab widget
+        top_level_layout = QVBoxLayout(central_widget)
+        top_level_layout.setContentsMargins(0, 0, 0, 0)
+
+        self.main_tabs = QTabWidget()
+        top_level_layout.addWidget(self.main_tabs)
+
+        # Tab 1: IntelliMation Station (entire current UI)
+        intellimation_tab = self._create_intellimation_station_tab()
+        self.main_tabs.addTab(intellimation_tab, "IntelliMation Station")
+
+        # Tab 2: GROM Viewer
+        self.grom_browser = GromBrowserWidget()
+        self.main_tabs.addTab(self.grom_browser, "GROM Viewer")
+
+        # Tab 3: STIC Figures (placeholder for now)
+        stic_tab = QWidget()
+        stic_layout = QVBoxLayout(stic_tab)
+        stic_layout.addWidget(QLabel("STIC Figures - Coming Soon"))
+        self.main_tabs.addTab(stic_tab, "STIC Figures")
+
+    def _create_intellimation_station_tab(self):
+        """Create the IntelliMation Station tab content (GRAM + Animations)"""
+        tab_widget = QWidget()
+        main_layout = QHBoxLayout(tab_widget)
         main_layout.setAlignment(Qt.AlignTop)
 
         # Left panel - GRAM Card grid and pixel editor
@@ -210,31 +234,11 @@ class MainWindow(QMainWindow):
 
         main_layout.addWidget(left_panel, stretch=0)  # Don't stretch
 
-        # Right panel - Main tab widget
-        right_panel = QWidget()
-        right_layout = QVBoxLayout(right_panel)
-        right_layout.setContentsMargins(0, 0, 0, 0)
-
-        # Create main tab widget
-        self.main_tabs = QTabWidget()
-
-        # Tab 1: IntelliMation Station (Animation Timelines + Composite Sprite Animator)
+        # Right panel - Animation Timelines + Composite Sprite Animator
         self.timeline_editor = AnimationComposerWidget(project=self.project, main_window=self)
-        self.main_tabs.addTab(self.timeline_editor, "IntelliMation Station")
+        main_layout.addWidget(self.timeline_editor, stretch=1)  # Takes remaining space
 
-        # Tab 2: GROM Viewer
-        self.grom_browser = GromBrowserWidget()
-        self.main_tabs.addTab(self.grom_browser, "GROM Viewer")
-
-        # Tab 3: STIC Figures (placeholder for now)
-        stic_tab = QWidget()
-        stic_layout = QVBoxLayout(stic_tab)
-        stic_layout.addWidget(QLabel("STIC Figures - Coming Soon"))
-        self.main_tabs.addTab(stic_tab, "STIC Figures")
-
-        right_layout.addWidget(self.main_tabs)
-
-        main_layout.addWidget(right_panel, stretch=1)  # Takes remaining space
+        return tab_widget
 
     def _create_status_bar(self):
         """Create status bar"""
