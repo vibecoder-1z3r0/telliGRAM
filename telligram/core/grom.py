@@ -200,13 +200,22 @@ class GromData:
                         print(f"WARNING: Ignoring card {card_num}: expected 8 bytes, got {len(value)}")
                         continue
 
-                    # Validate each byte is 0-255
-                    if not all(isinstance(b, int) and 0 <= b <= 255 for b in value):
-                        print(f"WARNING: Ignoring card {card_num}: bytes must be integers 0-255")
+                    # Parse and validate each byte (supports hex, decimal, binary)
+                    parsed_bytes = []
+                    valid = True
+                    for i, byte_val in enumerate(value):
+                        parsed = self._parse_byte(byte_val)
+                        if parsed is None:
+                            print(f"WARNING: Ignoring card {card_num}: invalid byte at index {i}: {byte_val}")
+                            valid = False
+                            break
+                        parsed_bytes.append(parsed)
+
+                    if not valid:
                         continue
 
                     # Load the card
-                    cards[card_num] = value
+                    cards[card_num] = parsed_bytes
                     loaded_count += 1
 
                 print(f"Loaded {loaded_count} GROM cards from {grom_json_path}")
@@ -214,6 +223,81 @@ class GromData:
 
         except json.JSONDecodeError as e:
             raise ValueError(f"Invalid JSON in {grom_json_path}: {e}")
+
+    def _parse_byte(self, value) -> Optional[int]:
+        """
+        Parse a byte value from various formats.
+
+        Supports:
+        - Decimal int: 24
+        - Hex string: "0x18", "18" (if looks like hex)
+        - Binary string: "0b00011000", "00011000" (if 8 chars of 0/1)
+
+        Args:
+            value: Value to parse
+
+        Returns:
+            Integer 0-255, or None if invalid
+        """
+        # Already an integer
+        if isinstance(value, int):
+            if 0 <= value <= 255:
+                return value
+            return None
+
+        # String - try to parse as hex or binary
+        if isinstance(value, str):
+            value = value.strip()
+
+            # Hex with 0x prefix
+            if value.startswith("0x") or value.startswith("0X"):
+                try:
+                    result = int(value, 16)
+                    if 0 <= result <= 255:
+                        return result
+                except ValueError:
+                    pass
+                return None
+
+            # Binary with 0b prefix
+            if value.startswith("0b") or value.startswith("0B"):
+                try:
+                    result = int(value, 2)
+                    if 0 <= result <= 255:
+                        return result
+                except ValueError:
+                    pass
+                return None
+
+            # Binary without prefix (8 chars of 0/1)
+            if len(value) == 8 and all(c in "01" for c in value):
+                try:
+                    result = int(value, 2)
+                    if 0 <= result <= 255:
+                        return result
+                except ValueError:
+                    pass
+                return None
+
+            # Hex without prefix (1-2 hex digits)
+            if len(value) <= 2 and all(c in "0123456789ABCDEFabcdef" for c in value):
+                try:
+                    result = int(value, 16)
+                    if 0 <= result <= 255:
+                        return result
+                except ValueError:
+                    pass
+                return None
+
+            # Try decimal
+            try:
+                result = int(value)
+                if 0 <= result <= 255:
+                    return result
+            except ValueError:
+                pass
+
+        return None
 
     def _initialize_grom_data(self) -> List[List[int]]:
         """
