@@ -34,6 +34,7 @@ class GromThumbnail(QFrame):
         self.grom = grom
         self.card_data = self.grom.get_card(card_num)
         self.label_text = self.grom.get_label(card_num)
+        self.selected = False  # Selection state (match GRAM)
 
         # Match GRAM thumbnail size but add 10px for bottom label
         self.pixel_size = 7
@@ -70,21 +71,38 @@ class GromThumbnail(QFrame):
         # Add flexible space at bottom
         layout.addStretch()
 
-        # Style - match GRAM formatting
-        self.setStyleSheet("""
-            QFrame {
-                background-color: #2b2b2b;
-                border: 1px solid #3c3c3c;
-            }
-            QFrame:hover {
-                background-color: #3c3c3c;
-                border: 1px solid #5c5c5c;
-            }
-            QLabel {
-                color: #787878;
-                background-color: transparent;
-            }
-        """)
+        # Set initial style
+        self._update_style()
+
+    def set_selected(self, selected: bool):
+        """Set selection state (match GRAM)"""
+        self.selected = selected
+        self._update_style()
+
+    def _update_style(self):
+        """Update visual style based on selection state (match GRAM)"""
+        if self.selected:
+            self.setStyleSheet("""
+                QFrame {
+                    background-color: #0078D4;
+                    border: 2px solid #0078D4;
+                }
+                QLabel {
+                    color: #b4b4b4;
+                    background-color: transparent;
+                }
+            """)
+        else:
+            self.setStyleSheet("""
+                QFrame {
+                    background-color: #2b2b2b;
+                    border: 1px solid #3c3c3c;
+                }
+                QLabel {
+                    color: #787878;
+                    background-color: transparent;
+                }
+            """)
 
     def _render_character(self) -> QPixmap:
         """Render GROM character to QPixmap - more WSL-compatible than direct painting"""
@@ -254,8 +272,10 @@ class GromBrowserWidget(QWidget):
         self.selected_card = 0
         self._create_ui()
 
-        # Initialize preview with first card
+        # Initialize preview with first card and select it
         self._update_preview(0)
+        if len(self.thumbnails) > 0:
+            self.thumbnails[0].set_selected(True)
 
     def _create_ui(self):
         """Create the UI layout"""
@@ -263,7 +283,7 @@ class GromBrowserWidget(QWidget):
         main_layout.setContentsMargins(0, 0, 0, 0)
 
         # Title label
-        title = QLabel("GROM Characters (0-255)")
+        title = QLabel("GROM Cards (0-255)")
         title.setStyleSheet("""
             QLabel {
                 color: #cccccc;
@@ -337,8 +357,12 @@ class GromBrowserWidget(QWidget):
         self.grid_checkbox.stateChanged.connect(self._on_grid_toggled)
         preview_layout.addWidget(self.grid_checkbox)
 
-        # Transform buttons
+        # Transform buttons (Clear, Flip H, Flip V)
         button_layout = QHBoxLayout()
+
+        clear_btn = QPushButton("Clear")
+        clear_btn.clicked.connect(self._on_clear_transforms)
+        button_layout.addWidget(clear_btn)
 
         flip_h_btn = QPushButton("Flip H")
         flip_h_btn.clicked.connect(self._on_flip_horizontal)
@@ -347,10 +371,6 @@ class GromBrowserWidget(QWidget):
         flip_v_btn = QPushButton("Flip V")
         flip_v_btn.clicked.connect(self._on_flip_vertical)
         button_layout.addWidget(flip_v_btn)
-
-        clear_btn = QPushButton("Clear")
-        clear_btn.clicked.connect(self._on_clear_transforms)
-        button_layout.addWidget(clear_btn)
 
         preview_layout.addLayout(button_layout)
 
@@ -371,6 +391,14 @@ class GromBrowserWidget(QWidget):
 
     def _on_thumbnail_clicked(self, card_num: int):
         """Handle thumbnail click"""
+        # Deselect all thumbnails (match GRAM behavior)
+        for thumb in self.thumbnails:
+            thumb.set_selected(False)
+
+        # Select clicked thumbnail
+        if 0 <= card_num < len(self.thumbnails):
+            self.thumbnails[card_num].set_selected(True)
+
         self.selected_card = card_num
         self._update_preview(card_num)
         self.card_selected.emit(card_num)
