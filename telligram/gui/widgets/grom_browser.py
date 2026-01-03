@@ -5,9 +5,12 @@ Displays all 256 built-in Intellivision GROM characters in a read-only grid.
 Helps users reference available characters and avoid wasting GRAM slots.
 """
 
-from PySide6.QtWidgets import QWidget, QGridLayout, QLabel, QVBoxLayout, QScrollArea, QFrame
+from PySide6.QtWidgets import (
+    QWidget, QGridLayout, QLabel, QVBoxLayout, QScrollArea, QFrame,
+    QMenu, QInputDialog
+)
 from PySide6.QtCore import Qt, Signal
-from PySide6.QtGui import QPainter, QColor, QPen, QFont, QPixmap
+from PySide6.QtGui import QPainter, QColor, QPen, QFont, QPixmap, QAction
 
 from telligram.core.grom import GromData
 
@@ -21,6 +24,7 @@ class GromThumbnail(QFrame):
     """
 
     clicked = Signal(int)  # Emits card number when clicked
+    copy_to_gram_requested = Signal(int)  # Emits GROM card number to copy
 
     def __init__(self, card_num: int, parent=None):
         super().__init__(parent)
@@ -104,6 +108,14 @@ class GromThumbnail(QFrame):
         if event.button() == Qt.LeftButton:
             self.clicked.emit(self.card_num)
 
+    def contextMenuEvent(self, event):
+        """Handle right-click context menu"""
+        menu = QMenu(self)
+        copy_action = QAction(f"Copy GROM #{self.card_num} to GRAM...", self)
+        copy_action.triggered.connect(lambda: self.copy_to_gram_requested.emit(self.card_num))
+        menu.addAction(copy_action)
+        menu.exec(event.globalPos())
+
 
 class GromBrowserWidget(QWidget):
     """
@@ -114,6 +126,7 @@ class GromBrowserWidget(QWidget):
     """
 
     card_selected = Signal(int)  # Emits when a card is clicked
+    copy_to_gram_requested = Signal(int)  # Emits GROM card number to copy to GRAM
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -161,6 +174,7 @@ class GromBrowserWidget(QWidget):
         for i in range(256):
             thumb = GromThumbnail(i)
             thumb.clicked.connect(self._on_thumbnail_clicked)
+            thumb.copy_to_gram_requested.connect(self._on_copy_to_gram_requested)
             self.thumbnails.append(thumb)
 
             row = i // 16
@@ -177,6 +191,10 @@ class GromBrowserWidget(QWidget):
     def _on_thumbnail_clicked(self, card_num: int):
         """Handle thumbnail click"""
         self.card_selected.emit(card_num)
+
+    def _on_copy_to_gram_requested(self, grom_card_num: int):
+        """Handle copy to GRAM request"""
+        self.copy_to_gram_requested.emit(grom_card_num)
 
     def get_card_data(self, card_num: int):
         """Get GROM card data by number"""
