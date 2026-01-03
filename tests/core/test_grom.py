@@ -6,6 +6,9 @@ Cards 0-94 map to ASCII 32-126.
 """
 
 import pytest
+import json
+import tempfile
+from pathlib import Path
 from telligram.core.grom import GromData
 
 
@@ -131,3 +134,130 @@ class TestGromStringConversion:
         """Should handle empty string"""
         grom = GromData()
         assert grom.text_to_cards("") == []
+
+
+class TestGromByteParsing:
+    """Test flexible byte parsing in GROM.json"""
+
+    @pytest.fixture
+    def grom_with_test_file(self):
+        """Create a temporary GROM file for testing"""
+        def _create_grom(data):
+            with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False) as f:
+                json.dump(data, f)
+                temp_path = Path(f.name)
+            grom = GromData(temp_path)
+            temp_path.unlink()  # Clean up
+            return grom
+        return _create_grom
+
+    def test_parse_decimal_int(self, grom_with_test_file):
+        """Should parse decimal integers"""
+        grom = grom_with_test_file({
+            "0": [24, 36, 66, 66, 126, 66, 66, 0]
+        })
+        card = grom.get_card(0)
+        assert card == [24, 36, 66, 66, 126, 66, 66, 0]
+
+    def test_parse_hex_with_prefix(self, grom_with_test_file):
+        """Should parse hex strings with 0x prefix"""
+        grom = grom_with_test_file({
+            "0": ["0x18", "0x24", "0x42", "0x42", "0x7E", "0x42", "0x42", "0x00"]
+        })
+        card = grom.get_card(0)
+        assert card == [0x18, 0x24, 0x42, 0x42, 0x7E, 0x42, 0x42, 0x00]
+
+    def test_parse_hex_without_prefix(self, grom_with_test_file):
+        """Should parse hex strings without prefix"""
+        grom = grom_with_test_file({
+            "0": ["18", "24", "42", "42", "7E", "42", "42", "00"]
+        })
+        card = grom.get_card(0)
+        assert card == [0x18, 0x24, 0x42, 0x42, 0x7E, 0x42, 0x42, 0x00]
+
+    def test_parse_binary_with_prefix(self, grom_with_test_file):
+        """Should parse binary strings with 0b prefix"""
+        grom = grom_with_test_file({
+            "0": ["0b00011000", "0b00100100", "0b01000010", "0b01000010",
+                  "0b01111110", "0b01000010", "0b01000010", "0b00000000"]
+        })
+        card = grom.get_card(0)
+        assert card == [0x18, 0x24, 0x42, 0x42, 0x7E, 0x42, 0x42, 0x00]
+
+    def test_parse_binary_without_prefix(self, grom_with_test_file):
+        """Should parse binary strings without prefix (exactly 8 chars)"""
+        grom = grom_with_test_file({
+            "0": ["00011000", "00100100", "01000010", "01000010",
+                  "01111110", "01000010", "01000010", "00000000"]
+        })
+        card = grom.get_card(0)
+        assert card == [0x18, 0x24, 0x42, 0x42, 0x7E, 0x42, 0x42, 0x00]
+
+    def test_parse_decimal_string(self, grom_with_test_file):
+        """Should parse decimal strings"""
+        grom = grom_with_test_file({
+            "0": ["24", "36", "66", "66", "126", "66", "66", "0"]
+        })
+        card = grom.get_card(0)
+        assert card == [24, 36, 66, 66, 126, 66, 66, 0]
+
+    def test_parse_mixed_formats(self, grom_with_test_file):
+        """Should handle mixed formats in same card"""
+        grom = grom_with_test_file({
+            "0": [24, "0x24", "42", "0b01000010", "7E", "0x42", 66, "0x00"]
+        })
+        card = grom.get_card(0)
+        assert card == [24, 0x24, 0x42, 0x42, 0x7E, 0x42, 66, 0x00]
+
+    def test_sparse_cards(self, grom_with_test_file):
+        """Should fill undefined cards with zeros"""
+        grom = grom_with_test_file({
+            "0": [0x18, 0x24, 0x42, 0x42, 0x7E, 0x42, 0x42, 0x00],
+            "255": [0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF]
+        })
+        # Card 0 should be defined
+        assert grom.get_card(0) == [0x18, 0x24, 0x42, 0x42, 0x7E, 0x42, 0x42, 0x00]
+        # Card 1 should be blank (not defined)
+        assert grom.get_card(1) == [0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00]
+        # Card 255 should be defined
+        assert grom.get_card(255) == [0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF]
+
+    def test_invalid_byte_value_ignored(self, grom_with_test_file, capsys):
+        """Should ignore invalid byte values with warning"""
+        grom = grom_with_test_file({
+            "0": [24, "invalid", 66, 66, 126, 66, 66, 0],  # Invalid byte
+            "1": [0x18, 0x24, 0x42, 0x42, 0x7E, 0x42, 0x42, 0x00]  # Valid card
+        })
+        # Card 0 should be blank (invalid data)
+        assert grom.get_card(0) == [0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00]
+        # Card 1 should be loaded
+        assert grom.get_card(1) == [0x18, 0x24, 0x42, 0x42, 0x7E, 0x42, 0x42, 0x00]
+        # Check warning was printed
+        captured = capsys.readouterr()
+        assert "WARNING" in captured.out
+        assert "card 0" in captured.out.lower()
+
+    def test_out_of_bounds_card_ignored(self, grom_with_test_file, capsys):
+        """Should ignore out-of-bounds card numbers"""
+        grom = grom_with_test_file({
+            "-1": [24, 36, 66, 66, 126, 66, 66, 0],  # Negative
+            "256": [24, 36, 66, 66, 126, 66, 66, 0],  # Too large
+            "0": [0x18, 0x24, 0x42, 0x42, 0x7E, 0x42, 0x42, 0x00]  # Valid
+        })
+        # Only card 0 should be loaded
+        assert grom.get_card(0) == [0x18, 0x24, 0x42, 0x42, 0x7E, 0x42, 0x42, 0x00]
+        # Check warnings
+        captured = capsys.readouterr()
+        assert "out-of-bounds" in captured.out.lower()
+
+    def test_non_numeric_key_ignored(self, grom_with_test_file, capsys):
+        """Should ignore non-numeric keys"""
+        grom = grom_with_test_file({
+            "foo": [24, 36, 66, 66, 126, 66, 66, 0],  # Invalid key
+            "0": [0x18, 0x24, 0x42, 0x42, 0x7E, 0x42, 0x42, 0x00]  # Valid
+        })
+        # Only card 0 should be loaded
+        assert grom.get_card(0) == [0x18, 0x24, 0x42, 0x42, 0x7E, 0x42, 0x42, 0x00]
+        # Check warning
+        captured = capsys.readouterr()
+        assert "non-numeric" in captured.out.lower()
