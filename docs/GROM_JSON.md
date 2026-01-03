@@ -60,21 +60,67 @@ Each byte can be specified in **multiple formats** - use whichever is most conve
 "33": ["24", "36", "66", "66", "126", "66", "66", "0"]
 ```
 
+### Visual Format (IntyBASIC BITMAP style)
+**NEW**: The most visual and intuitive format! Draw characters using ASCII art where:
+- `'0'`, `'_'`, `' '` (space), `'.'` = pixel OFF (0)
+- **Everything else** = pixel ON (1)
+
+```json
+"33": [
+  "..XXX...",
+  ".X...X..",
+  "X.....X.",
+  "X.....X.",
+  "XXXXXXX.",
+  "X.....X.",
+  "X.....X.",
+  "........"
+]
+```
+
+You can use any characters you want for pixels! These are all equivalent:
+```json
+"33": ["..XXX...", ".X...X..", "X.....X.", ...]   // X for pixel
+"33": ["..###...", ".#...#..", "#.....#.", ...]   // # for pixel
+"33": ["  XXX   ", " X   X  ", "X     X ", ...]   // Space for off
+"33": ["__XXX___", "_X___X__", "X_____X_", ...]   // Underscore for off
+"33": ["00ABC000", "0D000E00", "F00000G0", ...]   // Any char for on!
+```
+
+**Pro tip**: This matches IntyBASIC's `BITMAP` directive syntax!
+
 ### Mixed Formats (in same card!)
 ```json
 "33": [24, "0x24", "42", "0b01000010", "7E", "0x42", 66, "0x00"]
+```
+
+You can even mix visual format with numeric formats:
+```json
+"33": ["..XXX...", ".X...X..", 0x42, 0x42, 0x7E, 0x42, 0x42, 0x00]
 ```
 
 ## Complete Example
 
 Here's a minimal GROM.json with ASCII characters 0-94 (space through `~`):
 
+### Numeric Format (Hex)
 ```json
 {
   "0": [0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00],
   "1": [0x10, 0x10, 0x10, 0x10, 0x10, 0x00, 0x10, 0x00],
   "33": [0x18, 0x24, 0x42, 0x42, 0x7E, 0x42, 0x42, 0x00],
   "65": [0x10, 0x28, 0x44, 0x44, 0x7C, 0x44, 0x44, 0x00]
+}
+```
+
+### Visual Format (Recommended!)
+```json
+{
+  "0": ["........", "........", "........", "........", "........", "........", "........", "........"],
+  "1": ["...X....", "...X....", "...X....", "...X....", "...X....", "........", "...X....", "........"],
+  "33": ["..XXX...", ".X...X..", "X.....X.", "X.....X.", "XXXXXXX.", "X.....X.", "X.....X.", "........"],
+  "48": ["..XXX...", ".X...X..", "X.....X.", "X.....X.", "X.....X.", "X.....X.", ".X...X..", "..XXX..."],
+  "65": ["...X....", "..X.X...", ".X...X..", ".X...X..", "XXXXX...", ".X...X..", ".X...X..", "........"]
 }
 ```
 
@@ -243,11 +289,12 @@ Card 90: 'z'
 ## Tips
 
 1. **Start small** - Only define cards you need (ASCII 0-94 is ~800 lines)
-2. **Use comments** - JSON doesn't support comments, but you can use a build script to strip them
-3. **Version control** - Track your GROM.json in Git for different ROM versions
-4. **Test incrementally** - Load in telliGRAM frequently to verify correctness
-5. **Binary format** - Use binary strings for easy visual verification of graphics
-6. **Hex format** - Use hex for compact representation
+2. **Use visual format** - The visual ASCII-art format (`"..XXX..."`) is the easiest to read and edit
+3. **Use comments** - JSON doesn't support comments, but you can use a build script to strip them
+4. **Version control** - Track your GROM.json in Git for different ROM versions
+5. **Test incrementally** - Load in telliGRAM frequently to verify correctness
+6. **IntyBASIC users** - Visual format matches BITMAP directive syntax perfectly
+7. **Mix formats** - Use visual for complex characters, hex/decimal for simple ones
 
 ## Troubleshooting
 

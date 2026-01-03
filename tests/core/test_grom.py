@@ -168,12 +168,12 @@ class TestGromByteParsing:
         assert card == [0x18, 0x24, 0x42, 0x42, 0x7E, 0x42, 0x42, 0x00]
 
     def test_parse_hex_without_prefix(self, grom_with_test_file):
-        """Should parse hex strings without prefix"""
+        """Should parse hex strings without prefix (must contain A-F to distinguish from decimal)"""
         grom = grom_with_test_file({
-            "0": ["18", "24", "42", "42", "7E", "42", "42", "00"]
+            "0": ["1F", "2A", "FF", "AB", "7E", "CD", "EF", "00"]
         })
         card = grom.get_card(0)
-        assert card == [0x18, 0x24, 0x42, 0x42, 0x7E, 0x42, 0x42, 0x00]
+        assert card == [0x1F, 0x2A, 0xFF, 0xAB, 0x7E, 0xCD, 0xEF, 0x00]
 
     def test_parse_binary_with_prefix(self, grom_with_test_file):
         """Should parse binary strings with 0b prefix"""
@@ -207,7 +207,8 @@ class TestGromByteParsing:
             "0": [24, "0x24", "42", "0b01000010", "7E", "0x42", 66, "0x00"]
         })
         card = grom.get_card(0)
-        assert card == [24, 0x24, 0x42, 0x42, 0x7E, 0x42, 66, 0x00]
+        # "42" is decimal 42, "7E" is hex 0x7E = 126
+        assert card == [24, 0x24, 42, 0x42, 0x7E, 0x42, 66, 0x00]
 
     def test_sparse_cards(self, grom_with_test_file):
         """Should fill undefined cards with zeros"""
@@ -261,3 +262,86 @@ class TestGromByteParsing:
         # Check warning
         captured = capsys.readouterr()
         assert "non-numeric" in captured.out.lower()
+
+    def test_parse_visual_format_with_dots(self, grom_with_test_file):
+        """Should parse visual format with dots (.) as 0"""
+        # 0x18=00011000, 0x24=00100100, 0x42=01000010, 0x7E=01111110, 0x00=00000000
+        grom = grom_with_test_file({
+            "0": ["...XX...", "..X..X..", ".X....X.", ".X....X.",
+                  ".XXXXXX.", ".X....X.", ".X....X.", "........"]
+        })
+        card = grom.get_card(0)
+        assert card == [0x18, 0x24, 0x42, 0x42, 0x7E, 0x42, 0x42, 0x00]
+
+    def test_parse_visual_format_with_zeros(self, grom_with_test_file):
+        """Should parse visual format with zeros (0) as 0"""
+        grom = grom_with_test_file({
+            "0": ["000XX000", "00X00X00", "0X0000X0", "0X0000X0",
+                  "0XXXXXX0", "0X0000X0", "0X0000X0", "00000000"]
+        })
+        card = grom.get_card(0)
+        assert card == [0x18, 0x24, 0x42, 0x42, 0x7E, 0x42, 0x42, 0x00]
+
+    def test_parse_visual_format_with_underscores(self, grom_with_test_file):
+        """Should parse visual format with underscores (_) as 0"""
+        grom = grom_with_test_file({
+            "0": ["___XX___", "__X__X__", "_X____X_", "_X____X_",
+                  "_XXXXXX_", "_X____X_", "_X____X_", "________"]
+        })
+        card = grom.get_card(0)
+        assert card == [0x18, 0x24, 0x42, 0x42, 0x7E, 0x42, 0x42, 0x00]
+
+    def test_parse_visual_format_with_spaces(self, grom_with_test_file):
+        """Should parse visual format with spaces as 0"""
+        grom = grom_with_test_file({
+            "0": ["   XX   ", "  X  X  ", " X    X ", " X    X ",
+                  " XXXXXX ", " X    X ", " X    X ", "        "]
+        })
+        card = grom.get_card(0)
+        assert card == [0x18, 0x24, 0x42, 0x42, 0x7E, 0x42, 0x42, 0x00]
+
+    def test_parse_visual_format_mixed_zero_chars(self, grom_with_test_file):
+        """Should parse visual format with mixed zero characters (0, _, ., space)"""
+        grom = grom_with_test_file({
+            "0": ["0_.XX. _", "..X0.X..", ".X....X0", " X.00.X.",
+                  "0XXXXXX_", ".X.. .X_", " X.0  X0", "0_. 0_. "]
+        })
+        card = grom.get_card(0)
+        assert card == [0x18, 0x24, 0x42, 0x42, 0x7E, 0x42, 0x42, 0x00]
+
+    def test_parse_visual_format_any_char_is_one(self, grom_with_test_file):
+        """Should parse visual format where any non-zero char is 1"""
+        grom = grom_with_test_file({
+            "0": ["...AB...", "..C..D..", ".E....F.", ".G....H.",
+                  ".IJKLMN.", ".O....P.", ".Q....R.", "........"]
+        })
+        card = grom.get_card(0)
+        assert card == [0x18, 0x24, 0x42, 0x42, 0x7E, 0x42, 0x42, 0x00]
+
+    def test_parse_visual_format_with_symbols(self, grom_with_test_file):
+        """Should parse visual format with symbols as 1"""
+        grom = grom_with_test_file({
+            "0": ["...##...", "..#..#..", ".#....#.", ".#....#.",
+                  ".######.", ".#....#.", ".#....#.", "........"]
+        })
+        card = grom.get_card(0)
+        assert card == [0x18, 0x24, 0x42, 0x42, 0x7E, 0x42, 0x42, 0x00]
+
+    def test_visual_format_letter_zero(self, grom_with_test_file):
+        """Should parse visual format for number '0' character"""
+        # 0x18=00011000, 0x24=00100100, 0x42=01000010, 0x18=00011000
+        grom = grom_with_test_file({
+            "16": ["...XX...", "..X..X..", ".X....X.", ".X....X.",
+                   ".X....X.", ".X....X.", "..X..X..", "...XX..."]
+        })
+        card = grom.get_card(16)
+        assert card == [0x18, 0x24, 0x42, 0x42, 0x42, 0x42, 0x24, 0x18]
+
+    def test_mixed_visual_and_numeric_formats(self, grom_with_test_file):
+        """Should handle mixing visual format with numeric formats"""
+        grom = grom_with_test_file({
+            "0": ["...XX...", "..X..X..", 0x42, 0x42, 0x7E, 0x42, 0x42, 0x00],
+            "1": [0x18, 0x24, ".X....X.", ".X....X.", ".XXXXXX.", 0x42, 0x42, 0x00]
+        })
+        assert grom.get_card(0) == [0x18, 0x24, 0x42, 0x42, 0x7E, 0x42, 0x42, 0x00]
+        assert grom.get_card(1) == [0x18, 0x24, 0x42, 0x42, 0x7E, 0x42, 0x42, 0x00]

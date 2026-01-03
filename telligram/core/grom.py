@@ -230,8 +230,10 @@ class GromData:
 
         Supports:
         - Decimal int: 24
-        - Hex string: "0x18", "18" (if looks like hex)
-        - Binary string: "0b00011000", "00011000" (if 8 chars of 0/1)
+        - Hex string: "0x18", "FF" (hex letters A-F)
+        - Binary string: "0b00011000"
+        - Visual string: "..XXX..." where '0', '_', ' ', '.' = 0 and everything else = 1
+        - Decimal string: "24"
 
         Args:
             value: Value to parse
@@ -241,63 +243,52 @@ class GromData:
         """
         # Already an integer
         if isinstance(value, int):
-            if 0 <= value <= 255:
-                return value
+            return value if 0 <= value <= 255 else None
+
+        if not isinstance(value, str):
             return None
 
-        # String - try to parse as hex or binary
-        if isinstance(value, str):
-            value = value.strip()
+        # Check for visual format FIRST (8 chars, uses original with spaces)
+        # '0', '_', ' ', '.' = pixel OFF (0), everything else = pixel ON (1)
+        if len(value) == 8:
+            binary_str = "".join("0" if c in "0_. " else "1" for c in value)
+            result = int(binary_str, 2)
+            return result if 0 <= result <= 255 else None
 
-            # Hex with 0x prefix
-            if value.startswith("0x") or value.startswith("0X"):
-                try:
-                    result = int(value, 16)
-                    if 0 <= result <= 255:
-                        return result
-                except ValueError:
-                    pass
-                return None
+        # Strip whitespace for other formats
+        value = value.strip()
 
-            # Binary with 0b prefix
-            if value.startswith("0b") or value.startswith("0B"):
-                try:
-                    result = int(value, 2)
-                    if 0 <= result <= 255:
-                        return result
-                except ValueError:
-                    pass
-                return None
-
-            # Binary without prefix (8 chars of 0/1)
-            if len(value) == 8 and all(c in "01" for c in value):
-                try:
-                    result = int(value, 2)
-                    if 0 <= result <= 255:
-                        return result
-                except ValueError:
-                    pass
-                return None
-
-            # Hex without prefix (1-2 hex digits)
-            if len(value) <= 2 and all(c in "0123456789ABCDEFabcdef" for c in value):
-                try:
-                    result = int(value, 16)
-                    if 0 <= result <= 255:
-                        return result
-                except ValueError:
-                    pass
-                return None
-
-            # Try decimal
+        # Hex with 0x prefix
+        if value.startswith(("0x", "0X")):
             try:
-                result = int(value)
-                if 0 <= result <= 255:
-                    return result
+                result = int(value, 16)
+                return result if 0 <= result <= 255 else None
             except ValueError:
-                pass
+                return None
 
-        return None
+        # Binary with 0b prefix
+        if value.startswith(("0b", "0B")):
+            try:
+                result = int(value, 2)
+                return result if 0 <= result <= 255 else None
+            except ValueError:
+                return None
+
+        # Hex without prefix (must contain A-F to distinguish from decimal)
+        if len(value) <= 2 and any(c in "ABCDEFabcdef" for c in value):
+            if all(c in "0123456789ABCDEFabcdef" for c in value):
+                try:
+                    result = int(value, 16)
+                    return result if 0 <= result <= 255 else None
+                except ValueError:
+                    return None
+
+        # Try decimal (catches pure digit strings like "24", "126")
+        try:
+            result = int(value)
+            return result if 0 <= result <= 255 else None
+        except ValueError:
+            return None
 
     def _initialize_grom_data(self) -> List[List[int]]:
         """
