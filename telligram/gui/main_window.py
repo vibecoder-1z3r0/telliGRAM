@@ -210,15 +210,29 @@ class MainWindow(QMainWindow):
 
         main_layout.addWidget(left_panel, stretch=0)  # Don't stretch
 
-        # Right panel - IntelliMation Station
+        # Right panel - Main tab widget
         right_panel = QWidget()
         right_layout = QVBoxLayout(right_panel)
-        right_layout.setContentsMargins(0, 3, 0, 0)  # Add 3px top margin to align with other headers
+        right_layout.setContentsMargins(0, 0, 0, 0)
 
-        right_layout.addWidget(QLabel("<h3>IntelliMation Station</h3>"))
+        # Create main tab widget
+        self.main_tabs = QTabWidget()
 
+        # Tab 1: IntelliMation Station (Animation Timelines + Composite Sprite Animator)
         self.timeline_editor = AnimationComposerWidget(project=self.project, main_window=self)
-        right_layout.addWidget(self.timeline_editor)
+        self.main_tabs.addTab(self.timeline_editor, "IntelliMation Station")
+
+        # Tab 2: GROM Viewer
+        self.grom_browser = GromBrowserWidget()
+        self.main_tabs.addTab(self.grom_browser, "GROM Viewer")
+
+        # Tab 3: STIC Figures (placeholder for now)
+        stic_tab = QWidget()
+        stic_layout = QVBoxLayout(stic_tab)
+        stic_layout.addWidget(QLabel("STIC Figures - Coming Soon"))
+        self.main_tabs.addTab(stic_tab, "STIC Figures")
+
+        right_layout.addWidget(self.main_tabs)
 
         main_layout.addWidget(right_panel, stretch=1)  # Takes remaining space
 
