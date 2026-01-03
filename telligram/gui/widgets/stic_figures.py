@@ -16,10 +16,37 @@ from PySide6.QtWidgets import (
 from PySide6.QtCore import Qt, Signal
 from PySide6.QtGui import QPainter, QColor, QPen, QBrush, QPixmap
 
-from telligram.core.constants import get_color_hex
+from telligram.core.constants import get_color_hex, INTELLIVISION_PALETTE
 from telligram.core.grom import GromData
 from pathlib import Path
 import json
+
+
+def create_color_combo():
+    """Create a QComboBox populated with Intellivision colors and visual swatches"""
+    combo = QComboBox()
+    for i, color_data in enumerate(INTELLIVISION_PALETTE):
+        # Create color swatch pixmap
+        pixmap = QPixmap(16, 16)
+        pixmap.fill(QColor(color_data["hex"]))
+
+        # Add item with icon and text
+        combo.addItem(
+            pixmap,
+            f"{i}: {color_data['name']}"
+        )
+
+    return combo
+
+
+class ClickableContainer(QWidget):
+    """Container widget that emits signal when clicked on empty space"""
+    clicked = Signal()
+
+    def mousePressEvent(self, event):
+        """Emit clicked signal when background is clicked"""
+        self.clicked.emit()
+        super().mousePressEvent(event)
 
 
 class BacktabCanvas(QWidget):
@@ -36,10 +63,10 @@ class BacktabCanvas(QWidget):
         # BACKTAB dimensions
         self.grid_cols = 20
         self.grid_rows = 12
-        self.tile_size = 24  # Display size (8×8 pixels shown at 3× scale)
+        self.tile_size = 48  # Display size (8×8 pixels shown at 6× scale)
 
         # Canvas size with 8px border
-        self.border_size = 24  # 8px border shown at 3× scale
+        self.border_size = 48  # 8px border shown at 6× scale
         canvas_width = self.border_size * 2 + (self.grid_cols * self.tile_size)
         canvas_height = self.border_size * 2 + (self.grid_rows * self.tile_size)
         self.setFixedSize(canvas_width, canvas_height)
@@ -216,6 +243,7 @@ class CardPaletteWidget(QWidget):
     """
 
     card_selected = Signal(int)  # Emits card number when selected
+    card_deselected = Signal()  # Emits when clicking empty space
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -234,7 +262,8 @@ class CardPaletteWidget(QWidget):
         # GRAM tab
         self.gram_scroll = QScrollArea()
         self.gram_scroll.setWidgetResizable(True)
-        self.gram_container = QWidget()
+        self.gram_container = ClickableContainer()
+        self.gram_container.clicked.connect(lambda: self.card_deselected.emit())
         self.gram_layout = QVBoxLayout(self.gram_container)
         self.gram_layout.setAlignment(Qt.AlignTop)
         self.gram_scroll.setWidget(self.gram_container)
@@ -243,7 +272,8 @@ class CardPaletteWidget(QWidget):
         # GROM tab
         self.grom_scroll = QScrollArea()
         self.grom_scroll.setWidgetResizable(True)
-        self.grom_container = QWidget()
+        self.grom_container = ClickableContainer()
+        self.grom_container.clicked.connect(lambda: self.card_deselected.emit())
         self.grom_layout = QVBoxLayout(self.grom_container)
         self.grom_layout.setAlignment(Qt.AlignTop)
         self.grom_scroll.setWidget(self.grom_container)
@@ -382,6 +412,7 @@ class SticFiguresWidget(QWidget):
         self.palette_widget = CardPaletteWidget()
         self.palette_widget.setFixedWidth(240)
         self.palette_widget.card_selected.connect(self._on_card_selected)
+        self.palette_widget.card_deselected.connect(self._on_card_deselected)
         main_layout.addWidget(self.palette_widget)
 
         # Center panel: BACKTAB Canvas
@@ -423,6 +454,15 @@ class SticFiguresWidget(QWidget):
         self.border_checkbox.toggled.connect(self._on_border_toggled)
         display_layout.addWidget(self.border_checkbox)
 
+        # Border color
+        border_color_layout = QHBoxLayout()
+        border_color_layout.addWidget(QLabel("Border Color:"))
+        self.border_color_combo = create_color_combo()
+        self.border_color_combo.setCurrentIndex(0)  # Black
+        self.border_color_combo.currentIndexChanged.connect(self._on_border_color_changed)
+        border_color_layout.addWidget(self.border_color_combo)
+        display_layout.addLayout(border_color_layout)
+
         right_layout.addWidget(display_group)
 
         # Selected tile group
@@ -445,9 +485,7 @@ class SticFiguresWidget(QWidget):
         # Foreground color
         color_layout = QHBoxLayout()
         color_layout.addWidget(QLabel("FG Color:"))
-        self.fg_color_combo = QComboBox()
-        for i in range(16):
-            self.fg_color_combo.addItem(f"Color {i}")
+        self.fg_color_combo = create_color_combo()
         self.fg_color_combo.setCurrentIndex(7)  # White
         self.fg_color_combo.currentIndexChanged.connect(self._on_fg_color_changed)
         color_layout.addWidget(self.fg_color_combo)
@@ -468,9 +506,7 @@ class SticFiguresWidget(QWidget):
         for i in range(4):
             slot_layout = QHBoxLayout()
             slot_layout.addWidget(QLabel(f"Slot {i}:"))
-            combo = QComboBox()
-            for c in range(16):
-                combo.addItem(f"Color {c}")
+            combo = create_color_combo()
             combo.setCurrentIndex([0, 1, 2, 3][i])  # Default stack
             combo.currentIndexChanged.connect(lambda idx, slot=i: self._on_stack_color_changed(slot, idx))
             slot_layout.addWidget(combo)
@@ -505,6 +541,7 @@ class SticFiguresWidget(QWidget):
         self.current_fg_color = 7
         self.selected_row = None
         self.selected_col = None
+        self.paint_on_click = False  # Track if we should paint on next click
 
     def _update_palette(self):
         """Update card palette with GRAM/GROM data"""
@@ -536,21 +573,24 @@ class SticFiguresWidget(QWidget):
     def _on_card_selected(self, card_num):
         """Handle card selection from palette"""
         self.current_card = card_num
-        self.card_spin.setValue(card_num)
+        self.paint_on_click = True  # Enable painting on next canvas click
 
-        # If tile is selected, apply to it
+        # If tile is already selected, paint immediately
         if self.selected_row is not None and self.selected_col is not None:
             self._apply_current_to_selected()
+            # Update UI to show what was just painted
+            self._update_properties_from_tile(self.selected_row, self.selected_col)
 
-    def _on_tile_clicked(self, row, col):
-        """Handle tile click on canvas"""
-        self.selected_row = row
-        self.selected_col = col
+    def _on_card_deselected(self):
+        """Handle card deselection (clicking empty palette area)"""
+        self.paint_on_click = False  # Disable paint mode
 
-        # Update properties panel
+    def _update_properties_from_tile(self, row, col):
+        """Update properties panel to show tile's current state"""
         tile = self.canvas.get_tile(row, col)
         if tile:
             self.tile_info_label.setText(f"Row: {row}, Col: {col}")
+
             self.card_spin.blockSignals(True)
             self.card_spin.setValue(tile['card'])
             self.card_spin.blockSignals(False)
@@ -563,8 +603,22 @@ class SticFiguresWidget(QWidget):
             self.advance_stack_checkbox.setChecked(tile['advance_stack'])
             self.advance_stack_checkbox.blockSignals(False)
 
-        # Apply current card/color to clicked tile
-        self._apply_current_to_selected()
+            # Update current card/color to match tile (eyedropper effect)
+            self.current_card = tile['card']
+            self.current_fg_color = tile['fg_color']
+
+    def _on_tile_clicked(self, row, col):
+        """Handle tile click on canvas"""
+        self.selected_row = row
+        self.selected_col = col
+
+        # If paint mode is active, paint first then show new properties
+        if self.paint_on_click:
+            self._apply_current_to_selected()
+            self.paint_on_click = False  # Disable paint mode after one click
+
+        # Update properties panel to show tile's current state
+        self._update_properties_from_tile(row, col)
 
     def _apply_current_to_selected(self):
         """Apply current card and color to selected tile"""
@@ -602,6 +656,11 @@ class SticFiguresWidget(QWidget):
     def _on_border_toggled(self, checked):
         """Handle border visibility toggle"""
         self.canvas.border_visible = checked
+        self.canvas.update()
+
+    def _on_border_color_changed(self, color_idx):
+        """Handle border color change"""
+        self.canvas.border_color = color_idx
         self.canvas.update()
 
     def _on_stack_color_changed(self, slot, color_idx):
