@@ -21,12 +21,13 @@ from telligram.__version__ import __version__
 class MainWindow(QMainWindow):
     """Main application window"""
 
-    def __init__(self):
+    def __init__(self, grom_path=None):
         super().__init__()
         self.project = Project(name="Untitled")
         self.current_file = None
         self.current_card_slot = 0
         self.undo_stack = QUndoStack(self)
+        self.grom_path = grom_path  # Path to GROM.json file (None = no GROM tab)
 
         self.setWindowTitle(f"telliGRAM v{__version__} - Intellivision GRAM Card Creator and Animator")
         self.setMinimumSize(1200, 800)
@@ -154,9 +155,23 @@ class MainWindow(QMainWindow):
         intellimation_tab = self._create_intellimation_station_tab()
         self.main_tabs.addTab(intellimation_tab, "IntelliMation Station")
 
-        # Tab 2: GROM Viewer
-        self.grom_browser = GromBrowserWidget()
-        self.main_tabs.addTab(self.grom_browser, "GROM Viewer")
+        # Tab 2: GROM Viewer (only if --grom provided)
+        if self.grom_path:
+            from telligram.core.grom import GromData
+            self.grom_browser = GromBrowserWidget()
+            # Initialize with specified GROM data
+            self.grom_browser.grom = GromData(self.grom_path)
+            # Refresh thumbnails with new GROM data
+            for thumb in self.grom_browser.thumbnails:
+                thumb.grom = self.grom_browser.grom
+                thumb.card_data = thumb.grom.get_card(thumb.card_num)
+                thumb.label_text = thumb.grom.get_label(thumb.card_num)
+                thumb.char_label.setText(thumb.label_text[:10])
+                pixmap = thumb._render_character()
+                thumb.preview_label.setPixmap(pixmap)
+            self.main_tabs.addTab(self.grom_browser, "GROM Viewer")
+        else:
+            self.grom_browser = None
 
         # Tab 3: STIC Figures (placeholder for now)
         stic_tab = QWidget()
@@ -253,7 +268,8 @@ class MainWindow(QMainWindow):
         self.undo_stack.cleanChanged.connect(self.update_title)
         self.timeline_editor.animation_changed.connect(self.on_animation_changed)
         self.color_palette.color_selected.connect(self.on_color_selected)
-        self.grom_browser.copy_to_gram_requested.connect(self.on_copy_grom_to_gram)
+        if self.grom_browser:
+            self.grom_browser.copy_to_gram_requested.connect(self.on_copy_grom_to_gram)
 
     def _initialize_widgets(self):
         """Initialize widgets with default project data"""

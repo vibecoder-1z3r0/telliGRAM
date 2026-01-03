@@ -140,44 +140,33 @@ class GromData:
 
     def _load_grom_data(self, grom_json_path: Optional[Path] = None) -> List[List[int]]:
         """
-        Load GROM data from JSON file or use built-in defaults.
+        Load GROM data from JSON file.
 
         Args:
-            grom_json_path: Optional path to GROM.json file
+            grom_json_path: Path to GROM.json file (required)
 
         Returns:
             List of 256 cards, each card is a list of 8 bytes
+
+        Raises:
+            FileNotFoundError: If GROM file doesn't exist
+            ValueError: If GROM file format is invalid
         """
-        # Try to load from specified path
-        if grom_json_path and grom_json_path.exists():
-            try:
-                with open(grom_json_path, 'r') as f:
-                    data = json.load(f)
-                    if isinstance(data, list) and len(data) == 256:
-                        print(f"Loaded GROM data from {grom_json_path}")
-                        return data
-                    else:
-                        print(f"Warning: Invalid GROM.json format in {grom_json_path}, using built-in defaults")
-            except Exception as e:
-                print(f"Warning: Error loading {grom_json_path}: {e}, using built-in defaults")
+        if not grom_json_path:
+            raise ValueError("GROM file path is required")
 
-        # Try to load from current directory
-        default_path = Path("GROM.json")
-        if default_path.exists():
-            try:
-                with open(default_path, 'r') as f:
-                    data = json.load(f)
-                    if isinstance(data, list) and len(data) == 256:
-                        print(f"Loaded GROM data from {default_path}")
-                        return data
-                    else:
-                        print(f"Warning: Invalid GROM.json format, using built-in defaults")
-            except Exception as e:
-                print(f"Warning: Error loading GROM.json: {e}, using built-in defaults")
+        if not grom_json_path.exists():
+            raise FileNotFoundError(f"GROM file not found: {grom_json_path}")
 
-        # Fall back to built-in data
-        print("Using built-in GROM defaults (ASCII only, cards 95-255 are blank)")
-        return self._initialize_grom_data()
+        try:
+            with open(grom_json_path, 'r') as f:
+                data = json.load(f)
+                if not isinstance(data, list) or len(data) != 256:
+                    raise ValueError(f"Invalid GROM.json format: expected array of 256 cards")
+                print(f"Loaded GROM data from {grom_json_path}")
+                return data
+        except json.JSONDecodeError as e:
+            raise ValueError(f"Invalid JSON in {grom_json_path}: {e}")
 
     def _initialize_grom_data(self) -> List[List[int]]:
         """
