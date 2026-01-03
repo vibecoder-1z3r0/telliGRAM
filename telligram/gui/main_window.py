@@ -522,9 +522,10 @@ class MainWindow(QMainWindow):
             "<p>© 2025-2026 Andrew Potozniak (Tyraziel & 1.z3r0)</p>"
             "<p>Dual licensed under the <a href='https://opensource.org/licenses/MIT'>MIT License</a> "
             "and <a href='https://github.com/tyraziel/vibe-coder-license'>VCL-0.1-Experimental</a></p>"
-            "<p><small>Intellivision and Intellivision Trademarks are property of Atari Interactive, Inc. "
-            "This application does not distribute GROM graphics from the Intellivision. "
-            "This application is built to help aid graphical programming for the Intellivision.</small></p>"
+            "<p><small>Intellivision and Intellivision trademarks are the property of Atari Interactive, Inc. "
+            "This application does not distribute GROM graphics from the Intellivision and requires "
+            "user-supplied data for previewing built-in characters. This application is built to aid "
+            "graphical programming for the Intellivision.</small></p>"
             "<p><i><a href='https://aiattribution.github.io/statements/AIA-PAI-Nc-Hin-R-?model=Claude%20Code%20%5BSonnet%204.5%5D-v1.0'>AIA PAI Nc Hin R Claude Code [Sonnet 4.5] v1.0</a></i></p>"
         )
 
