@@ -33,35 +33,41 @@ class GromThumbnail(QFrame):
         self.card_data = self.grom.get_card(card_num)
         self.label_text = self.grom.get_label(card_num)
 
-        # Smaller thumbnails than GRAM grid (we have 256 cards!)
-        self.pixel_size = 6
-        self.setFixedSize(60, 80)  # Width: 60px, Height: 80px (extra space for labels)
+        # Match GRAM thumbnail size but add 10px for bottom label
+        self.pixel_size = 7
+        self.setFixedSize(70, 100)  # GRAM is 70x90, add 10px for character label
 
-        # Create UI elements
+        # Create UI elements - match GRAM formatting
         layout = QVBoxLayout(self)
-        layout.setContentsMargins(1, 1, 1, 1)
+        layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(0)
 
-        # Card number label (decimal and hex)
-        self.num_label = QLabel(f"#{card_num} ${card_num:02X}")
-        self.num_label.setStyleSheet("color: #787878; font-size: 9px;")
-        layout.addWidget(self.num_label)
+        # Add flexible space at top
+        layout.addStretch()
 
-        # Character preview (QLabel displaying QPixmap)
+        # Card number label (decimal and hex) - match GRAM format
+        self.num_label = QLabel(f"#{card_num} ${card_num:02X}")
+        self.num_label.setFixedWidth(60)
+        self.num_label.setAlignment(Qt.AlignCenter)
+        layout.addWidget(self.num_label, alignment=Qt.AlignCenter)
+
+        # Character preview (QLabel displaying QPixmap) - match GRAM size
         self.preview_label = QLabel()
-        self.preview_label.setFixedSize(48, 48)
+        self.preview_label.setFixedSize(60, 60)
         self.preview_label.setAlignment(Qt.AlignCenter)
         pixmap = self._render_character()
         self.preview_label.setPixmap(pixmap)
-        layout.addWidget(self.preview_label)
+        layout.addWidget(self.preview_label, alignment=Qt.AlignCenter)
 
-        # Character label
+        # Character label - extra label not in GRAM
         self.char_label = QLabel(self.label_text[:10])  # Truncate long labels
-        self.char_label.setStyleSheet("color: #969696; font-size: 8px;")
         self.char_label.setAlignment(Qt.AlignCenter)
-        layout.addWidget(self.char_label)
+        layout.addWidget(self.char_label, alignment=Qt.AlignCenter)
 
-        # Style
+        # Add flexible space at bottom
+        layout.addStretch()
+
+        # Style - match GRAM formatting
         self.setStyleSheet("""
             QFrame {
                 background-color: #2b2b2b;
@@ -72,13 +78,14 @@ class GromThumbnail(QFrame):
                 border: 1px solid #5c5c5c;
             }
             QLabel {
+                color: #787878;
                 background-color: transparent;
             }
         """)
 
     def _render_character(self) -> QPixmap:
         """Render GROM character to QPixmap - more WSL-compatible than direct painting"""
-        pixmap = QPixmap(48, 48)
+        pixmap = QPixmap(60, 60)
         pixmap.fill(Qt.transparent)
 
         painter = QPainter(pixmap)
