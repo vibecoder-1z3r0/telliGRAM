@@ -103,22 +103,9 @@ class GromData:
             card_num: GROM card number (0-255)
 
         Returns:
-            Label string (e.g., "'A'" for letter A, "Extended 95" for card 95, or custom label)
+            Custom label string, or empty string if no label defined
         """
-        # Check for custom label first
-        if card_num in self._labels:
-            return self._labels[card_num]
-
-        # Fall back to auto-generated labels
-        if card_num <= 94:
-            # ASCII range - return the character in quotes
-            char = self.grom_to_ascii(card_num)
-            if char == ' ':
-                return "' '"
-            return f"'{char}'"
-        else:
-            # Extended graphics
-            return f"Extended {card_num}"
+        return self._labels.get(card_num, "")
 
     def is_ascii(self, card_num: int) -> bool:
         """
