@@ -21,6 +21,7 @@ class PixelEditorWidget(QWidget):
         self.drawing = False
         self.draw_value = 1  # 1 = set pixel, 0 = erase
         self.stroke_start_data = None  # Card state at start of stroke
+        self.show_grid = True  # Grid visible by default
 
         # Calculate total size
         total_size = self.pixel_size * self.grid_size
@@ -49,6 +50,11 @@ class PixelEditorWidget(QWidget):
             self.card.clear()
             self.update()
             self.card_changed.emit()
+
+    def set_grid_visible(self, visible: bool):
+        """Toggle grid visibility"""
+        self.show_grid = visible
+        self.update()
 
     def mousePressEvent(self, event: QMouseEvent):
         """Handle mouse press"""
@@ -145,18 +151,19 @@ class PixelEditorWidget(QWidget):
                 else:
                     painter.fillRect(px, py, self.pixel_size, self.pixel_size, QColor("#2D2D30"))
 
-        # Draw grid lines
-        painter.setPen(QPen(QColor("#3E3E42"), 1))
+        # Draw grid lines (if enabled)
+        if self.show_grid:
+            painter.setPen(QPen(QColor("#3E3E42"), 1))
 
-        # Vertical lines
-        for x in range(self.grid_size + 1):
-            px = x * self.pixel_size
-            painter.drawLine(px, 0, px, self.height())
+            # Vertical lines
+            for x in range(self.grid_size + 1):
+                px = x * self.pixel_size
+                painter.drawLine(px, 0, px, self.height())
 
-        # Horizontal lines
-        for y in range(self.grid_size + 1):
-            py = y * self.pixel_size
-            painter.drawLine(0, py, self.width(), py)
+            # Horizontal lines
+            for y in range(self.grid_size + 1):
+                py = y * self.pixel_size
+                painter.drawLine(0, py, self.width(), py)
 
         # Draw thicker border
         painter.setPen(QPen(QColor("#666666"), 2))

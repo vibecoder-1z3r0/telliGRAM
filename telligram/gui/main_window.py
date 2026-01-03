@@ -2,7 +2,7 @@
 from PySide6.QtWidgets import (
     QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
     QMenuBar, QMenu, QFileDialog, QMessageBox, QStatusBar,
-    QLabel, QPushButton, QTabWidget, QApplication, QInputDialog
+    QLabel, QPushButton, QTabWidget, QApplication, QInputDialog, QCheckBox
 )
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QAction, QUndoStack, QUndoCommand
@@ -205,6 +205,12 @@ class MainWindow(QMainWindow):
 
         self.pixel_editor = PixelEditorWidget(main_window=self)
         editor_layout.addWidget(self.pixel_editor)
+
+        # Grid toggle checkbox
+        self.grid_checkbox = QCheckBox("Show Grid")
+        self.grid_checkbox.setChecked(True)
+        self.grid_checkbox.stateChanged.connect(self._on_grid_toggled)
+        editor_layout.addWidget(self.grid_checkbox)
 
         # Buttons
         button_layout = QHBoxLayout()
@@ -436,6 +442,10 @@ class MainWindow(QMainWindow):
         """Flip current card vertically"""
         command = FlipVerticalCommand(self, self.current_card_slot)
         self.undo_stack.push(command)
+
+    def _on_grid_toggled(self, state: int):
+        """Handle grid toggle checkbox"""
+        self.pixel_editor.set_grid_visible(state == Qt.Checked)
 
     def update_title(self):
         """Update window title"""

@@ -7,7 +7,7 @@ Helps users reference available characters and avoid wasting GRAM slots.
 
 from PySide6.QtWidgets import (
     QWidget, QGridLayout, QLabel, QVBoxLayout, QHBoxLayout, QScrollArea, QFrame,
-    QMenu, QInputDialog
+    QMenu, QInputDialog, QCheckBox
 )
 from PySide6.QtCore import Qt, Signal
 from PySide6.QtGui import QPainter, QColor, QPen, QFont, QPixmap, QAction
@@ -142,6 +142,7 @@ class GromPreviewWidget(QWidget):
         self.preview_color = 7  # Default to white
         self.pixel_size = 40  # Match GRAM editor size
         self.grid_size = 8
+        self.show_grid = True  # Grid visible by default
 
         # Calculate total size (same as GRAM pixel editor)
         total_size = self.pixel_size * self.grid_size
@@ -156,6 +157,11 @@ class GromPreviewWidget(QWidget):
     def set_color(self, color_index: int):
         """Set preview color"""
         self.preview_color = color_index
+        self.update()
+
+    def set_grid_visible(self, visible: bool):
+        """Toggle grid visibility"""
+        self.show_grid = visible
         self.update()
 
     def paintEvent(self, event):
@@ -189,18 +195,19 @@ class GromPreviewWidget(QWidget):
                 else:
                     painter.fillRect(px, py, self.pixel_size, self.pixel_size, QColor("#2D2D30"))
 
-        # Draw grid lines
-        painter.setPen(QPen(QColor("#3E3E42"), 1))
+        # Draw grid lines (if enabled)
+        if self.show_grid:
+            painter.setPen(QPen(QColor("#3E3E42"), 1))
 
-        # Vertical lines
-        for x in range(self.grid_size + 1):
-            px = x * self.pixel_size
-            painter.drawLine(px, 0, px, self.height())
+            # Vertical lines
+            for x in range(self.grid_size + 1):
+                px = x * self.pixel_size
+                painter.drawLine(px, 0, px, self.height())
 
-        # Horizontal lines
-        for y in range(self.grid_size + 1):
-            py = y * self.pixel_size
-            painter.drawLine(0, py, self.width(), py)
+            # Horizontal lines
+            for y in range(self.grid_size + 1):
+                py = y * self.pixel_size
+                painter.drawLine(0, py, self.width(), py)
 
         # Draw thicker border
         painter.setPen(QPen(QColor("#666666"), 2))
@@ -309,6 +316,13 @@ class GromBrowserWidget(QWidget):
         self.preview_widget = GromPreviewWidget()
         preview_layout.addWidget(self.preview_widget, alignment=Qt.AlignTop)
 
+        # Grid toggle checkbox
+        self.grid_checkbox = QCheckBox("Show Grid")
+        self.grid_checkbox.setChecked(True)
+        self.grid_checkbox.setStyleSheet("color: #cccccc; font-size: 11px;")
+        self.grid_checkbox.stateChanged.connect(self._on_grid_toggled)
+        preview_layout.addWidget(self.grid_checkbox)
+
         # Color palette
         palette_label = QLabel("Preview Color:")
         palette_label.setStyleSheet("color: #cccccc; font-size: 11px;")
@@ -337,6 +351,10 @@ class GromBrowserWidget(QWidget):
     def _on_color_selected(self, color_index: int):
         """Handle color selection"""
         self.preview_widget.set_color(color_index)
+
+    def _on_grid_toggled(self, state: int):
+        """Handle grid toggle checkbox"""
+        self.preview_widget.set_grid_visible(state == Qt.Checked)
 
     def _update_preview(self, card_num: int):
         """Update preview panel with selected card"""
