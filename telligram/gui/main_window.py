@@ -16,6 +16,7 @@ from telligram.gui.widgets.stic_figures import SticFiguresWidget
 from telligram.gui.widgets.timeline_editor_new import TimelineEditorWidget
 from telligram.gui.widgets.animation_composer import AnimationComposerWidget
 from telligram.gui.widgets.color_palette import ColorPaletteWidget
+from telligram.gui.widgets.export_dialog import ExportDialog
 from telligram.__version__ import __version__
 
 
@@ -69,43 +70,10 @@ class MainWindow(QMainWindow):
 
         file_menu.addSeparator()
 
-        # Export submenu
-        export_menu = file_menu.addMenu("&Export All Cards")
-
-        export_intybasic_visual_action = QAction("IntyBASIC (Visual)...", self)
-        export_intybasic_visual_action.triggered.connect(self.export_all_intybasic_visual)
-        export_menu.addAction(export_intybasic_visual_action)
-
-        export_intybasic_data_action = QAction("IntyBASIC (Data)...", self)
-        export_intybasic_data_action.triggered.connect(self.export_all_intybasic_data)
-        export_menu.addAction(export_intybasic_data_action)
-
-        export_menu.addSeparator()
-
-        export_mbcc_action = QAction("MBCC...", self)
-        export_mbcc_action.triggered.connect(self.export_all_mbcc)
-        export_menu.addAction(export_mbcc_action)
-
-        export_menu.addSeparator()
-
-        export_asm_action = QAction("Assembly (DECLE)...", self)
-        export_asm_action.triggered.connect(self.export_all_asm)
-        export_menu.addAction(export_asm_action)
-
-        # Export Animation submenu
-        export_anim_menu = file_menu.addMenu("Export &Animation")
-
-        export_anim_intybasic_action = QAction("IntyBASIC...", self)
-        export_anim_intybasic_action.triggered.connect(self.export_animation_intybasic)
-        export_anim_menu.addAction(export_anim_intybasic_action)
-
-        export_anim_mbcc_action = QAction("MBCC...", self)
-        export_anim_mbcc_action.triggered.connect(self.export_animation_mbcc)
-        export_anim_menu.addAction(export_anim_mbcc_action)
-
-        export_anim_asm_action = QAction("Assembly (DECLE)...", self)
-        export_anim_asm_action.triggered.connect(self.export_animation_asm)
-        export_anim_menu.addAction(export_anim_asm_action)
+        # Export all GRAM cards action
+        export_all_action = QAction("Export all &GRAM Cards...", self)
+        export_all_action.triggered.connect(self.export_all_gram_cards)
+        file_menu.addAction(export_all_action)
 
         file_menu.addSeparator()
 
@@ -490,89 +458,20 @@ class MainWindow(QMainWindow):
             "<p><i><a href='https://aiattribution.github.io/statements/AIA-PAI-Nc-Hin-R-?model=Claude%20Code%20%5BSonnet%204.5%5D-v1.0'>AIA PAI Nc Hin R Claude Code [Sonnet 4.5] v1.0</a></i></p>"
         )
 
-    def export_all_intybasic_visual(self):
-        """Export all cards as IntyBASIC code (visual format)"""
-        filename, _ = QFileDialog.getSaveFileName(
-            self,
-            "Export All Cards (IntyBASIC Visual)",
-            "",
-            "IntyBASIC Source (*.bas);;All Files (*)"
-        )
+    def export_all_gram_cards(self):
+        """Export all GRAM cards using unified export dialog"""
+        def generator(format_key):
+            """Generate code based on selected format"""
+            generators = {
+                "intybasic_visual": self._generate_all_cards_intybasic_visual,
+                "intybasic_data": self._generate_all_cards_intybasic_data,
+                "mbcc": self._generate_all_cards_mbcc,
+                "asm": self._generate_all_cards_asm
+            }
+            return generators[format_key]()
 
-        if filename:
-            if not filename.endswith('.bas'):
-                filename += '.bas'
-
-            try:
-                code = self._generate_all_cards_intybasic_visual()
-                with open(filename, 'w') as f:
-                    f.write(code)
-                self.status_bar.showMessage(f"Exported to: {filename}")
-            except Exception as e:
-                QMessageBox.critical(self, "Error", f"Failed to export cards:\n{e}")
-
-    def export_all_intybasic_data(self):
-        """Export all cards as IntyBASIC code (DATA format)"""
-        filename, _ = QFileDialog.getSaveFileName(
-            self,
-            "Export All Cards (IntyBASIC Data)",
-            "",
-            "IntyBASIC Source (*.bas);;All Files (*)"
-        )
-
-        if filename:
-            if not filename.endswith('.bas'):
-                filename += '.bas'
-
-            try:
-                code = self._generate_all_cards_intybasic_data()
-                with open(filename, 'w') as f:
-                    f.write(code)
-                self.status_bar.showMessage(f"Exported to: {filename}")
-            except Exception as e:
-                QMessageBox.critical(self, "Error", f"Failed to export cards:\n{e}")
-
-    def export_all_mbcc(self):
-        """Export all cards as MBCC code"""
-        filename, _ = QFileDialog.getSaveFileName(
-            self,
-            "Export All Cards (MBCC)",
-            "",
-            "C Header (*.h);;C Source (*.c);;All Files (*)"
-        )
-
-        if filename:
-            if not filename.endswith('.h') and not filename.endswith('.c'):
-                filename += '.h'
-
-            try:
-                code = self._generate_all_cards_mbcc()
-                with open(filename, 'w') as f:
-                    f.write(code)
-                self.status_bar.showMessage(f"Exported to: {filename}")
-            except Exception as e:
-                QMessageBox.critical(self, "Error", f"Failed to export cards:\n{e}")
-
-    def export_all_asm(self):
-        """Export all cards as Assembly code"""
-        filename, _ = QFileDialog.getSaveFileName(
-            self,
-            "Export All Cards (Assembly)",
-            "",
-            "Assembly Source (*.asm);;All Files (*)"
-        )
-
-        if filename:
-            if not filename.endswith('.asm'):
-                filename += '.asm'
-
-            try:
-                code = self._generate_all_cards_asm()
-                with open(filename, 'w') as f:
-                    f.write(code)
-                self.status_bar.showMessage(f"Exported to: {filename}")
-            except Exception as e:
-                QMessageBox.critical(self, "Error", f"Failed to export cards:\n{e}")
+        dialog = ExportDialog("Export all GRAM Cards", generator, self)
+        dialog.exec()
 
     def _generate_all_cards_intybasic_visual(self) -> str:
         """Generate IntyBASIC code for all non-empty cards (visual format)"""
@@ -689,86 +588,24 @@ class MainWindow(QMainWindow):
         code += f"; Total cards exported: {card_count}\n"
         return code
 
-    def export_animation_intybasic(self):
-        """Export current animation as IntyBASIC code"""
-        if not self.timeline_editor or not self.timeline_editor.current_animation:
+    def export_animation(self, animation):
+        """Export animation using unified export dialog"""
+        if not animation:
             QMessageBox.warning(self, "No Animation", "Please select an animation to export.")
             return
 
-        anim = self.timeline_editor.current_animation
+        def generator(format_key):
+            """Generate code based on selected format"""
+            generators = {
+                "intybasic_visual": lambda: self._generate_animation_intybasic(animation),
+                "intybasic_data": lambda: self._generate_animation_intybasic(animation),  # Same as visual for animations
+                "mbcc": lambda: self._generate_animation_mbcc(animation),
+                "asm": lambda: self._generate_animation_asm(animation)
+            }
+            return generators[format_key]()
 
-        filename, _ = QFileDialog.getSaveFileName(
-            self,
-            "Export Animation (IntyBASIC)",
-            f"{anim.name}.bas",
-            "IntyBASIC Source (*.bas);;All Files (*)"
-        )
-
-        if filename:
-            if not filename.endswith('.bas'):
-                filename += '.bas'
-
-            try:
-                code = self._generate_animation_intybasic(anim)
-                with open(filename, 'w') as f:
-                    f.write(code)
-                self.status_bar.showMessage(f"Exported animation to: {filename}")
-            except Exception as e:
-                QMessageBox.critical(self, "Error", f"Failed to export animation:\n{e}")
-
-    def export_animation_mbcc(self):
-        """Export current animation as MBCC code"""
-        if not self.timeline_editor or not self.timeline_editor.current_animation:
-            QMessageBox.warning(self, "No Animation", "Please select an animation to export.")
-            return
-
-        anim = self.timeline_editor.current_animation
-
-        filename, _ = QFileDialog.getSaveFileName(
-            self,
-            "Export Animation (MBCC)",
-            f"{anim.name}.h",
-            "C Header (*.h);;C Source (*.c);;All Files (*)"
-        )
-
-        if filename:
-            if not filename.endswith('.h') and not filename.endswith('.c'):
-                filename += '.h'
-
-            try:
-                code = self._generate_animation_mbcc(anim)
-                with open(filename, 'w') as f:
-                    f.write(code)
-                self.status_bar.showMessage(f"Exported animation to: {filename}")
-            except Exception as e:
-                QMessageBox.critical(self, "Error", f"Failed to export animation:\n{e}")
-
-    def export_animation_asm(self):
-        """Export current animation as Assembly code"""
-        if not self.timeline_editor or not self.timeline_editor.current_animation:
-            QMessageBox.warning(self, "No Animation", "Please select an animation to export.")
-            return
-
-        anim = self.timeline_editor.current_animation
-
-        filename, _ = QFileDialog.getSaveFileName(
-            self,
-            "Export Animation (Assembly)",
-            f"{anim.name}.asm",
-            "Assembly Source (*.asm);;All Files (*)"
-        )
-
-        if filename:
-            if not filename.endswith('.asm'):
-                filename += '.asm'
-
-            try:
-                code = self._generate_animation_asm(anim)
-                with open(filename, 'w') as f:
-                    f.write(code)
-                self.status_bar.showMessage(f"Exported animation to: {filename}")
-            except Exception as e:
-                QMessageBox.critical(self, "Error", f"Failed to export animation:\n{e}")
+        dialog = ExportDialog(f"Export Animation: {animation.name}", generator, self)
+        dialog.exec()
 
     def _generate_animation_intybasic(self, anim) -> str:
         """Generate IntyBASIC code for animation"""

@@ -364,6 +364,10 @@ class TimelineEditorWidget(QWidget):
         self.delete_anim_btn.clicked.connect(self._delete_animation)
         anim_header.addWidget(self.delete_anim_btn)
 
+        self.export_anim_btn = QPushButton("Export")
+        self.export_anim_btn.clicked.connect(self._export_animation)
+        anim_header.addWidget(self.export_anim_btn)
+
         layout.addLayout(anim_header)
 
         # Timeline label
@@ -680,6 +684,18 @@ class TimelineEditorWidget(QWidget):
                 else:
                     self._load_animation(None)
                 self.animation_changed.emit()
+
+    def _export_animation(self):
+        """Export current animation"""
+        if not self.current_animation:
+            QMessageBox.warning(self, "No Animation", "Please select an animation to export.")
+            return
+
+        # Call main window's export method
+        if self.main_window:
+            self.main_window.export_animation(self.current_animation)
+        else:
+            QMessageBox.warning(self, "Export Not Available", "Export requires main window context.")
 
     def _add_current_card(self):
         """Add current card to end of animation"""

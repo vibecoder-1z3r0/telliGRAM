@@ -9,6 +9,7 @@ from PySide6.QtGui import QPainter, QColor, QPen, QPixmap, QAction, QFont
 from telligram.core.project import Project
 from telligram.core.card import GramCard
 from telligram.core.constants import get_color_hex, INTELLIVISION_PALETTE
+from telligram.gui.widgets.export_dialog import ExportDialog
 
 
 class CardThumbnail(QFrame):
@@ -178,41 +179,40 @@ class CardThumbnail(QFrame):
                 color_action.triggered.connect(lambda *args, idx=i: self._change_color(idx))
                 color_menu.addAction(color_action)
 
-        # Separator before code generation
+        # Separator before export
         if has_card:
             menu.addSeparator()
 
-        # Code generation submenu (only if card exists)
+        # Export action (only if card exists)
         if has_card:
-            gen_menu = menu.addMenu("Generate Code")
-
-            intybasic_visual_action = QAction("IntyBASIC (Visual)", self)
-            intybasic_visual_action.triggered.connect(self._generate_intybasic_visual)
-            gen_menu.addAction(intybasic_visual_action)
-
-            intybasic_data_action = QAction("IntyBASIC (Data)", self)
-            intybasic_data_action.triggered.connect(self._generate_intybasic_data)
-            gen_menu.addAction(intybasic_data_action)
-
-            gen_menu.addSeparator()
-
-            mbcc_action = QAction("MBCC", self)
-            mbcc_action.triggered.connect(self._generate_mbcc)
-            gen_menu.addAction(mbcc_action)
-
-            gen_menu.addSeparator()
-
-            asm_action = QAction("Assembly (DECLE)", self)
-            asm_action.triggered.connect(self._generate_asm)
-            gen_menu.addAction(asm_action)
+            export_action = QAction("Export...", self)
+            export_action.triggered.connect(self._export_card)
+            menu.addAction(export_action)
 
         menu.exec(event.globalPos())
 
-    def _generate_intybasic_visual(self):
-        """Generate IntyBASIC code for this card (visual format)"""
+    def _export_card(self):
+        """Export this card using unified export dialog"""
         if self.card is None:
             return
 
+        def generator(format_key):
+            """Generate code based on selected format"""
+            if format_key == "intybasic_visual":
+                return self._generate_intybasic_visual_code()
+            elif format_key == "intybasic_data":
+                return self._generate_intybasic_data_code()
+            elif format_key == "mbcc":
+                return self._generate_mbcc_code()
+            elif format_key == "asm":
+                return self._generate_asm_code()
+            return ""
+
+        dialog = ExportDialog(f"Export Card #{self.slot}", generator, self)
+        dialog.exec()
+
+    def _generate_intybasic_visual_code(self) -> str:
+        """Generate IntyBASIC code for this card (visual format)"""
         # Get card data as binary strings
         binary_rows = self.card.to_binary_strings()
 
@@ -227,14 +227,10 @@ class CardThumbnail(QFrame):
         code += f"BITMAP card_{self.slot}\n"
         code += "\n".join(visual_rows)
         code += "\nEND\n"
+        return code
 
-        self._show_code_dialog("IntyBASIC Code (Visual)", code)
-
-    def _generate_intybasic_data(self):
+    def _generate_intybasic_data_code(self) -> str:
         """Generate IntyBASIC code for this card (DATA format)"""
-        if self.card is None:
-            return
-
         # Get card data as 8 bytes
         data = self.card.to_bytes()
 
@@ -244,14 +240,10 @@ class CardThumbnail(QFrame):
         code += "    DATA "
         code += ", ".join(f"${byte:02X}" for byte in data)
         code += "\nEND\n"
+        return code
 
-        self._show_code_dialog("IntyBASIC Code (Data)", code)
-
-    def _generate_mbcc(self):
+    def _generate_mbcc_code(self) -> str:
         """Generate MBCC code for this card"""
-        if self.card is None:
-            return
-
         # Get card data as binary strings
         binary_rows = self.card.to_binary_strings()
 
@@ -266,14 +258,10 @@ class CardThumbnail(QFrame):
         code += f"const U16 card_{self.slot} = SBITMAP(\n"
         code += ",\n".join(visual_rows)
         code += ");\n"
+        return code
 
-        self._show_code_dialog("MBCC Code", code)
-
-    def _generate_asm(self):
+    def _generate_asm_code(self) -> str:
         """Generate Assembly DECLE code for this card"""
-        if self.card is None:
-            return
-
         # Get card data as 8 bytes
         data = self.card.to_bytes()
 
@@ -288,34 +276,7 @@ class CardThumbnail(QFrame):
             decle = (high_byte << 8) | low_byte
             code += f"    DECLE ${decle:04X}    ; rows {i}-{i+1}\n"
 
-        self._show_code_dialog("Assembly Code", code)
-
-    def _show_code_dialog(self, title: str, code: str):
-        """Show generated code in a dialog"""
-        dialog = QDialog(self)
-        dialog.setWindowTitle(title)
-        dialog.setMinimumSize(500, 300)
-
-        layout = QVBoxLayout(dialog)
-
-        # Code display
-        text_edit = QTextEdit()
-        text_edit.setPlainText(code)
-        text_edit.setReadOnly(True)
-        text_edit.setFont(QFont("Courier", 10))
-        layout.addWidget(text_edit)
-
-        # Copy button
-        copy_button = QPushButton("Copy to Clipboard")
-        copy_button.clicked.connect(lambda: QApplication.clipboard().setText(code))
-        layout.addWidget(copy_button)
-
-        # Close button
-        close_button = QPushButton("Close")
-        close_button.clicked.connect(dialog.accept)
-        layout.addWidget(close_button)
-
-        dialog.exec()
+        return code
 
     def _copy_card(self):
         """Copy this card to clipboard"""
