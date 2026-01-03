@@ -580,6 +580,8 @@ class SticFiguresWidget(QWidget):
             self._apply_current_to_selected()
             # Update UI to show what was just painted
             self._update_properties_from_tile(self.selected_row, self.selected_col)
+            # Reset paint mode since we already painted
+            self.paint_on_click = False
 
     def _on_card_deselected(self):
         """Handle card deselection (clicking empty palette area)"""
