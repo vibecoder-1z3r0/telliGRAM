@@ -426,7 +426,32 @@ class CardPaletteWidget(QWidget):
 
 
 class SticFiguresWidget(QWidget):
-    """Main STIC Figures widget with three-panel layout"""
+    """Main STIC Figures widget with three-panel layout.
+
+    Interaction Model:
+    ------------------
+    1. **Select from palette**: Click GRAM/GROM card to select it
+       - Card becomes current_card for painting
+       - Card selection persists even after clicking off palette
+
+    2. **Click tile (Eyedropper)**: Click BACKTAB tile to inspect/copy it
+       - Tile becomes selected, properties panel shows its values
+       - current_card updates to match the tile's card (eyedropper)
+       - Enables copying tiles: click source tile, Ctrl+Click targets
+
+    3. **Ctrl+Click tile (Paint)**: Ctrl+Click to paint current_card
+       - Immediately paints current_card to clicked tile
+       - Works with cards from palette OR from eyedropper
+       - Brush workflow: select once, Ctrl+Click multiple tiles
+
+    4. **Right-click tile (Clear)**: Right-click → "Set to GROM 0"
+       - Quickly clears tile to blank card
+       - Useful for erasing or resetting tiles
+
+    5. **Properties panel**: Modify selected tile's card/colors/flags
+       - Changes apply immediately to selected tile
+       - Spinbox, color combos, checkboxes all update live
+    """
 
     def __init__(self, project=None, grom_path=None, parent=None):
         super().__init__(parent)
@@ -658,15 +683,26 @@ class SticFiguresWidget(QWidget):
             self.current_fg_color = tile['fg_color']
 
     def _on_tile_clicked(self, row, col):
-        """Handle tile click on canvas - just selects the tile"""
+        """Handle tile click on canvas - selects tile with eyedropper effect.
+
+        Updates current_card to match the clicked tile, allowing you to:
+        1. Click a palette card, then click tiles to select them (normal flow)
+        2. Click a tile to "pick up" its card, then Ctrl+Click other tiles to copy it
+        """
         self.selected_row = row
         self.selected_col = col
 
         # Update properties panel to show tile's current state
+        # This also updates current_card (eyedropper effect)
         self._update_properties_from_tile(row, col)
 
     def _on_tile_ctrl_clicked(self, row, col):
-        """Handle Ctrl+Click on tile - paint current card"""
+        """Handle Ctrl+Click on tile - paint current card.
+
+        Paints whatever card is currently selected (either from palette or
+        from clicking another tile). This enables a "brush" workflow for
+        quickly painting multiple tiles with the same card.
+        """
         self.selected_row = row
         self.selected_col = col
 
