@@ -458,58 +458,66 @@ class CompositePreviewWidget(QWidget):
         self.num_visible_layers = 2
         self._update_layer_buttons()
 
-        # Playback controls
+        # Playback controls (single horizontal layout to match Animation Timelines)
         playback_group = QGroupBox("Playback")
         playback_layout = QVBoxLayout(playback_group)
+        playback_controls = QHBoxLayout()
 
-        # Buttons
-        btn_layout = QHBoxLayout()
+        # Playback buttons
         self.play_btn = QPushButton("▶ Play")
         self.play_btn.clicked.connect(self._toggle_playback)
-        btn_layout.addWidget(self.play_btn)
+        playback_controls.addWidget(self.play_btn)
+
+        playback_controls.addWidget(QLabel("|"))
 
         self.stop_btn = QPushButton("⏹ Stop")
         self.stop_btn.clicked.connect(self._stop_playback)
-        btn_layout.addWidget(self.stop_btn)
+        playback_controls.addWidget(self.stop_btn)
+
+        playback_controls.addWidget(QLabel("|"))
 
         self.rewind_btn = QPushButton("⏮ Rewind")
         self.rewind_btn.clicked.connect(self._rewind)
-        btn_layout.addWidget(self.rewind_btn)
+        playback_controls.addWidget(self.rewind_btn)
 
-        playback_layout.addLayout(btn_layout)
-
-        # Speed control
-        speed_layout = QHBoxLayout()
-        speed_layout.addWidget(QLabel("FPS:"))
-        self.speed_slider = QSlider(Qt.Horizontal)
-        self.speed_slider.setMinimum(1)
-        self.speed_slider.setMaximum(60)  # Cap at 60 FPS (Intellivision's refresh rate)
-        self.speed_slider.setValue(60)
-        self.speed_slider.setMaximumWidth(140)  # Make slider more compact
-        speed_layout.addWidget(self.speed_slider)
-        self.speed_label = QLabel("60")
-        self.speed_label.setFixedWidth(30)
-        self.speed_slider.valueChanged.connect(self._on_speed_changed)
-        speed_layout.addWidget(self.speed_label)
-        speed_layout.addStretch()
-
-        # Frame counter label
-        self.playback_info_label = QLabel("F: 000/000")
-        speed_layout.addWidget(self.playback_info_label)
-
-        playback_layout.addLayout(speed_layout)
+        playback_controls.addWidget(QLabel("|"))
 
         # Loop checkbox
         self.loop_check = QCheckBox("Loop")
         self.loop_check.setChecked(False)
-        playback_layout.addWidget(self.loop_check)
+        playback_controls.addWidget(self.loop_check)
+
+        playback_controls.addWidget(QLabel("|"))
 
         # Grid checkbox
         self.grid_check = QCheckBox("Grid")
         self.grid_check.setChecked(True)
         self.grid_check.stateChanged.connect(self._on_grid_changed)
-        playback_layout.addWidget(self.grid_check)
+        playback_controls.addWidget(self.grid_check)
 
+        playback_controls.addWidget(QLabel("|"))
+
+        # Speed control
+        playback_controls.addWidget(QLabel("FPS:"))
+        self.speed_slider = QSlider(Qt.Horizontal)
+        self.speed_slider.setMinimum(1)
+        self.speed_slider.setMaximum(60)  # Cap at 60 FPS (Intellivision's refresh rate)
+        self.speed_slider.setValue(60)
+        self.speed_slider.setFixedWidth(100)
+        self.speed_slider.valueChanged.connect(self._on_speed_changed)
+        playback_controls.addWidget(self.speed_slider)
+
+        self.speed_label = QLabel("60")
+        self.speed_label.setFixedWidth(30)
+        playback_controls.addWidget(self.speed_label)
+
+        playback_controls.addStretch()
+
+        # Frame counter label
+        self.playback_info_label = QLabel("F: 000/000")
+        playback_controls.addWidget(self.playback_info_label)
+
+        playback_layout.addLayout(playback_controls)
         layout.addWidget(playback_group)
 
         # Preview area
