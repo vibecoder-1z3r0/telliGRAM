@@ -142,11 +142,19 @@ class GromData:
         """
         Load GROM data from JSON file.
 
+        JSON format: Object with card numbers as keys
+        {
+          "0": [0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00],
+          "33": [0x18, 0x24, 0x42, 0x42, 0x7E, 0x42, 0x42, 0x00],
+          ...
+        }
+
         Args:
             grom_json_path: Path to GROM.json file (required)
 
         Returns:
-            List of 256 cards, each card is a list of 8 bytes
+            List of 256 cards, each card is a list of 8 bytes.
+            Undefined cards are filled with blank data.
 
         Raises:
             FileNotFoundError: If GROM file doesn't exist
@@ -161,10 +169,49 @@ class GromData:
         try:
             with open(grom_json_path, 'r') as f:
                 data = json.load(f)
-                if not isinstance(data, list) or len(data) != 256:
-                    raise ValueError(f"Invalid GROM.json format: expected array of 256 cards")
-                print(f"Loaded GROM data from {grom_json_path}")
-                return data
+
+                if not isinstance(data, dict):
+                    raise ValueError(f"Invalid GROM.json format: expected object with card numbers as keys")
+
+                # Initialize all 256 cards as blank
+                cards = [[0x00] * 8 for _ in range(256)]
+                loaded_count = 0
+
+                # Load defined cards
+                for key, value in data.items():
+                    # Validate key is numeric
+                    try:
+                        card_num = int(key)
+                    except ValueError:
+                        print(f"WARNING: Ignoring non-numeric card key: '{key}'")
+                        continue
+
+                    # Validate card number is in range
+                    if card_num < 0 or card_num > 255:
+                        print(f"WARNING: Ignoring out-of-bounds card number: {card_num} (must be 0-255)")
+                        continue
+
+                    # Validate card data is a list of 8 bytes
+                    if not isinstance(value, list):
+                        print(f"WARNING: Ignoring card {card_num}: data must be an array")
+                        continue
+
+                    if len(value) != 8:
+                        print(f"WARNING: Ignoring card {card_num}: expected 8 bytes, got {len(value)}")
+                        continue
+
+                    # Validate each byte is 0-255
+                    if not all(isinstance(b, int) and 0 <= b <= 255 for b in value):
+                        print(f"WARNING: Ignoring card {card_num}: bytes must be integers 0-255")
+                        continue
+
+                    # Load the card
+                    cards[card_num] = value
+                    loaded_count += 1
+
+                print(f"Loaded {loaded_count} GROM cards from {grom_json_path}")
+                return cards
+
         except json.JSONDecodeError as e:
             raise ValueError(f"Invalid JSON in {grom_json_path}: {e}")
 
