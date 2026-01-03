@@ -438,6 +438,9 @@ class GromBrowserWidget(QWidget):
             info_text += f" - {card_label}"
         self.card_info_label.setText(f"<h3>{info_text}</h3>")
 
+        # Clear transforms when switching cards
+        self.preview_widget.clear_transforms()
+
         # Update preview
         self.preview_widget.set_card(card_num, card_data)
 
