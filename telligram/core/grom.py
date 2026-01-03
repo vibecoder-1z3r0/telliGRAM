@@ -245,7 +245,7 @@ class GromData:
 
         Supports:
         - Integer: 24
-        - Hex: "0x18" (4 chars: 0x + 2 hex digits)
+        - Hex: "0x18" (4 chars: 0x + 2 hex digits), "$18" (2-3 chars: $ + 1-2 hex digits)
         - Binary: "0b00110011" (10 chars: 0b + 8 binary digits)
         - BITMAP: "00110011" (8 chars: '0'/_/./space = 0, else = 1)
         - Decimal string: "24"
@@ -274,6 +274,14 @@ class GromData:
         if len(value) == 4 and value.startswith(("0x", "0X")):
             try:
                 result = int(value, 16)
+                return result if 0 <= result <= 255 else None
+            except ValueError:
+                return None
+
+        # Hex: 2-3 characters starting with "$" (assembly style)
+        if value.startswith("$") and 2 <= len(value) <= 3:
+            try:
+                result = int(value[1:], 16)
                 return result if 0 <= result <= 255 else None
             except ValueError:
                 return None

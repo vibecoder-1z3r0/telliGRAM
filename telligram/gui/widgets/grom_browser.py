@@ -42,8 +42,8 @@ class GromThumbnail(QFrame):
         layout.setContentsMargins(1, 1, 1, 1)
         layout.setSpacing(0)
 
-        # Card number label
-        self.num_label = QLabel(f"#{card_num}")
+        # Card number label (decimal and hex)
+        self.num_label = QLabel(f"#{card_num} ${card_num:02X}")
         self.num_label.setStyleSheet("color: #787878; font-size: 9px;")
         layout.addWidget(self.num_label)
 
