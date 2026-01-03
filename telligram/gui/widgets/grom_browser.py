@@ -424,8 +424,16 @@ class GromBrowserWidget(QWidget):
         self.preview_widget.toggle_flip_vertical()
 
     def _on_clear_transforms(self):
-        """Handle clear transforms button"""
+        """Handle clear button - full reset to card #0 with default color"""
+        # Reset transforms (flips)
         self.preview_widget.clear_transforms()
+
+        # Reset color to default (white, color index 7)
+        self.preview_widget.set_color(7)
+        self.color_palette.set_color(7)
+
+        # Reset card selection to card #0
+        self._on_thumbnail_clicked(0)
 
     def _update_preview(self, card_num: int):
         """Update preview panel with selected card"""
