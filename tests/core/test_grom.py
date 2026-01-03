@@ -244,7 +244,7 @@ class TestGromByteParsing:
         assert "out-of-bounds" in captured.out.lower()
 
     def test_non_numeric_key_ignored(self, grom_with_test_file, capsys):
-        """Should ignore non-numeric keys"""
+        """Should ignore invalid keys"""
         grom = grom_with_test_file({
             "foo": [24, 36, 66, 66, 126, 66, 66, 0],  # Invalid key
             "0": [0x18, 0x24, 0x42, 0x42, 0x7E, 0x42, 0x42, 0x00]  # Valid
@@ -253,7 +253,7 @@ class TestGromByteParsing:
         assert grom.get_card(0) == [0x18, 0x24, 0x42, 0x42, 0x7E, 0x42, 0x42, 0x00]
         # Check warning
         captured = capsys.readouterr()
-        assert "non-numeric" in captured.out.lower()
+        assert "invalid card key" in captured.out.lower()
 
     def test_parse_visual_format_with_dots(self, grom_with_test_file):
         """Should parse visual format with dots (.) as 0"""
@@ -337,3 +337,39 @@ class TestGromByteParsing:
         })
         assert grom.get_card(0) == [0x18, 0x24, 0x42, 0x42, 0x7E, 0x42, 0x42, 0x00]
         assert grom.get_card(1) == [0x18, 0x24, 0x42, 0x42, 0x7E, 0x42, 0x42, 0x00]
+
+    def test_hex_card_key(self, grom_with_test_file):
+        """Should accept hex card numbers with $ prefix"""
+        grom = grom_with_test_file({
+            "$00": [0x18, 0x24, 0x42, 0x42, 0x7E, 0x42, 0x42, 0x00],
+            "$21": [0x10, 0x20, 0x30, 0x40, 0x50, 0x60, 0x70, 0x80]
+        })
+        assert grom.get_card(0) == [0x18, 0x24, 0x42, 0x42, 0x7E, 0x42, 0x42, 0x00]
+        assert grom.get_card(0x21) == [0x10, 0x20, 0x30, 0x40, 0x50, 0x60, 0x70, 0x80]
+
+    def test_hex_data_values(self, grom_with_test_file):
+        """Should parse $ prefixed hex values in data"""
+        grom = grom_with_test_file({
+            "0": ["$18", "$24", "$42", "$42", "$7E", "$42", "$42", "$00"]
+        })
+        assert grom.get_card(0) == [0x18, 0x24, 0x42, 0x42, 0x7E, 0x42, 0x42, 0x00]
+
+    def test_hex_key_precedence(self, grom_with_test_file):
+        """Hex card key should take precedence over decimal key"""
+        grom = grom_with_test_file({
+            "0": [0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF],
+            "$00": [0x18, 0x24, 0x42, 0x42, 0x7E, 0x42, 0x42, 0x00]
+        })
+        # Hex key should win
+        assert grom.get_card(0) == [0x18, 0x24, 0x42, 0x42, 0x7E, 0x42, 0x42, 0x00]
+
+    def test_hex_key_with_label(self, grom_with_test_file):
+        """Should support hex card keys with labels"""
+        grom = grom_with_test_file({
+            "$00": {
+                "data": ["$18", "$24", "$42", "$42", "$7E", "$42", "$42", "$00"],
+                "label": "Test Card"
+            }
+        })
+        assert grom.get_card(0) == [0x18, 0x24, 0x42, 0x42, 0x7E, 0x42, 0x42, 0x00]
+        assert grom.get_label(0) == "Test Card"
