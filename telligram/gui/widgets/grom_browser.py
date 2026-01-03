@@ -6,13 +6,15 @@ Helps users reference available characters and avoid wasting GRAM slots.
 """
 
 from PySide6.QtWidgets import (
-    QWidget, QGridLayout, QLabel, QVBoxLayout, QScrollArea, QFrame,
+    QWidget, QGridLayout, QLabel, QVBoxLayout, QHBoxLayout, QScrollArea, QFrame,
     QMenu, QInputDialog
 )
 from PySide6.QtCore import Qt, Signal
 from PySide6.QtGui import QPainter, QColor, QPen, QFont, QPixmap, QAction
 
 from telligram.core.grom import GromData
+from telligram.core.constants import get_color_hex
+from telligram.gui.widgets.color_palette import ColorPaletteWidget
 
 
 class GromThumbnail(QFrame):
@@ -125,11 +127,91 @@ class GromThumbnail(QFrame):
         menu.exec(event.globalPos())
 
 
+class GromPreviewWidget(QWidget):
+    """
+    Large preview widget for viewing selected GROM character.
+
+    Read-only display with color selection to preview character in different colors.
+    Similar to GRAM pixel editor but without editing capability.
+    """
+
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.card_data = None
+        self.card_num = 0
+        self.preview_color = 7  # Default to white
+        self.pixel_size = 40  # Match GRAM editor size
+        self.grid_size = 8
+
+        # Calculate total size (same as GRAM pixel editor)
+        total_size = self.pixel_size * self.grid_size
+        self.setFixedSize(total_size, total_size)
+
+    def set_card(self, card_num: int, card_data: list):
+        """Set GROM card to preview"""
+        self.card_num = card_num
+        self.card_data = card_data
+        self.update()
+
+    def set_color(self, color_index: int):
+        """Set preview color"""
+        self.preview_color = color_index
+        self.update()
+
+    def paintEvent(self, event):
+        """Paint the grid and pixels"""
+        painter = QPainter(self)
+        painter.setRenderHint(QPainter.Antialiasing, False)
+
+        # Draw background
+        painter.fillRect(0, 0, self.width(), self.height(), QColor("#1E1E1E"))
+
+        if self.card_data is None:
+            return
+
+        # Get preview color
+        card_color = get_color_hex(self.preview_color)
+
+        # Draw pixels
+        for y in range(self.grid_size):
+            row_byte = self.card_data[y]
+            for x in range(self.grid_size):
+                px = x * self.pixel_size
+                py = y * self.pixel_size
+
+                # Check if pixel is on (bit 7-x in row_byte)
+                bit = 7 - x
+                pixel_on = (row_byte >> bit) & 1
+
+                # Draw pixel
+                if pixel_on:
+                    painter.fillRect(px, py, self.pixel_size, self.pixel_size, QColor(card_color))
+                else:
+                    painter.fillRect(px, py, self.pixel_size, self.pixel_size, QColor("#2D2D30"))
+
+        # Draw grid lines
+        painter.setPen(QPen(QColor("#3E3E42"), 1))
+
+        # Vertical lines
+        for x in range(self.grid_size + 1):
+            px = x * self.pixel_size
+            painter.drawLine(px, 0, px, self.height())
+
+        # Horizontal lines
+        for y in range(self.grid_size + 1):
+            py = y * self.pixel_size
+            painter.drawLine(0, py, self.width(), py)
+
+        # Draw thicker border
+        painter.setPen(QPen(QColor("#666666"), 2))
+        painter.drawRect(0, 0, self.width()-1, self.height()-1)
+
+
 class GromBrowserWidget(QWidget):
     """
     GROM character browser widget.
 
-    Displays all 256 GROM characters in a scrollable grid.
+    Displays all 256 GROM characters in a scrollable grid with preview panel.
     Read-only reference for users to see available built-in characters.
     """
 
@@ -140,7 +222,11 @@ class GromBrowserWidget(QWidget):
         super().__init__(parent)
         self.grom = GromData(grom_path)
         self.thumbnails = []
+        self.selected_card = 0
         self._create_ui()
+
+        # Initialize preview with first card
+        self._update_preview(0)
 
     def _create_ui(self):
         """Create the UI layout"""
@@ -160,7 +246,12 @@ class GromBrowserWidget(QWidget):
         """)
         main_layout.addWidget(title)
 
-        # Scroll area for the grid
+        # Split layout: grid on left, preview panel on right
+        split_layout = QHBoxLayout()
+        split_layout.setContentsMargins(0, 0, 0, 0)
+        split_layout.setSpacing(0)
+
+        # Left side: Scroll area for the grid
         scroll = QScrollArea()
         scroll.setWidgetResizable(True)
         scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
@@ -190,19 +281,76 @@ class GromBrowserWidget(QWidget):
             grid_layout.addWidget(thumb, row, col)
 
         # Set minimum width to fit all 16 columns
-        # 16 cols * 60px + 15 gaps * 2px + margins 8px = 998px
-        container.setMinimumWidth(998)
+        # 16 cols * 70px + 15 gaps * 2px + margins 8px = 1158px
+        container.setMinimumWidth(1158)
 
         scroll.setWidget(container)
-        main_layout.addWidget(scroll)
+        split_layout.addWidget(scroll)
+
+        # Right side: Preview panel
+        preview_panel = QWidget()
+        preview_panel.setStyleSheet("background-color: #1e1e1e;")
+        preview_layout = QVBoxLayout(preview_panel)
+        preview_layout.setContentsMargins(12, 12, 12, 12)
+        preview_layout.setSpacing(12)
+
+        # Card info label
+        self.card_info_label = QLabel("Card #0 $00")
+        self.card_info_label.setStyleSheet("""
+            QLabel {
+                color: #cccccc;
+                font-size: 12px;
+                font-weight: bold;
+            }
+        """)
+        preview_layout.addWidget(self.card_info_label)
+
+        # Preview widget
+        self.preview_widget = GromPreviewWidget()
+        preview_layout.addWidget(self.preview_widget, alignment=Qt.AlignTop)
+
+        # Color palette
+        palette_label = QLabel("Preview Color:")
+        palette_label.setStyleSheet("color: #cccccc; font-size: 11px;")
+        preview_layout.addWidget(palette_label)
+
+        self.color_palette = ColorPaletteWidget()
+        self.color_palette.color_selected.connect(self._on_color_selected)
+        preview_layout.addWidget(self.color_palette)
+
+        preview_layout.addStretch()
+
+        split_layout.addWidget(preview_panel)
+
+        main_layout.addLayout(split_layout)
 
     def _on_thumbnail_clicked(self, card_num: int):
         """Handle thumbnail click"""
+        self.selected_card = card_num
+        self._update_preview(card_num)
         self.card_selected.emit(card_num)
 
     def _on_copy_to_gram_requested(self, grom_card_num: int):
         """Handle copy to GRAM request"""
         self.copy_to_gram_requested.emit(grom_card_num)
+
+    def _on_color_selected(self, color_index: int):
+        """Handle color selection"""
+        self.preview_widget.set_color(color_index)
+
+    def _update_preview(self, card_num: int):
+        """Update preview panel with selected card"""
+        card_data = self.grom.get_card(card_num)
+        card_label = self.grom.get_label(card_num)
+
+        # Update card info label
+        info_text = f"Card #{card_num} ${card_num:02X}"
+        if card_label:
+            info_text += f" - {card_label}"
+        self.card_info_label.setText(info_text)
+
+        # Update preview
+        self.preview_widget.set_card(card_num, card_data)
 
     def get_card_data(self, card_num: int):
         """Get GROM card data by number"""
