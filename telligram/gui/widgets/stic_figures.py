@@ -631,8 +631,9 @@ class SticFiguresWidget(QWidget):
 
     def _on_card_deselected(self):
         """Handle card deselection (clicking empty palette area)"""
-        # Reset to default card (blank)
-        self.current_card = 0
+        # Keep current card for Ctrl+Click painting
+        # Visual deselection in palette is enough feedback
+        pass
 
     def _update_properties_from_tile(self, row, col):
         """Update properties panel to show tile's current state"""
