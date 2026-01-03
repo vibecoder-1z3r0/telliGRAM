@@ -26,10 +26,10 @@ class GromThumbnail(QFrame):
     clicked = Signal(int)  # Emits card number when clicked
     copy_to_gram_requested = Signal(int)  # Emits GROM card number to copy
 
-    def __init__(self, card_num: int, parent=None):
+    def __init__(self, card_num: int, grom: GromData, parent=None):
         super().__init__(parent)
         self.card_num = card_num
-        self.grom = GromData()
+        self.grom = grom
         self.card_data = self.grom.get_card(card_num)
         self.label_text = self.grom.get_label(card_num)
 
@@ -172,7 +172,7 @@ class GromBrowserWidget(QWidget):
 
         # Create 256 thumbnails in 16x16 grid
         for i in range(256):
-            thumb = GromThumbnail(i)
+            thumb = GromThumbnail(i, self.grom)
             thumb.clicked.connect(self._on_thumbnail_clicked)
             thumb.copy_to_gram_requested.connect(self._on_copy_to_gram_requested)
             self.thumbnails.append(thumb)
