@@ -549,6 +549,12 @@ class SticFiguresWidget(QWidget):
         self._update_palette()
         self._update_canvas_data()
 
+    def set_project(self, project):
+        """Update project reference (called when project is loaded/changed)"""
+        self.project = project
+        self._update_palette()
+        self._update_canvas_data()
+
     def _update_palette(self):
         """Update card palette with GRAM/GROM data"""
         if self.project:

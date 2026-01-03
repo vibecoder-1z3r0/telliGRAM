@@ -260,6 +260,7 @@ class MainWindow(QMainWindow):
         """Initialize widgets with default project data"""
         self.card_grid.set_project(self.project)
         self.timeline_editor.set_project(self.project)
+        self.stic_figures.set_project(self.project)
         self.update_title()
         self.update_cards_info()
 
@@ -276,6 +277,7 @@ class MainWindow(QMainWindow):
         self.card_grid.set_project(self.project)
         self.pixel_editor.set_card(None)
         self.timeline_editor.set_project(self.project)
+        self.stic_figures.set_project(self.project)
         self.undo_stack.setClean()
         self.update_title()
         self.update_cards_info()
@@ -298,6 +300,7 @@ class MainWindow(QMainWindow):
                 # Sync main window state to card 0 (which card_grid selects)
                 self.on_card_selected(0)
                 self.timeline_editor.set_project(self.project)
+                self.stic_figures.set_project(self.project)
                 self.undo_stack.setClean()
                 self.update_title()
                 self.update_cards_info()
