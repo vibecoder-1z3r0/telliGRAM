@@ -485,6 +485,7 @@ class CompositePreviewWidget(QWidget):
         self.speed_slider.setMinimum(1)
         self.speed_slider.setMaximum(60)  # Cap at 60 FPS (Intellivision's refresh rate)
         self.speed_slider.setValue(60)
+        self.speed_slider.setMaximumWidth(140)  # Make slider more compact
         speed_layout.addWidget(self.speed_slider)
         self.speed_label = QLabel("60 fps")
         self.speed_slider.valueChanged.connect(self._on_speed_changed)
