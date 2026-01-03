@@ -170,69 +170,82 @@ class GromData:
                 cards = [[0x00] * 8 for _ in range(256)]
                 loaded_count = 0
 
-                # Load defined cards
-                for key, value in data.items():
-                    # Validate key is numeric
-                    try:
-                        card_num = int(key)
-                    except ValueError:
-                        print(f"WARNING: Ignoring non-numeric card key: '{key}'")
-                        continue
+                # Load defined cards (two passes: decimal first, then hex to allow hex to override)
+                for is_hex_pass in [False, True]:
+                    for key, value in data.items():
+                        # Parse key as card number (decimal or hex with $ prefix)
+                        card_num = None
+                        is_hex_key = key.startswith("$")
 
-                    # Validate card number is in range
-                    if card_num < 0 or card_num > 255:
-                        print(f"WARNING: Ignoring out-of-bounds card number: {card_num} (must be 0-255)")
-                        continue
-
-                    # Handle both old (array) and new (object) formats
-                    card_data = None
-                    card_label = None
-
-                    if isinstance(value, dict):
-                        # New format: {"data": [...], "label": "..."}
-                        card_data = value.get("data")
-                        card_label = value.get("label")
-                        if card_data is None:
-                            print(f"WARNING: Ignoring card {card_num}: missing 'data' field")
+                        # Skip if not matching current pass
+                        if is_hex_key != is_hex_pass:
                             continue
-                    elif isinstance(value, list):
-                        # Old format: [...]
-                        card_data = value
-                    else:
-                        print(f"WARNING: Ignoring card {card_num}: value must be array or object")
-                        continue
 
-                    # Validate card data is a list of 8 bytes
-                    if not isinstance(card_data, list):
-                        print(f"WARNING: Ignoring card {card_num}: data must be an array")
-                        continue
+                        try:
+                            if is_hex_key:
+                                # Hex key: $00, $FF, etc.
+                                card_num = int(key[1:], 16)
+                            else:
+                                # Decimal key: 0, 255, etc.
+                                card_num = int(key)
+                        except ValueError:
+                            print(f"WARNING: Ignoring invalid card key: '{key}'")
+                            continue
 
-                    if len(card_data) != 8:
-                        print(f"WARNING: Ignoring card {card_num}: expected 8 bytes, got {len(card_data)}")
-                        continue
+                        # Validate card number is in range
+                        if card_num < 0 or card_num > 255:
+                            print(f"WARNING: Ignoring out-of-bounds card number: {card_num} (must be 0-255)")
+                            continue
 
-                    # Parse and validate each byte
-                    parsed_bytes = []
-                    valid = True
-                    for i, byte_val in enumerate(card_data):
-                        parsed = self._parse_byte(byte_val)
-                        if parsed is None:
-                            print(f"WARNING: Ignoring card {card_num}: invalid byte at index {i}: {byte_val}")
-                            valid = False
-                            break
-                        parsed_bytes.append(parsed)
+                        # Handle both old (array) and new (object) formats
+                        card_data = None
+                        card_label = None
 
-                    if not valid:
-                        continue
+                        if isinstance(value, dict):
+                            # New format: {"data": [...], "label": "..."}
+                            card_data = value.get("data")
+                            card_label = value.get("label")
+                            if card_data is None:
+                                print(f"WARNING: Ignoring card {card_num}: missing 'data' field")
+                                continue
+                        elif isinstance(value, list):
+                            # Old format: [...]
+                            card_data = value
+                        else:
+                            print(f"WARNING: Ignoring card {card_num}: value must be array or object")
+                            continue
 
-                    # Load the card
-                    cards[card_num] = parsed_bytes
+                        # Validate card data is a list of 8 bytes
+                        if not isinstance(card_data, list):
+                            print(f"WARNING: Ignoring card {card_num}: data must be an array")
+                            continue
 
-                    # Store custom label if provided
-                    if card_label:
-                        self._labels[card_num] = card_label
+                        if len(card_data) != 8:
+                            print(f"WARNING: Ignoring card {card_num}: expected 8 bytes, got {len(card_data)}")
+                            continue
 
-                    loaded_count += 1
+                        # Parse and validate each byte
+                        parsed_bytes = []
+                        valid = True
+                        for i, byte_val in enumerate(card_data):
+                            parsed = self._parse_byte(byte_val)
+                            if parsed is None:
+                                print(f"WARNING: Ignoring card {card_num}: invalid byte at index {i}: {byte_val}")
+                                valid = False
+                                break
+                            parsed_bytes.append(parsed)
+
+                        if not valid:
+                            continue
+
+                        # Load the card
+                        cards[card_num] = parsed_bytes
+
+                        # Store custom label if provided
+                        if card_label:
+                            self._labels[card_num] = card_label
+
+                        loaded_count += 1
 
                 return cards
 
