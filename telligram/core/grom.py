@@ -4,9 +4,13 @@ GROM (Graphics ROM) data module.
 Provides access to the 256 built-in Intellivision character graphics.
 Cards 0-94 correspond to ASCII characters 32-126.
 Cards 95-255 are extended graphics (system-specific).
+
+GROM data is loaded from GROM.json if available, otherwise uses built-in defaults.
 """
 
 from typing import List, Optional
+import json
+from pathlib import Path
 
 
 class GromData:
@@ -17,9 +21,15 @@ class GromData:
     Each character is 8x8 pixels (8 bytes, 1 byte per row).
     """
 
-    def __init__(self):
-        """Initialize GROM data"""
-        self._data = self._initialize_grom_data()
+    def __init__(self, grom_json_path: Optional[Path] = None):
+        """
+        Initialize GROM data.
+
+        Args:
+            grom_json_path: Optional path to GROM.json file. If not provided,
+                          looks for GROM.json in current directory, then uses built-in defaults.
+        """
+        self._data = self._load_grom_data(grom_json_path)
 
     @property
     def card_count(self) -> int:
@@ -128,9 +138,50 @@ class GromData:
         """
         return [self.ascii_to_grom(char) for char in text]
 
+    def _load_grom_data(self, grom_json_path: Optional[Path] = None) -> List[List[int]]:
+        """
+        Load GROM data from JSON file or use built-in defaults.
+
+        Args:
+            grom_json_path: Optional path to GROM.json file
+
+        Returns:
+            List of 256 cards, each card is a list of 8 bytes
+        """
+        # Try to load from specified path
+        if grom_json_path and grom_json_path.exists():
+            try:
+                with open(grom_json_path, 'r') as f:
+                    data = json.load(f)
+                    if isinstance(data, list) and len(data) == 256:
+                        print(f"Loaded GROM data from {grom_json_path}")
+                        return data
+                    else:
+                        print(f"Warning: Invalid GROM.json format in {grom_json_path}, using built-in defaults")
+            except Exception as e:
+                print(f"Warning: Error loading {grom_json_path}: {e}, using built-in defaults")
+
+        # Try to load from current directory
+        default_path = Path("GROM.json")
+        if default_path.exists():
+            try:
+                with open(default_path, 'r') as f:
+                    data = json.load(f)
+                    if isinstance(data, list) and len(data) == 256:
+                        print(f"Loaded GROM data from {default_path}")
+                        return data
+                    else:
+                        print(f"Warning: Invalid GROM.json format, using built-in defaults")
+            except Exception as e:
+                print(f"Warning: Error loading GROM.json: {e}, using built-in defaults")
+
+        # Fall back to built-in data
+        print("Using built-in GROM defaults (ASCII only, cards 95-255 are blank)")
+        return self._initialize_grom_data()
+
     def _initialize_grom_data(self) -> List[List[int]]:
         """
-        Initialize GROM character bitmap data.
+        Initialize built-in GROM character bitmap data (fallback).
 
         Returns complete 256-card GROM set.
         Each card is 8 bytes (one byte per row).
