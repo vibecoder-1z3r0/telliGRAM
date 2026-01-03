@@ -480,16 +480,23 @@ class CompositePreviewWidget(QWidget):
 
         # Speed control
         speed_layout = QHBoxLayout()
-        speed_layout.addWidget(QLabel("Speed:"))
+        speed_layout.addWidget(QLabel("FPS:"))
         self.speed_slider = QSlider(Qt.Horizontal)
         self.speed_slider.setMinimum(1)
         self.speed_slider.setMaximum(60)  # Cap at 60 FPS (Intellivision's refresh rate)
         self.speed_slider.setValue(60)
         self.speed_slider.setMaximumWidth(140)  # Make slider more compact
         speed_layout.addWidget(self.speed_slider)
-        self.speed_label = QLabel("60 fps")
+        self.speed_label = QLabel("60")
+        self.speed_label.setFixedWidth(30)
         self.speed_slider.valueChanged.connect(self._on_speed_changed)
         speed_layout.addWidget(self.speed_label)
+        speed_layout.addStretch()
+
+        # Frame counter label
+        self.playback_info_label = QLabel("F: 000/000")
+        speed_layout.addWidget(self.playback_info_label)
+
         playback_layout.addLayout(speed_layout)
 
         # Loop checkbox
@@ -553,11 +560,13 @@ class CompositePreviewWidget(QWidget):
             self.current_composite = composite
             self._load_composite_to_controls()
             self._update_preview()
+            self._update_playback_info()
         else:
             # No composite selected
             self.current_composite = None
             self._clear_layer_controls()
             self._update_preview()
+            self._update_playback_info()
 
     def _clear_layer_controls(self):
         """Clear all layer controls"""
@@ -822,7 +831,7 @@ class CompositePreviewWidget(QWidget):
     def _on_speed_changed(self, fps: int):
         """Handle speed slider change"""
         # Update label
-        self.speed_label.setText(f"{fps} fps")
+        self.speed_label.setText(f"{fps}")
 
         # If currently playing, update timer interval
         if self.is_playing:
@@ -862,6 +871,7 @@ class CompositePreviewWidget(QWidget):
         """Rewind to start"""
         self.current_frame = 0
         self._update_preview()
+        self._update_playback_info()
 
     def _advance_frame(self):
         """Advance to next frame"""
@@ -880,3 +890,14 @@ class CompositePreviewWidget(QWidget):
                 return
 
         self._update_preview()
+        self._update_playback_info()
+
+    def _update_playback_info(self):
+        """Update the playback info label with current frame / total frames"""
+        if self.current_composite:
+            max_duration = self.current_composite.get_max_duration(self.project)
+            self.playback_info_label.setText(
+                f"F: {self.current_frame + 1:03d}/{max_duration:03d}"
+            )
+        else:
+            self.playback_info_label.setText("F: 000/000")
