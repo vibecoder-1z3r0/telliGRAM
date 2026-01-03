@@ -391,10 +391,10 @@ class MainWindow(QMainWindow):
             self,
             "Copy GROM to GRAM",
             f"Copy GROM #{grom_card_num} to which GRAM slot?",
-            value=0,  # Default to slot 0
-            min=0,
-            max=63,
-            step=1
+            0,      # value
+            0,      # minValue
+            63,     # maxValue
+            1       # step
         )
 
         if ok:

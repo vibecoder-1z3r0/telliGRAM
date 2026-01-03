@@ -39,11 +39,11 @@ class GromThumbnail(QFrame):
 
         # Create UI elements
         layout = QVBoxLayout(self)
-        layout.setContentsMargins(2, 2, 2, 2)
-        layout.setSpacing(1)
+        layout.setContentsMargins(1, 1, 1, 1)
+        layout.setSpacing(0)
 
         # Card number label
-        self.num_label = QLabel(f"{card_num}")
+        self.num_label = QLabel(f"#{card_num}")
         self.num_label.setStyleSheet("color: #787878; font-size: 9px;")
         layout.addWidget(self.num_label)
 

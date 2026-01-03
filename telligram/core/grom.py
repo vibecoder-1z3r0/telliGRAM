@@ -234,7 +234,6 @@ class GromData:
 
                     loaded_count += 1
 
-                print(f"Loaded {loaded_count} GROM cards from {grom_json_path}")
                 return cards
 
         except json.JSONDecodeError as e:
