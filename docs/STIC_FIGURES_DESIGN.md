@@ -23,17 +23,23 @@ STIC Figures is a visual tool for designing complete Intellivision screens, incl
 
 **Grid:** 20 columns × 12 rows = 240 tiles
 - Each tile: 8×8 pixels
-- Total playfield: 160×96 pixels
+- Logical playfield: 160×96 pixels (20 × 8 = 160 width)
+- **Visible display: 159×96 pixels** (rightmost pixel column not displayed)
 
 **Screen Coordinates:**
 ```
 Full screen: 176×112 pixels (with 8px border on all sides)
+Visible area: 159×96 pixels (rightmost pixel column hidden)
 
 Border (8px) ┌────────────────────────────────────┐
-             │  BACKTAB playfield (160×96)        │
+             │  BACKTAB playfield (160×96 logical)│
+             │  Visible: 159×96 actual display    │
              │  Card (0,0) at screen (8,8)        │
              │  Card (19,11) at screen (159,95)   │
              └────────────────────────────────────┘
+
+Note: All 20 columns exist in memory and should be editable,
+but the rightmost pixel column won't be visible on hardware.
 
 Coordinate conversion:
   Screen X = 8 + (col × 8)

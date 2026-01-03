@@ -11,13 +11,14 @@ Allows visual design of complete Intellivision screens including:
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, QScrollArea, QFrame,
     QPushButton, QComboBox, QCheckBox, QTabWidget, QGridLayout, QGroupBox,
-    QSpinBox
+    QSpinBox, QFileDialog, QMessageBox
 )
 from PySide6.QtCore import Qt, Signal
 from PySide6.QtGui import QPainter, QColor, QPen, QBrush, QPixmap
 
 from telligram.core.constants import get_color_hex
 from telligram.core.grom import GromData
+from pathlib import Path
 import json
 
 
@@ -477,6 +478,20 @@ class SticFiguresWidget(QWidget):
             self.stack_combos.append(combo)
 
         right_layout.addWidget(stack_group)
+
+        # Save/Load buttons
+        file_group = QGroupBox("File")
+        file_layout = QVBoxLayout(file_group)
+
+        save_btn = QPushButton("Save Figure...")
+        save_btn.clicked.connect(self.save_figure)
+        file_layout.addWidget(save_btn)
+
+        load_btn = QPushButton("Load Figure...")
+        load_btn.clicked.connect(self.load_figure)
+        file_layout.addWidget(load_btn)
+
+        right_layout.addWidget(file_group)
         right_layout.addStretch()
 
         main_layout.addWidget(right_panel)
@@ -494,7 +509,13 @@ class SticFiguresWidget(QWidget):
     def _update_palette(self):
         """Update card palette with GRAM/GROM data"""
         if self.project:
-            gram_data = [self.project.get_card_data(i) for i in range(64)]
+            gram_data = []
+            for i in range(64):
+                card = self.project.get_card(i)
+                if card is not None:
+                    gram_data.append(card.to_bytes())
+                else:
+                    gram_data.append([0] * 8)  # Empty card
             self.palette_widget.set_gram_data(gram_data)
 
         if self.grom_data:
@@ -503,7 +524,13 @@ class SticFiguresWidget(QWidget):
     def _update_canvas_data(self):
         """Update canvas with GRAM/GROM data sources"""
         if self.project and self.grom_data:
-            gram_data = [self.project.get_card_data(i) for i in range(64)]
+            gram_data = []
+            for i in range(64):
+                card = self.project.get_card(i)
+                if card is not None:
+                    gram_data.append(card.to_bytes())
+                else:
+                    gram_data.append([0] * 8)  # Empty card
             self.canvas.set_card_sources(self.grom_data, gram_data)
 
     def _on_card_selected(self, card_num):
@@ -581,3 +608,127 @@ class SticFiguresWidget(QWidget):
         """Handle color stack change"""
         self.canvas.color_stack[slot] = color_idx
         self.canvas.update()
+
+    def save_figure(self):
+        """Save current STIC Figure to JSON file"""
+        file_path, _ = QFileDialog.getSaveFileName(
+            self,
+            "Save STIC Figure",
+            "",
+            "STIC Figure Files (*.sticfig);;JSON Files (*.json);;All Files (*)"
+        )
+
+        if not file_path:
+            return
+
+        try:
+            # Build BACKTAB data array
+            backtab_data = []
+            for row in range(self.canvas.grid_rows):
+                for col in range(self.canvas.grid_cols):
+                    tile = self.canvas.get_tile(row, col)
+                    backtab_data.append({
+                        "row": row,
+                        "col": col,
+                        "card": tile['card'],
+                        "fg_color": tile['fg_color'],
+                        "advance_stack": tile['advance_stack']
+                    })
+
+            # Build complete figure data
+            figure_data = {
+                "name": Path(file_path).stem,
+                "mode": "color_stack",  # Phase 1 only supports Color Stack mode
+                "border": {
+                    "visible": self.canvas.border_visible,
+                    "color": self.canvas.border_color,
+                    "show_left": self.canvas.show_left_border,
+                    "show_top": self.canvas.show_top_border
+                },
+                "color_stack": self.canvas.color_stack.copy(),
+                "backtab": backtab_data
+            }
+
+            # Save to file
+            with open(file_path, 'w') as f:
+                json.dump(figure_data, f, indent=2)
+
+            QMessageBox.information(
+                self,
+                "Success",
+                f"STIC Figure saved to:\n{file_path}"
+            )
+
+        except Exception as e:
+            QMessageBox.critical(
+                self,
+                "Save Error",
+                f"Failed to save STIC Figure:\n{str(e)}"
+            )
+
+    def load_figure(self):
+        """Load STIC Figure from JSON file"""
+        file_path, _ = QFileDialog.getOpenFileName(
+            self,
+            "Load STIC Figure",
+            "",
+            "STIC Figure Files (*.sticfig);;JSON Files (*.json);;All Files (*)"
+        )
+
+        if not file_path:
+            return
+
+        try:
+            # Load from file
+            with open(file_path, 'r') as f:
+                figure_data = json.load(f)
+
+            # Validate data
+            if "backtab" not in figure_data:
+                raise ValueError("Invalid STIC Figure file: missing 'backtab' field")
+
+            # Load border settings
+            if "border" in figure_data:
+                border = figure_data["border"]
+                self.canvas.border_visible = border.get("visible", True)
+                self.canvas.border_color = border.get("color", 0)
+                self.canvas.show_left_border = border.get("show_left", True)
+                self.canvas.show_top_border = border.get("show_top", True)
+
+                # Update UI
+                self.border_checkbox.setChecked(self.canvas.border_visible)
+
+            # Load color stack
+            if "color_stack" in figure_data:
+                self.canvas.color_stack = figure_data["color_stack"].copy()
+
+                # Update UI
+                for i in range(4):
+                    if i < len(self.canvas.color_stack):
+                        self.stack_combos[i].setCurrentIndex(self.canvas.color_stack[i])
+
+            # Load BACKTAB data
+            for tile_data in figure_data["backtab"]:
+                row = tile_data["row"]
+                col = tile_data["col"]
+                card = tile_data["card"]
+                fg_color = tile_data["fg_color"]
+                advance_stack = tile_data.get("advance_stack", False)
+
+                self.canvas.set_tile(row, col, card, fg_color, advance_stack)
+
+            # Refresh canvas
+            self.canvas.update()
+
+            QMessageBox.information(
+                self,
+                "Success",
+                f"STIC Figure loaded from:\n{file_path}"
+            )
+
+        except Exception as e:
+            QMessageBox.critical(
+                self,
+                "Load Error",
+                f"Failed to load STIC Figure:\n{str(e)}"
+            )
