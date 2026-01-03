@@ -59,8 +59,9 @@ class GromThumbnail(QFrame):
         self.preview_label.setPixmap(pixmap)
         layout.addWidget(self.preview_label, alignment=Qt.AlignCenter)
 
-        # Character label - extra label not in GRAM
+        # Character label - extra label not in GRAM (2px smaller font)
         self.char_label = QLabel(self.label_text[:10])  # Truncate long labels
+        self.char_label.setStyleSheet("font-size: 11px;")
         self.char_label.setAlignment(Qt.AlignCenter)
         layout.addWidget(self.char_label, alignment=Qt.AlignCenter)
 
