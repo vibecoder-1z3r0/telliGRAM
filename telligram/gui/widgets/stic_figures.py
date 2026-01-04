@@ -700,6 +700,9 @@ class SticFiguresWidget(QWidget):
         self.selected_row = None
         self.selected_col = None
 
+        # Set initial UI visibility based on default mode (Color Stack)
+        self._update_mode_ui()
+
     def showEvent(self, event):
         """Refresh palette when tab becomes visible"""
         super().showEvent(event)
@@ -892,10 +895,8 @@ class SticFiguresWidget(QWidget):
 
     def _update_mode_ui(self):
         """Update UI control visibility based on current display mode"""
-        if not self.current_figure:
-            return
-
-        is_color_stack = (self.current_figure.mode == "color_stack")
+        # Check which radio button is selected (works even without current_figure)
+        is_color_stack = self.color_stack_radio.isChecked()
 
         # Show/hide BG color controls (FG/BG mode only)
         self.bg_color_label.setVisible(not is_color_stack)
