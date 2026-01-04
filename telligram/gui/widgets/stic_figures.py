@@ -409,8 +409,8 @@ class BacktabCanvas(QWidget):
 
             # Calculate MOB canvas position from world coordinates
             # World coords are in INTV pixels, scale by 6 for canvas
-            # X has +1 offset: X=7,Y=8 aligns with card 0
-            mob_x = (mob['x'] + 1) * 6
+            # X has -1 offset correction: X=7,Y=8 aligns with card 0
+            mob_x = (mob['x'] - 1) * 6
             mob_y = mob['y'] * 6
 
             # Get size multiplier (0=8x8, 1=8x16, 2=16x8, 3=16x16)
