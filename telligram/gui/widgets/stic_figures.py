@@ -588,45 +588,7 @@ class SticFiguresWidget(QWidget):
         center_layout = QVBoxLayout(center_panel)
         center_layout.setAlignment(Qt.AlignTop)
 
-        # STIC Figure management (at top)
-        figure_group = QGroupBox("STIC Figure")
-        figure_layout = QVBoxLayout(figure_group)
-
-        # Figure dropdown
-        self.figure_combo = QComboBox()
-        self.figure_combo.setMinimumWidth(200)
-        self.figure_combo.currentIndexChanged.connect(self._on_figure_selected)
-        figure_layout.addWidget(self.figure_combo)
-
-        # Figure management buttons - Row 1
-        button_layout1 = QHBoxLayout()
-        self.new_figure_btn = QPushButton("New")
-        self.new_figure_btn.clicked.connect(self._new_figure)
-        button_layout1.addWidget(self.new_figure_btn)
-
-        self.rename_figure_btn = QPushButton("Rename")
-        self.rename_figure_btn.clicked.connect(self._rename_figure)
-        button_layout1.addWidget(self.rename_figure_btn)
-
-        self.delete_figure_btn = QPushButton("Delete")
-        self.delete_figure_btn.clicked.connect(self._delete_figure)
-        button_layout1.addWidget(self.delete_figure_btn)
-        figure_layout.addLayout(button_layout1)
-
-        # Import/Export buttons - Row 2
-        button_layout2 = QHBoxLayout()
-        self.import_figure_btn = QPushButton("Import...")
-        self.import_figure_btn.clicked.connect(self._import_figure)
-        button_layout2.addWidget(self.import_figure_btn)
-
-        self.export_figure_btn = QPushButton("Export...")
-        self.export_figure_btn.clicked.connect(self._export_figure)
-        button_layout2.addWidget(self.export_figure_btn)
-        figure_layout.addLayout(button_layout2)
-
-        center_layout.addWidget(figure_group)
-
-        # BACKTAB Canvas (below figure management)
+        # BACKTAB Canvas (at top)
         canvas_title = QLabel("<h3>BACKTAB Canvas (20×12)</h3>")
         canvas_title.setAlignment(Qt.AlignCenter)
         center_layout.addWidget(canvas_title)
@@ -635,6 +597,38 @@ class SticFiguresWidget(QWidget):
         self.canvas.tile_clicked.connect(self._on_tile_clicked)
         self.canvas.tile_ctrl_clicked.connect(self._on_tile_ctrl_clicked)
         center_layout.addWidget(self.canvas, alignment=Qt.AlignCenter)
+
+        # STIC Figure management (below canvas, all in one row)
+        figure_layout = QHBoxLayout()
+
+        # Figure dropdown
+        self.figure_combo = QComboBox()
+        self.figure_combo.setMinimumWidth(200)
+        self.figure_combo.currentIndexChanged.connect(self._on_figure_selected)
+        figure_layout.addWidget(self.figure_combo)
+
+        # All buttons in one row
+        self.new_figure_btn = QPushButton("New")
+        self.new_figure_btn.clicked.connect(self._new_figure)
+        figure_layout.addWidget(self.new_figure_btn)
+
+        self.rename_figure_btn = QPushButton("Rename")
+        self.rename_figure_btn.clicked.connect(self._rename_figure)
+        figure_layout.addWidget(self.rename_figure_btn)
+
+        self.delete_figure_btn = QPushButton("Delete")
+        self.delete_figure_btn.clicked.connect(self._delete_figure)
+        figure_layout.addWidget(self.delete_figure_btn)
+
+        self.import_figure_btn = QPushButton("Import...")
+        self.import_figure_btn.clicked.connect(self._import_figure)
+        figure_layout.addWidget(self.import_figure_btn)
+
+        self.export_figure_btn = QPushButton("Export...")
+        self.export_figure_btn.clicked.connect(self._export_figure)
+        figure_layout.addWidget(self.export_figure_btn)
+
+        center_layout.addLayout(figure_layout)
 
         center_layout.addStretch()
         main_layout.addWidget(center_panel, stretch=1)
