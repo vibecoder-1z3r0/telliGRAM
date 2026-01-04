@@ -1081,8 +1081,8 @@ class SticFiguresWidget(QWidget):
                     gram_data.append(card.to_bytes())
                 else:
                     gram_data.append([0] * 8)  # Empty card
-            if self.grom_data:
-                self.canvas.set_card_sources(self.grom_data, gram_data)
+            # Set card sources (grom_data can be None if no GROM loaded)
+            self.canvas.set_card_sources(self.grom_data, gram_data)
 
     def _on_card_selected(self, card_num):
         """Handle card selection from palette"""
