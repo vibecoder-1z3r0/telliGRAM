@@ -123,6 +123,17 @@ class BacktabCanvas(QWidget):
         """Get tile data at specific position"""
         return self.backtab.get((row, col))
 
+    def clear_all_tiles(self):
+        """Reset all tiles to default (blank) state"""
+        for row in range(self.grid_rows):
+            for col in range(self.grid_cols):
+                self.backtab[(row, col)] = {
+                    'card': 0,
+                    'fg_color': 7,
+                    'advance_stack': False
+                }
+        self.update()
+
     def set_selected(self, row, col):
         """Set selected tile"""
         self.selected_row = row
@@ -667,7 +678,7 @@ class SticFiguresWidget(QWidget):
 
     def _update_canvas_data(self):
         """Update canvas with GRAM/GROM data sources"""
-        if self.project and self.grom_data:
+        if self.project:
             gram_data = []
             for i in range(64):
                 card = self.project.get_card(i)
@@ -675,7 +686,8 @@ class SticFiguresWidget(QWidget):
                     gram_data.append(card.to_bytes())
                 else:
                     gram_data.append([0] * 8)  # Empty card
-            self.canvas.set_card_sources(self.grom_data, gram_data)
+            if self.grom_data:
+                self.canvas.set_card_sources(self.grom_data, gram_data)
 
     def _on_card_selected(self, card_num):
         """Handle card selection from palette"""
@@ -845,6 +857,9 @@ class SticFiguresWidget(QWidget):
         """Load a figure into the canvas and UI"""
         if not figure:
             return
+
+        # Clear canvas first to ensure no old data persists
+        self.canvas.clear_all_tiles()
 
         # Update canvas border settings
         self.canvas.border_visible = figure.border_visible
