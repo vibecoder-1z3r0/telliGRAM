@@ -101,13 +101,16 @@ class BacktabCanvas(QWidget):
         self.selected_row = None
         self.selected_col = None
 
+        # Hover tracking for on-canvas display
+        self.hovered_row = None
+        self.hovered_col = None
+
         # Card data sources (set externally)
         self.grom_data = None
         self.gram_data = None
 
-        # Enable mouse tracking for hover tooltips
+        # Enable mouse tracking for hover display
         self.setMouseTracking(True)
-        print(f"[DEBUG] BacktabCanvas mouse tracking enabled: {self.hasMouseTracking()}")
 
     def set_card_sources(self, grom_data, gram_data):
         """Set GROM and GRAM data sources"""
@@ -171,30 +174,38 @@ class BacktabCanvas(QWidget):
                     self.set_selected(row, col)
 
     def mouseMoveEvent(self, event):
-        """Handle mouse movement for hover tooltips"""
-        print(f"[DEBUG] mouseMoveEvent called at ({event.position().x()}, {event.position().y()})")
-
+        """Handle mouse movement for hover display"""
         # Convert screen position to grid position
         x = event.position().x() - self.border_size
         y = event.position().y() - self.border_size
+
+        prev_row = self.hovered_row
+        prev_col = self.hovered_col
 
         if x >= 0 and y >= 0:
             col = int(x // self.tile_size)
             row = int(y // self.tile_size)
 
             if 0 <= row < self.grid_rows and 0 <= col < self.grid_cols:
-                # Calculate BACKTAB card number (0-239)
-                backtab_card = row * 20 + col
-                # Set tooltip with card number and position
-                tooltip = f"#: {backtab_card}\nR: {row}, C: {col}"
-                print(f"[DEBUG] Setting tooltip: {tooltip}")
-                self.setToolTip(tooltip)
+                self.hovered_row = row
+                self.hovered_col = col
             else:
-                print("[DEBUG] Outside grid bounds")
-                self.setToolTip("")
+                self.hovered_row = None
+                self.hovered_col = None
         else:
-            print("[DEBUG] Outside border area")
-            self.setToolTip("")
+            self.hovered_row = None
+            self.hovered_col = None
+
+        # Repaint if hover changed
+        if (self.hovered_row != prev_row or self.hovered_col != prev_col):
+            self.update()
+
+    def leaveEvent(self, event):
+        """Clear hover when mouse leaves canvas"""
+        if self.hovered_row is not None or self.hovered_col is not None:
+            self.hovered_row = None
+            self.hovered_col = None
+            self.update()
 
     def contextMenuEvent(self, event):
         """Handle right-click context menu"""
@@ -309,6 +320,30 @@ class BacktabCanvas(QWidget):
             sel_y = playfield_y + (self.selected_row * self.tile_size)
             painter.setPen(QPen(QColor("#FFD700"), 3))  # Gold/yellow
             painter.drawRect(sel_x, sel_y, self.tile_size, self.tile_size)
+
+        # Draw hover info on tile
+        if self.hovered_row is not None and self.hovered_col is not None:
+            hover_x = playfield_x + (self.hovered_col * self.tile_size)
+            hover_y = playfield_y + (self.hovered_row * self.tile_size)
+
+            # Calculate BACKTAB card number
+            backtab_card = self.hovered_row * 20 + self.hovered_col
+
+            # Draw semi-transparent background
+            painter.fillRect(hover_x, hover_y, self.tile_size, self.tile_size,
+                           QColor(0, 0, 0, 180))
+
+            # Draw text
+            painter.setPen(QColor("#FFFFFF"))
+            from PySide6.QtGui import QFont
+            font = QFont("Monospace", 7)
+            painter.setFont(font)
+
+            # Line 1: Card number
+            painter.drawText(hover_x + 2, hover_y + 10, f"#: {backtab_card}")
+            # Line 2: Row, Col
+            painter.drawText(hover_x + 2, hover_y + 20, f"R:{self.hovered_row}")
+            painter.drawText(hover_x + 2, hover_y + 30, f"C:{self.hovered_col}")
 
     def _get_card_data(self, card_num):
         """Get card bitmap data from GROM or GRAM"""
