@@ -1,8 +1,10 @@
 # telliGRAM
 
-A visual editor for creating Intellivision GRAM cards, animations, and complete screen layouts (BACKTAB + MOBs) with support for **IntyBASIC** and **Intellivision Assembly** (as1600 / CP1610).
+A cross platform visual editor built in Python and PySide for creating Intellivision GRAM cards, animations, and complete screen layouts (BACKTAB + MOBs) with support for **IntyBASIC** and **Intellivision Assembly** (as1600 / CP1610).
 
 Create custom 8×8 graphics, animated sequences, and full screen designs for Intellivision games using an intuitive GUI with real-time editing and project management.
+
+This project is not affiliated or endorsed by Atari Interactive, Inc.
 
 ## What are GRAM Cards?
 
