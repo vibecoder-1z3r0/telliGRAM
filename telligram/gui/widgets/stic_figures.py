@@ -765,28 +765,34 @@ class SticFiguresWidget(QWidget):
         mobs_label = QLabel("<b>MOBs</b>")
         right_layout.addWidget(mobs_label)
 
+        # Create scrollable area for MOBs
+        mobs_scroll = QScrollArea()
+        mobs_scroll.setWidgetResizable(True)
+        mobs_scroll.setMaximumHeight(300)  # Limit height to make it scrollable
+
         mobs_group = QGroupBox()
         mobs_layout = QVBoxLayout(mobs_group)
-        mobs_layout.setSpacing(2)  # Compact spacing
+        mobs_layout.setSpacing(4)
 
         # Store MOB controls for each of 8 MOBs
         self.mob_controls = []
 
         for mob_idx in range(8):
-            mob_row = QHBoxLayout()
-            mob_row.setSpacing(4)
-
             controls = {}
+
+            # Row 1: Visibility, MOB#, Card, X, Y
+            mob_row1 = QHBoxLayout()
+            mob_row1.setSpacing(4)
 
             # Visibility checkbox
             controls['visible'] = QCheckBox()
             controls['visible'].setMaximumWidth(20)
-            mob_row.addWidget(controls['visible'])
+            mob_row1.addWidget(controls['visible'])
 
             # MOB number label
             mob_label = QLabel(f"{mob_idx}:")
             mob_label.setMaximumWidth(15)
-            mob_row.addWidget(mob_label)
+            mob_row1.addWidget(mob_label)
 
             # GRAM# dropdown (cards 0-319)
             controls['card'] = QComboBox()
@@ -794,24 +800,32 @@ class SticFiguresWidget(QWidget):
             for card_num in range(320):
                 controls['card'].addItem(f"{card_num}")
             controls['card'].setCurrentIndex(256)  # Default to GRAM card 256
-            mob_row.addWidget(controls['card'])
+            mob_row1.addWidget(controls['card'])
 
             # X position (3-digit)
-            mob_row.addWidget(QLabel("X"))
+            mob_row1.addWidget(QLabel("X"))
             controls['x'] = QSpinBox()
             controls['x'].setRange(0, 999)
             controls['x'].setMaximumWidth(50)
-            mob_row.addWidget(controls['x'])
+            mob_row1.addWidget(controls['x'])
 
             # Y position (3-digit)
-            mob_row.addWidget(QLabel("Y"))
+            mob_row1.addWidget(QLabel("Y"))
             controls['y'] = QSpinBox()
             controls['y'].setRange(0, 999)
             controls['y'].setMaximumWidth(50)
-            mob_row.addWidget(controls['y'])
+            mob_row1.addWidget(controls['y'])
+
+            mob_row1.addStretch()
+            mobs_layout.addLayout(mob_row1)
+
+            # Row 2: Color, Priority, Size, H/V flip (indented)
+            mob_row2 = QHBoxLayout()
+            mob_row2.setSpacing(4)
+            mob_row2.addSpacing(35)  # Indent to align with row 1 controls
 
             # Color (compact: just swatch + number)
-            mob_row.addWidget(QLabel("C:"))
+            mob_row2.addWidget(QLabel("C:"))
             controls['color'] = QComboBox()
             controls['color'].setMaximumWidth(55)
             for i in range(16):
@@ -819,32 +833,44 @@ class SticFiguresWidget(QWidget):
                 pixmap.fill(QColor(get_color_hex(i)))
                 controls['color'].addItem(pixmap, f"{i}")
             controls['color'].setCurrentIndex(7)  # White
-            mob_row.addWidget(controls['color'])
+            mob_row2.addWidget(controls['color'])
 
             # Priority checkbox (F/B = Front/Back)
             controls['priority'] = QCheckBox("F/B")
             controls['priority'].setMaximumWidth(40)
-            mob_row.addWidget(controls['priority'])
+            mob_row2.addWidget(controls['priority'])
 
             # Size dropdown
-            mob_row.addWidget(QLabel("S:"))
+            mob_row2.addWidget(QLabel("S:"))
             controls['size'] = QComboBox()
             controls['size'].setMaximumWidth(60)
             controls['size'].addItems(["8x8", "8x16", "16x8", "16x16"])
-            mob_row.addWidget(controls['size'])
+            mob_row2.addWidget(controls['size'])
 
             # Horizontal flip
             controls['h_flip'] = QCheckBox("H")
             controls['h_flip'].setMaximumWidth(30)
-            mob_row.addWidget(controls['h_flip'])
+            mob_row2.addWidget(controls['h_flip'])
 
             # Vertical flip
             controls['v_flip'] = QCheckBox("V")
             controls['v_flip'].setMaximumWidth(30)
-            mob_row.addWidget(controls['v_flip'])
+            mob_row2.addWidget(controls['v_flip'])
+
+            mob_row2.addStretch()
+            mobs_layout.addLayout(mob_row2)
+
+            # Add separator line between MOBs (except after last one)
+            if mob_idx < 7:
+                separator = QFrame()
+                separator.setFrameShape(QFrame.HLine)
+                separator.setFrameShadow(QFrame.Sunken)
+                mobs_layout.addWidget(separator)
 
             self.mob_controls.append(controls)
-            mobs_layout.addLayout(mob_row)
+
+        mobs_scroll.setWidget(mobs_group)
+        right_layout.addWidget(mobs_scroll)
 
         # Connect MOB control signals
         for mob_idx, controls in enumerate(self.mob_controls):
@@ -858,7 +884,6 @@ class SticFiguresWidget(QWidget):
             controls['h_flip'].toggled.connect(lambda checked, idx=mob_idx: self._on_mob_hflip_changed(idx, checked))
             controls['v_flip'].toggled.connect(lambda checked, idx=mob_idx: self._on_mob_vflip_changed(idx, checked))
 
-        right_layout.addWidget(mobs_group)
         right_layout.addStretch()
 
         main_layout.addWidget(right_panel)
