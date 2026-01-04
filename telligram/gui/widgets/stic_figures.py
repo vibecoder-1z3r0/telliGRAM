@@ -11,7 +11,7 @@ Allows visual design of complete Intellivision screens including:
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, QScrollArea, QFrame,
     QPushButton, QComboBox, QCheckBox, QTabWidget, QGridLayout, QGroupBox,
-    QSpinBox, QFileDialog, QMessageBox, QMenu
+    QSpinBox, QFileDialog, QMessageBox, QMenu, QRadioButton, QButtonGroup
 )
 from PySide6.QtCore import Qt, Signal
 from PySide6.QtGui import QPainter, QColor, QPen, QBrush, QPixmap, QAction
@@ -79,6 +79,7 @@ class BacktabCanvas(QWidget):
                 self.backtab[(row, col)] = {
                     'card': 0,  # Card number (0-319)
                     'fg_color': 7,  # Foreground color (0-15)
+                    'bg_color': 0,  # Background color (0-15, FG/BG mode only)
                     'advance_stack': False  # Advance color stack after tile
                 }
 
@@ -94,6 +95,7 @@ class BacktabCanvas(QWidget):
 
         # Display settings
         self.show_grid = True
+        self.display_mode = "color_stack"  # or "fg_bg"
 
         # Selection
         self.selected_row = None
@@ -109,12 +111,13 @@ class BacktabCanvas(QWidget):
         self.gram_data = gram_data
         self.update()
 
-    def set_tile(self, row, col, card, fg_color, advance_stack=False):
+    def set_tile(self, row, col, card, fg_color, bg_color=0, advance_stack=False):
         """Set tile data at specific position"""
         if (row, col) in self.backtab:
             self.backtab[(row, col)] = {
                 'card': card,
                 'fg_color': fg_color,
+                'bg_color': bg_color,
                 'advance_stack': advance_stack
             }
             self.update()
@@ -130,6 +133,7 @@ class BacktabCanvas(QWidget):
                 self.backtab[(row, col)] = {
                     'card': 0,
                     'fg_color': 7,
+                    'bg_color': 0,
                     'advance_stack': False
                 }
         self.update()
@@ -205,30 +209,55 @@ class BacktabCanvas(QWidget):
         playfield_w = self.grid_cols * self.tile_size
         playfield_h = self.grid_rows * self.tile_size
 
-        # Calculate color stack position for each tile
-        stack_pos = 0
-        for row in range(self.grid_rows):
-            for col in range(self.grid_cols):
-                tile = self.backtab[(row, col)]
+        # Render tiles based on display mode
+        if self.display_mode == "color_stack":
+            # Color Stack mode: simulate color stack with advance_stack flags
+            stack_pos = 0
+            for row in range(self.grid_rows):
+                for col in range(self.grid_cols):
+                    tile = self.backtab[(row, col)]
 
-                # Get background color from color stack
-                bg_color_idx = self.color_stack[stack_pos % 4]
-                bg_hex = get_color_hex(bg_color_idx)
+                    # Get background color from color stack
+                    bg_color_idx = self.color_stack[stack_pos % 4]
+                    bg_hex = get_color_hex(bg_color_idx)
 
-                # Draw tile background
-                tile_x = playfield_x + (col * self.tile_size)
-                tile_y = playfield_y + (row * self.tile_size)
-                painter.fillRect(tile_x, tile_y, self.tile_size, self.tile_size, QColor(bg_hex))
+                    # Draw tile background
+                    tile_x = playfield_x + (col * self.tile_size)
+                    tile_y = playfield_y + (row * self.tile_size)
+                    painter.fillRect(tile_x, tile_y, self.tile_size, self.tile_size, QColor(bg_hex))
 
-                # Draw tile foreground (card data)
-                card_data = self._get_card_data(tile['card'])
-                if card_data:
-                    fg_hex = get_color_hex(tile['fg_color'])
-                    self._draw_card(painter, tile_x, tile_y, card_data, fg_hex, bg_hex)
+                    # Draw tile foreground (card data)
+                    card_data = self._get_card_data(tile['card'])
+                    if card_data:
+                        fg_hex = get_color_hex(tile['fg_color'])
+                        self._draw_card(painter, tile_x, tile_y, card_data, fg_hex, bg_hex)
 
-                # Advance stack if flag set
-                if tile['advance_stack']:
-                    stack_pos += 1
+                    # Advance stack if flag set
+                    if tile['advance_stack']:
+                        stack_pos += 1
+
+        else:  # fg_bg mode
+            # FG/BG mode: use tile's fg_color and bg_color directly
+            for row in range(self.grid_rows):
+                for col in range(self.grid_cols):
+                    tile = self.backtab[(row, col)]
+
+                    # Get colors from tile
+                    fg_color_idx = tile['fg_color']
+                    bg_color_idx = tile.get('bg_color', 0)
+
+                    fg_hex = get_color_hex(fg_color_idx)
+                    bg_hex = get_color_hex(bg_color_idx)
+
+                    # Draw tile background
+                    tile_x = playfield_x + (col * self.tile_size)
+                    tile_y = playfield_y + (row * self.tile_size)
+                    painter.fillRect(tile_x, tile_y, self.tile_size, self.tile_size, QColor(bg_hex))
+
+                    # Draw tile foreground (card data)
+                    card_data = self._get_card_data(tile['card'])
+                    if card_data:
+                        self._draw_card(painter, tile_x, tile_y, card_data, fg_hex, bg_hex)
 
         # Draw grid lines
         if self.show_grid:
@@ -539,6 +568,25 @@ class SticFiguresWidget(QWidget):
 
         right_layout.addWidget(display_group)
 
+        # Display mode group
+        mode_group = QGroupBox("Display Mode")
+        mode_layout = QVBoxLayout(mode_group)
+
+        # Radio buttons for mode selection
+        self.mode_button_group = QButtonGroup(self)
+
+        self.color_stack_radio = QRadioButton("Color Stack Mode")
+        self.color_stack_radio.setChecked(True)  # Default mode
+        self.color_stack_radio.toggled.connect(self._on_mode_changed)
+        self.mode_button_group.addButton(self.color_stack_radio, 0)
+        mode_layout.addWidget(self.color_stack_radio)
+
+        self.fg_bg_radio = QRadioButton("Foreground/Background Mode")
+        self.mode_button_group.addButton(self.fg_bg_radio, 1)
+        mode_layout.addWidget(self.fg_bg_radio)
+
+        right_layout.addWidget(mode_group)
+
         # Selected tile group
         tile_group = QGroupBox("Selected Tile")
         tile_layout = QVBoxLayout(tile_group)
@@ -557,24 +605,34 @@ class SticFiguresWidget(QWidget):
         tile_layout.addLayout(card_layout)
 
         # Foreground color
-        color_layout = QHBoxLayout()
-        color_layout.addWidget(QLabel("FG Color:"))
+        fg_color_layout = QHBoxLayout()
+        fg_color_layout.addWidget(QLabel("FG Color:"))
         self.fg_color_combo = create_color_combo()
         self.fg_color_combo.setCurrentIndex(7)  # White
         self.fg_color_combo.currentIndexChanged.connect(self._on_fg_color_changed)
-        color_layout.addWidget(self.fg_color_combo)
-        tile_layout.addLayout(color_layout)
+        fg_color_layout.addWidget(self.fg_color_combo)
+        tile_layout.addLayout(fg_color_layout)
 
-        # Advance stack checkbox
+        # Background color (FG/BG mode only)
+        self.bg_color_layout = QHBoxLayout()
+        self.bg_color_label = QLabel("BG Color:")
+        self.bg_color_layout.addWidget(self.bg_color_label)
+        self.bg_color_combo = create_color_combo()
+        self.bg_color_combo.setCurrentIndex(0)  # Black
+        self.bg_color_combo.currentIndexChanged.connect(self._on_bg_color_changed)
+        self.bg_color_layout.addWidget(self.bg_color_combo)
+        tile_layout.addLayout(self.bg_color_layout)
+
+        # Advance stack checkbox (Color Stack mode only)
         self.advance_stack_checkbox = QCheckBox("Advance Color Stack")
         self.advance_stack_checkbox.toggled.connect(self._on_advance_stack_toggled)
         tile_layout.addWidget(self.advance_stack_checkbox)
 
         right_layout.addWidget(tile_group)
 
-        # Color stack group
-        stack_group = QGroupBox("Color Stack")
-        stack_layout = QVBoxLayout(stack_group)
+        # Color stack group (Color Stack mode only)
+        self.stack_group = QGroupBox("Color Stack")
+        stack_layout = QVBoxLayout(self.stack_group)
 
         self.stack_combos = []
         for i in range(4):
@@ -587,7 +645,7 @@ class SticFiguresWidget(QWidget):
             stack_layout.addLayout(slot_layout)
             self.stack_combos.append(combo)
 
-        right_layout.addWidget(stack_group)
+        right_layout.addWidget(self.stack_group)
 
         # Figure management
         figure_group = QGroupBox("STIC Figure")
@@ -638,6 +696,7 @@ class SticFiguresWidget(QWidget):
         # Current selection state
         self.current_card = 0
         self.current_fg_color = 7
+        self.current_bg_color = 0  # Black (FG/BG mode only)
         self.selected_row = None
         self.selected_col = None
 
@@ -720,6 +779,12 @@ class SticFiguresWidget(QWidget):
             self.fg_color_combo.setCurrentIndex(tile['fg_color'])
             self.fg_color_combo.blockSignals(False)
 
+            # Update BG color if tile has it
+            if 'bg_color' in tile:
+                self.bg_color_combo.blockSignals(True)
+                self.bg_color_combo.setCurrentIndex(tile['bg_color'])
+                self.bg_color_combo.blockSignals(False)
+
             self.advance_stack_checkbox.blockSignals(True)
             self.advance_stack_checkbox.setChecked(tile['advance_stack'])
             self.advance_stack_checkbox.blockSignals(False)
@@ -727,6 +792,8 @@ class SticFiguresWidget(QWidget):
             # Update current card/color to match tile (eyedropper effect)
             self.current_card = tile['card']
             self.current_fg_color = tile['fg_color']
+            if 'bg_color' in tile:
+                self.current_bg_color = tile['bg_color']
 
     def _on_tile_clicked(self, row, col):
         """Handle tile click on canvas - selects tile with eyedropper effect.
@@ -767,7 +834,8 @@ class SticFiguresWidget(QWidget):
                 self.selected_col,
                 self.current_card,
                 self.current_fg_color,
-                self.advance_stack_checkbox.isChecked()
+                bg_color=self.current_bg_color,
+                advance_stack=self.advance_stack_checkbox.isChecked()
             )
             # Update current figure if one is loaded
             if self.current_figure:
@@ -776,6 +844,7 @@ class SticFiguresWidget(QWidget):
                     self.selected_col,
                     self.current_card,
                     self.current_fg_color,
+                    bg_color=self.current_bg_color,
                     advance_stack=self.advance_stack_checkbox.isChecked()
                 )
 
@@ -795,6 +864,48 @@ class SticFiguresWidget(QWidget):
         """Handle advance stack checkbox toggle"""
         if self.selected_row is not None and self.selected_col is not None:
             self._apply_current_to_selected()
+
+    def _on_bg_color_changed(self, index):
+        """Handle background color change (FG/BG mode only)"""
+        self.current_bg_color = index
+        if self.selected_row is not None and self.selected_col is not None:
+            self._apply_current_to_selected()
+
+    def _on_mode_changed(self, checked):
+        """Handle display mode change"""
+        if not checked:  # Only process when radio is checked, not unchecked
+            return
+
+        if not self.current_figure:
+            return
+
+        # Update figure mode
+        if self.color_stack_radio.isChecked():
+            self.current_figure.mode = "color_stack"
+        else:
+            self.current_figure.mode = "fg_bg"
+
+        # Update UI visibility and canvas display mode
+        self._update_mode_ui()
+        self.canvas.display_mode = self.current_figure.mode
+        self.canvas.update()
+
+    def _update_mode_ui(self):
+        """Update UI control visibility based on current display mode"""
+        if not self.current_figure:
+            return
+
+        is_color_stack = (self.current_figure.mode == "color_stack")
+
+        # Show/hide BG color controls (FG/BG mode only)
+        self.bg_color_label.setVisible(not is_color_stack)
+        self.bg_color_combo.setVisible(not is_color_stack)
+
+        # Show/hide advance stack checkbox (Color Stack mode only)
+        self.advance_stack_checkbox.setVisible(is_color_stack)
+
+        # Show/hide Color Stack group (Color Stack mode only)
+        self.stack_group.setVisible(is_color_stack)
 
     def _on_grid_toggled(self, checked):
         """Handle grid visibility toggle"""
@@ -871,6 +982,14 @@ class SticFiguresWidget(QWidget):
         self.border_checkbox.setChecked(figure.border_visible)
         self.border_color_combo.setCurrentIndex(figure.border_color)
 
+        # Update display mode
+        self.canvas.display_mode = figure.mode
+        if figure.mode == "color_stack":
+            self.color_stack_radio.setChecked(True)
+        else:
+            self.fg_bg_radio.setChecked(True)
+        self._update_mode_ui()
+
         # Update color stack
         self.canvas.color_stack = figure.color_stack.copy()
         for i in range(4):
@@ -885,7 +1004,8 @@ class SticFiguresWidget(QWidget):
                 row, col,
                 tile_data["card"],
                 tile_data["fg_color"],
-                tile_data.get("advance_stack", False)
+                bg_color=tile_data.get("bg_color", 0),
+                advance_stack=tile_data.get("advance_stack", False)
             )
 
         self.canvas.update()
