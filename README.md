@@ -1,8 +1,8 @@
 # telliGRAM
 
-A visual editor for creating Intellivision GRAM cards with support for **IntyBASIC** and **Intellivision Assembly** (as1600 / CP1610).
+A visual editor for creating Intellivision GRAM cards, animations, and complete screen layouts (BACKTAB + MOBs) with support for **IntyBASIC** and **Intellivision Assembly** (as1600 / CP1610).
 
-Create custom 8×8 graphics for Intellivision games using an intuitive GUI with real-time pixel editing and project management.
+Create custom 8×8 graphics, animated sequences, and full screen designs for Intellivision games using an intuitive GUI with real-time editing and project management.
 
 ## What are GRAM Cards?
 
@@ -17,11 +17,12 @@ GRAM (Graphics RAM) cards are user-definable 8×8 pixel graphics on the Intelliv
 
 - 🎨 **Visual Pixel Editor** - Interactive 8×8 grid with click-and-drag painting
 - 📦 **64-Card Project Manager** - Organize all GRAM cards in one project
-- 💾 **Save/Load Projects** - JSON-based `.telligram` file format
+- 💾 **Save/Load Projects** - JSON-based `.tlgm` file format
 - 🔄 **Card Transformations** - Flip horizontal/vertical, clear, invert
 - 👁️ **Live Preview** - See all 64 cards at once with thumbnail grid
 - 📚 **GROM Browser** - Reference all 256 built-in Intellivision characters
 - 🎬 **Animation Timeline** - Sequence GRAM cards with frame timing and playback
+- 🖼️ **STIC Figures** - Complete screen layout designer with 20×12 BACKTAB grid and 8 MOBs
 - ⌨️ **Keyboard Shortcuts** - Ctrl+N/O/S for quick file operations
 - ✅ **Test-Driven Development** - 100% test coverage on core modules (71/71 tests passing)
 
@@ -117,6 +118,7 @@ python3 -m telligram.main
 - **Right Panel (Tabs):**
   - **GROM Browser:** View all 256 built-in Intellivision characters
   - **Animation Timeline:** Create animations by sequencing GRAM cards
+  - **STIC Figures:** Design complete screen layouts with BACKTAB tiles and MOBs
 - **File Menu:** New, Open, Save, Save As (.telligram format)
 - **Edit Menu:** Clear card, flip transformations
 - **Mouse Controls:**
@@ -189,13 +191,23 @@ python3 -m pytest tests/ --cov=telligram --cov-report=html
 - [x] Tabbed interface for GROM browser and timeline editor
 - [x] Full project integration with save/load
 
-🚧 **Phase 4: Code Generation & Advanced Features (PLANNED)**
-- [ ] Screen layout editor (20×12 BACKTAB)
+✅ **Phase 4: STIC Figures - Screen Layout Designer (COMPLETE)**
+- [x] 20×12 BACKTAB grid editor with visual canvas
+- [x] Dual display modes: Color Stack and Foreground/Background
+- [x] Real-time canvas rendering (48px tiles at 6× scale)
+- [x] 8 MOBs (Moving Object Blocks) with full configuration
+- [x] MOB properties: Position (X/Y), Card, Color, Priority, Size, Flip (H/V)
+- [x] Card palette with GRAM/GROM tabs (conditional GROM display)
+- [x] Figure management: Multiple figures per project with New/Rename/Delete/Import/Export
+- [x] Project integration: Figures saved with .tlgm files
+
+🚧 **Phase 5: Code Generation & Advanced Features (PLANNED)**
 - [ ] IntyBASIC code export (BITMAP format)
 - [ ] Assembly code export (DECLE format)
+- [ ] BACKTAB/MOB export to IntyBASIC/Assembly
 - [ ] Import from sprite sheets/images
-- [ ] Undo/redo system
-- [ ] Color palette preview
+- [ ] Undo/redo system for STIC Figures
+- [ ] MOB animation support (link to Animation objects)
 
 ## Contributing
 
