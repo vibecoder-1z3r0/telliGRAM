@@ -267,6 +267,7 @@ class BacktabCanvas(QWidget):
         playfield_h = self.grid_rows * self.tile_size
 
         # Render tiles based on display mode
+        # STEP 1: Draw all tile backgrounds
         if self.display_mode == "color_stack":
             # Color Stack mode: simulate color stack with advance_stack flags
             stack_pos = 0
@@ -283,12 +284,6 @@ class BacktabCanvas(QWidget):
                     tile_y = playfield_y + (row * self.tile_size)
                     painter.fillRect(tile_x, tile_y, self.tile_size, self.tile_size, QColor(bg_hex))
 
-                    # Draw tile foreground (card data)
-                    card_data = self._get_card_data(tile['card'])
-                    if card_data:
-                        fg_hex = get_color_hex(tile['fg_color'])
-                        self._draw_card(painter, tile_x, tile_y, card_data, fg_hex, bg_hex)
-
                     # Advance stack if flag set
                     if tile['advance_stack']:
                         stack_pos += 1
@@ -299,11 +294,8 @@ class BacktabCanvas(QWidget):
                 for col in range(self.grid_cols):
                     tile = self.backtab[(row, col)]
 
-                    # Get colors from tile
-                    fg_color_idx = tile['fg_color']
+                    # Get background color
                     bg_color_idx = tile.get('bg_color', 0)
-
-                    fg_hex = get_color_hex(fg_color_idx)
                     bg_hex = get_color_hex(bg_color_idx)
 
                     # Draw tile background
@@ -311,7 +303,46 @@ class BacktabCanvas(QWidget):
                     tile_y = playfield_y + (row * self.tile_size)
                     painter.fillRect(tile_x, tile_y, self.tile_size, self.tile_size, QColor(bg_hex))
 
+        # STEP 2: Draw MOBs with priority=False (behind foreground)
+        self._draw_mobs(painter, priority=False)
+
+        # STEP 3: Draw all tile foregrounds (card data)
+        if self.display_mode == "color_stack":
+            stack_pos = 0
+            for row in range(self.grid_rows):
+                for col in range(self.grid_cols):
+                    tile = self.backtab[(row, col)]
+
+                    # Get colors
+                    bg_color_idx = self.color_stack[stack_pos % 4]
+                    fg_hex = get_color_hex(tile['fg_color'])
+                    bg_hex = get_color_hex(bg_color_idx)
+
                     # Draw tile foreground (card data)
+                    tile_x = playfield_x + (col * self.tile_size)
+                    tile_y = playfield_y + (row * self.tile_size)
+                    card_data = self._get_card_data(tile['card'])
+                    if card_data:
+                        self._draw_card(painter, tile_x, tile_y, card_data, fg_hex, bg_hex)
+
+                    # Advance stack if flag set
+                    if tile['advance_stack']:
+                        stack_pos += 1
+
+        else:  # fg_bg mode
+            for row in range(self.grid_rows):
+                for col in range(self.grid_cols):
+                    tile = self.backtab[(row, col)]
+
+                    # Get colors
+                    fg_color_idx = tile['fg_color']
+                    bg_color_idx = tile.get('bg_color', 0)
+                    fg_hex = get_color_hex(fg_color_idx)
+                    bg_hex = get_color_hex(bg_color_idx)
+
+                    # Draw tile foreground (card data)
+                    tile_x = playfield_x + (col * self.tile_size)
+                    tile_y = playfield_y + (row * self.tile_size)
                     card_data = self._get_card_data(tile['card'])
                     if card_data:
                         self._draw_card(painter, tile_x, tile_y, card_data, fg_hex, bg_hex)
@@ -361,9 +392,14 @@ class BacktabCanvas(QWidget):
             painter.drawText(hover_x + 2, hover_y + 20, f"R:{self.hovered_row}")
             painter.drawText(hover_x + 2, hover_y + 30, f"C:{self.hovered_col}")
 
-        # Draw MOBs (Moving Object Blocks)
+        # STEP 4: Draw MOBs with priority=True (in front of foreground)
+        self._draw_mobs(painter, priority=True)
+
+    def _draw_mobs(self, painter, priority):
+        """Draw MOBs with the specified priority setting"""
         for mob_idx, mob in enumerate(self.mobs):
-            if not mob['visible']:
+            # Only draw MOBs matching the requested priority
+            if not mob['visible'] or mob['priority'] != priority:
                 continue
 
             # Get card data (MOBs can only use GRAM cards 256-319)
