@@ -773,7 +773,9 @@ class SticFiguresWidget(QWidget):
         """Update properties panel to show tile's current state"""
         tile = self.canvas.get_tile(row, col)
         if tile:
-            self.tile_info_label.setText(f"Row: {row}, Col: {col}")
+            # Calculate BACKTAB card number (0-239)
+            backtab_card = row * 20 + col
+            self.tile_info_label.setText(f"Card: {backtab_card}, Row: {row}, Col: {col}")
 
             self.card_spin.blockSignals(True)
             self.card_spin.setValue(tile['card'])
