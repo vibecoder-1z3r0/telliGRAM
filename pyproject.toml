@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "telligram"
 version = "0.1.0-alpha"
-description = "Intellivision GRAM Card Creator and Animator"
+description = "Intellivision GRAM Card Creator, Animator and BACKTAB/STIC Designer"
 authors = [
     {name = "Andrew Potozniak", email = "vibecoder.1.z3r0@gmail.com"},
     {name = "Tyraziel", email = "tyraziel@gmail.com"},

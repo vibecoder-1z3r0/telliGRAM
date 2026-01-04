@@ -37,7 +37,7 @@ class MainWindow(QMainWindow):
         self.undo_stack = QUndoStack(self)
         self.grom_path = grom_path  # Path to GROM.json file (None = no GROM tab)
 
-        self.setWindowTitle(f"telliGRAM v{__version__} - Intellivision GRAM Card Creator and Animator")
+        self.setWindowTitle(f"telliGRAM v{__version__} - Intellivision GRAM Card Creator, Animator and BACKTAB/STIC Designer")
         self.setMinimumSize(1200, 800)
         self.resize(1750, 880)  # Default window size with proper spacing
 
@@ -458,8 +458,8 @@ class MainWindow(QMainWindow):
             self,
             "About telliGRAM",
             f"<h2>telliGRAM v{__version__}</h2>"
-            "<p>Intellivision GRAM Card Creator and Animator</p>"
-            "<p>Create custom 8×8 graphics and animations for Intellivision games</p>"
+            "<p>Intellivision GRAM Card Creator, Animator and BACKTAB/STIC Designer</p>"
+            "<p>Create custom 8×8 graphics, animations, and complete screen layouts (BACKTAB + MOBs) for Intellivision games</p>"
             "<p>© 2025-2026 Andrew Potozniak (Tyraziel & 1.z3r0)</p>"
             "<p>Dual licensed under the <a href='https://opensource.org/licenses/MIT'>MIT License</a> "
             "and <a href='https://github.com/tyraziel/vibe-coder-license'>VCL-0.1-Experimental</a></p>"
