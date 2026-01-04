@@ -599,7 +599,8 @@ class SticFiguresWidget(QWidget):
         center_layout.addWidget(self.canvas, alignment=Qt.AlignCenter)
 
         # STIC Figure management (below canvas, all in one row)
-        figure_layout = QHBoxLayout()
+        figure_group = QGroupBox()  # Empty title for grey box
+        figure_layout = QHBoxLayout(figure_group)
 
         # Figure dropdown
         self.figure_combo = QComboBox()
@@ -628,7 +629,7 @@ class SticFiguresWidget(QWidget):
         self.export_figure_btn.clicked.connect(self._export_figure)
         figure_layout.addWidget(self.export_figure_btn)
 
-        center_layout.addLayout(figure_layout)
+        center_layout.addWidget(figure_group)
 
         center_layout.addStretch()
         main_layout.addWidget(center_panel, stretch=1)
