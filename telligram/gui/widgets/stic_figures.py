@@ -598,34 +598,42 @@ class SticFiguresWidget(QWidget):
         self.canvas.tile_ctrl_clicked.connect(self._on_tile_ctrl_clicked)
         center_layout.addWidget(self.canvas, alignment=Qt.AlignCenter)
 
-        # STIC Figure management (below canvas, all in one row)
-        figure_group = QGroupBox()  # Empty title for grey box
+        # STIC Figure management (below canvas)
+        figures_label = QLabel("<b>Figures</b>")
+        center_layout.addWidget(figures_label)
+
+        figure_group = QGroupBox()  # Grey box
         figure_layout = QHBoxLayout(figure_group)
 
-        # Figure dropdown
+        # Figure dropdown (bigger)
         self.figure_combo = QComboBox()
-        self.figure_combo.setMinimumWidth(200)
+        self.figure_combo.setMinimumWidth(350)
         self.figure_combo.currentIndexChanged.connect(self._on_figure_selected)
         figure_layout.addWidget(self.figure_combo)
 
-        # All buttons in one row
+        # All buttons in one row (smaller)
         self.new_figure_btn = QPushButton("New")
+        self.new_figure_btn.setMaximumWidth(80)
         self.new_figure_btn.clicked.connect(self._new_figure)
         figure_layout.addWidget(self.new_figure_btn)
 
         self.rename_figure_btn = QPushButton("Rename")
+        self.rename_figure_btn.setMaximumWidth(80)
         self.rename_figure_btn.clicked.connect(self._rename_figure)
         figure_layout.addWidget(self.rename_figure_btn)
 
         self.delete_figure_btn = QPushButton("Delete")
+        self.delete_figure_btn.setMaximumWidth(80)
         self.delete_figure_btn.clicked.connect(self._delete_figure)
         figure_layout.addWidget(self.delete_figure_btn)
 
         self.import_figure_btn = QPushButton("Import...")
+        self.import_figure_btn.setMaximumWidth(80)
         self.import_figure_btn.clicked.connect(self._import_figure)
         figure_layout.addWidget(self.import_figure_btn)
 
         self.export_figure_btn = QPushButton("Export...")
+        self.export_figure_btn.setMaximumWidth(80)
         self.export_figure_btn.clicked.connect(self._export_figure)
         figure_layout.addWidget(self.export_figure_btn)
 
