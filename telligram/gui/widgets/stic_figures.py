@@ -371,9 +371,10 @@ class BacktabCanvas(QWidget):
             if not card_data:
                 continue
 
-            # Calculate MOB position (accounting for border)
-            mob_x = self.border_size + mob['x']
-            mob_y = self.border_size + mob['y']
+            # Calculate MOB canvas position from world coordinates
+            # World coords are in INTV pixels (0-175, 0-111), scale by 6 for canvas
+            mob_x = mob['x'] * 6
+            mob_y = mob['y'] * 6
 
             # Get size multiplier (0=8x8, 1=8x16, 2=16x8, 3=16x16)
             size_map = {
@@ -879,17 +880,17 @@ class SticFiguresWidget(QWidget):
             controls['card'].setCurrentIndex(0)  # Default to GRAM card 256
             mob_row1.addWidget(controls['card'])
 
-            # X position (3-digit)
+            # X position (INTV world coordinates: 0-175)
             mob_row1.addWidget(QLabel("X"))
             controls['x'] = QSpinBox()
-            controls['x'].setRange(0, 999)
+            controls['x'].setRange(0, 175)  # 8px border + 160px playfield + 8px border - 1
             controls['x'].setMaximumWidth(50)
             mob_row1.addWidget(controls['x'])
 
-            # Y position (3-digit)
+            # Y position (INTV world coordinates: 0-111)
             mob_row1.addWidget(QLabel("Y"))
             controls['y'] = QSpinBox()
-            controls['y'].setRange(0, 999)
+            controls['y'].setRange(0, 111)  # 8px border + 96px playfield + 8px border - 1
             controls['y'].setMaximumWidth(50)
             mob_row1.addWidget(controls['y'])
 
