@@ -26,6 +26,12 @@ class MainWindow(QMainWindow):
     def __init__(self, grom_path=None):
         super().__init__()
         self.project = Project(name="Untitled")
+
+        # Create default STIC figure for new projects
+        from telligram.core.stic_figure import SticFigure
+        default_figure = SticFigure(name="Figure 1")
+        self.project.add_stic_figure(default_figure)
+
         self.current_file = None
         self.current_card_slot = 0
         self.undo_stack = QUndoStack(self)
@@ -242,6 +248,12 @@ class MainWindow(QMainWindow):
         # TODO: Ask to save current project if modified
         self.project = Project(name="Untitled")
         self.current_file = None
+
+        # Create default STIC figure
+        from telligram.core.stic_figure import SticFigure
+        default_figure = SticFigure(name="Figure 1")
+        self.project.add_stic_figure(default_figure)
+
         self.card_grid.set_project(self.project)
         self.pixel_editor.set_card(None)
         self.timeline_editor.set_project(self.project)
