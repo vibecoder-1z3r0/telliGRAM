@@ -646,6 +646,9 @@ class SticFiguresWidget(QWidget):
         # Load first figure if available
         if len(self.project.stic_figures) > 0:
             self.figure_combo.setCurrentIndex(0)
+            # Explicitly load the first figure (in case signal doesn't fire)
+            self.current_figure = self.project.stic_figures[0]
+            self._load_figure(self.current_figure)
 
     def _update_palette(self):
         """Update card palette with GRAM/GROM data"""
