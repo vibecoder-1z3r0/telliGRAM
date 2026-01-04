@@ -110,30 +110,6 @@ pip install -r requirements.txt
 python3 -m telligram.main
 ```
 
-**Features:**
-- **Left Panel:**
-  - 64-card grid view - click any card to edit
-  - 8×8 pixel editor with real-time preview
-  - Card transformation buttons (Clear, Flip H/V)
-- **Right Panel (Tabs):**
-  - **GROM Browser:** View all 256 built-in Intellivision characters
-  - **Animation Timeline:** Create animations by sequencing GRAM cards
-  - **STIC Figures:** Design complete screen layouts with BACKTAB tiles and MOBs
-- **File Menu:** New, Open, Save, Save As (.telligram format)
-- **Edit Menu:** Clear card, flip transformations
-- **Mouse Controls:**
-  - Left-click: Toggle pixels on/off
-  - Drag: Paint multiple pixels
-  - Right-click: Erase pixels
-
-**Keyboard Shortcuts:**
-- `Ctrl+N` - New project
-- `Ctrl+O` - Open project
-- `Ctrl+S` - Save project
-- `Ctrl+Shift+S` - Save As
-- `Ctrl+Shift+C` - Clear current card
-- `Ctrl+Q` - Quit
-
 ### Running Tests
 
 ```bash
@@ -220,11 +196,13 @@ Contributions are welcome! Please:
 
 ## License
 
-MIT License - See [LICENSE](LICENSE) file for details
+[MIT License](LICENSE)
+[VCL-0.1-Experimental](https://github.com/tyraziel/vibe-coder-license)
 
 ## Credits
 
 Created by **Vibe-Coder 1.z3r0**
+[AIA PAI Nc Hin R Claude Code [Sonnet 4.5] v1.0](https://aiattribution.github.io/statements/AIA-PAI-Nc-Hin-R-?model=Claude%20Code%20%5BSonnet%204.5%5D-v1.0)
 
 ### References
 - [Intellivision Wiki](https://wiki.intellivision.us/)
