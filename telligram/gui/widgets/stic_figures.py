@@ -761,7 +761,104 @@ class SticFiguresWidget(QWidget):
 
         right_layout.addWidget(self.stack_group)
 
-        # MOB (Moving Object Blocks) controls will go here in the future
+        # MOBs (Moving Object Blocks)
+        mobs_label = QLabel("<b>MOBs</b>")
+        right_layout.addWidget(mobs_label)
+
+        mobs_group = QGroupBox()
+        mobs_layout = QVBoxLayout(mobs_group)
+        mobs_layout.setSpacing(2)  # Compact spacing
+
+        # Store MOB controls for each of 8 MOBs
+        self.mob_controls = []
+
+        for mob_idx in range(8):
+            mob_row = QHBoxLayout()
+            mob_row.setSpacing(4)
+
+            controls = {}
+
+            # Visibility checkbox
+            controls['visible'] = QCheckBox()
+            controls['visible'].setMaximumWidth(20)
+            mob_row.addWidget(controls['visible'])
+
+            # MOB number label
+            mob_label = QLabel(f"{mob_idx}:")
+            mob_label.setMaximumWidth(15)
+            mob_row.addWidget(mob_label)
+
+            # GRAM# dropdown (cards 0-319)
+            controls['card'] = QComboBox()
+            controls['card'].setMaximumWidth(70)
+            for card_num in range(320):
+                controls['card'].addItem(f"{card_num}")
+            controls['card'].setCurrentIndex(256)  # Default to GRAM card 256
+            mob_row.addWidget(controls['card'])
+
+            # X position (3-digit)
+            mob_row.addWidget(QLabel("X"))
+            controls['x'] = QSpinBox()
+            controls['x'].setRange(0, 999)
+            controls['x'].setMaximumWidth(50)
+            mob_row.addWidget(controls['x'])
+
+            # Y position (3-digit)
+            mob_row.addWidget(QLabel("Y"))
+            controls['y'] = QSpinBox()
+            controls['y'].setRange(0, 999)
+            controls['y'].setMaximumWidth(50)
+            mob_row.addWidget(controls['y'])
+
+            # Color (compact: just swatch + number)
+            mob_row.addWidget(QLabel("C:"))
+            controls['color'] = QComboBox()
+            controls['color'].setMaximumWidth(55)
+            for i in range(16):
+                pixmap = QPixmap(12, 12)
+                pixmap.fill(QColor(get_color_hex(i)))
+                controls['color'].addItem(pixmap, f"{i}")
+            controls['color'].setCurrentIndex(7)  # White
+            mob_row.addWidget(controls['color'])
+
+            # Priority checkbox (F/B = Front/Back)
+            controls['priority'] = QCheckBox("F/B")
+            controls['priority'].setMaximumWidth(40)
+            mob_row.addWidget(controls['priority'])
+
+            # Size dropdown
+            mob_row.addWidget(QLabel("S:"))
+            controls['size'] = QComboBox()
+            controls['size'].setMaximumWidth(60)
+            controls['size'].addItems(["8x8", "8x16", "16x8", "16x16"])
+            mob_row.addWidget(controls['size'])
+
+            # Horizontal flip
+            controls['h_flip'] = QCheckBox("H")
+            controls['h_flip'].setMaximumWidth(30)
+            mob_row.addWidget(controls['h_flip'])
+
+            # Vertical flip
+            controls['v_flip'] = QCheckBox("V")
+            controls['v_flip'].setMaximumWidth(30)
+            mob_row.addWidget(controls['v_flip'])
+
+            self.mob_controls.append(controls)
+            mobs_layout.addLayout(mob_row)
+
+        # Connect MOB control signals
+        for mob_idx, controls in enumerate(self.mob_controls):
+            controls['visible'].toggled.connect(lambda checked, idx=mob_idx: self._on_mob_visible_changed(idx, checked))
+            controls['card'].currentIndexChanged.connect(lambda card, idx=mob_idx: self._on_mob_card_changed(idx, card))
+            controls['x'].valueChanged.connect(lambda x, idx=mob_idx: self._on_mob_x_changed(idx, x))
+            controls['y'].valueChanged.connect(lambda y, idx=mob_idx: self._on_mob_y_changed(idx, y))
+            controls['color'].currentIndexChanged.connect(lambda color, idx=mob_idx: self._on_mob_color_changed(idx, color))
+            controls['priority'].toggled.connect(lambda checked, idx=mob_idx: self._on_mob_priority_changed(idx, checked))
+            controls['size'].currentIndexChanged.connect(lambda size, idx=mob_idx: self._on_mob_size_changed(idx, size))
+            controls['h_flip'].toggled.connect(lambda checked, idx=mob_idx: self._on_mob_hflip_changed(idx, checked))
+            controls['v_flip'].toggled.connect(lambda checked, idx=mob_idx: self._on_mob_vflip_changed(idx, checked))
+
+        right_layout.addWidget(mobs_group)
         right_layout.addStretch()
 
         main_layout.addWidget(right_panel)
@@ -1100,6 +1197,9 @@ class SticFiguresWidget(QWidget):
                 advance_stack=tile_data.get("advance_stack", False)
             )
 
+        # Load MOB data
+        self._load_mobs_from_figure(figure)
+
         self.canvas.update()
 
     def _new_figure(self):
@@ -1295,3 +1395,91 @@ class SticFiguresWidget(QWidget):
                 "Load Error",
                 f"Failed to load STIC Figure:\n{str(e)}"
             )
+
+    # MOB control handlers
+    def _on_mob_visible_changed(self, mob_idx, checked):
+        """Handle MOB visibility checkbox change"""
+        if self.current_figure:
+            self.current_figure.mobs[mob_idx]['visible'] = checked
+
+    def _on_mob_card_changed(self, mob_idx, card):
+        """Handle MOB card dropdown change"""
+        if self.current_figure:
+            self.current_figure.mobs[mob_idx]['card'] = card
+
+    def _on_mob_x_changed(self, mob_idx, x):
+        """Handle MOB X position change"""
+        if self.current_figure:
+            self.current_figure.mobs[mob_idx]['x'] = x
+
+    def _on_mob_y_changed(self, mob_idx, y):
+        """Handle MOB Y position change"""
+        if self.current_figure:
+            self.current_figure.mobs[mob_idx]['y'] = y
+
+    def _on_mob_color_changed(self, mob_idx, color):
+        """Handle MOB color dropdown change"""
+        if self.current_figure:
+            self.current_figure.mobs[mob_idx]['color'] = color
+
+    def _on_mob_priority_changed(self, mob_idx, checked):
+        """Handle MOB priority checkbox change"""
+        if self.current_figure:
+            self.current_figure.mobs[mob_idx]['priority'] = checked
+
+    def _on_mob_size_changed(self, mob_idx, size_idx):
+        """Handle MOB size dropdown change"""
+        if self.current_figure:
+            self.current_figure.mobs[mob_idx]['size'] = size_idx
+
+    def _on_mob_hflip_changed(self, mob_idx, checked):
+        """Handle MOB horizontal flip checkbox change"""
+        if self.current_figure:
+            self.current_figure.mobs[mob_idx]['h_flip'] = checked
+
+    def _on_mob_vflip_changed(self, mob_idx, checked):
+        """Handle MOB vertical flip checkbox change"""
+        if self.current_figure:
+            self.current_figure.mobs[mob_idx]['v_flip'] = checked
+
+    def _load_mobs_from_figure(self, figure):
+        """Load MOB data from figure into UI controls"""
+        if not figure:
+            return
+
+        for mob_idx in range(8):
+            mob_data = figure.mobs[mob_idx]
+            controls = self.mob_controls[mob_idx]
+
+            # Block signals while updating to avoid triggering save
+            controls['visible'].blockSignals(True)
+            controls['card'].blockSignals(True)
+            controls['x'].blockSignals(True)
+            controls['y'].blockSignals(True)
+            controls['color'].blockSignals(True)
+            controls['priority'].blockSignals(True)
+            controls['size'].blockSignals(True)
+            controls['h_flip'].blockSignals(True)
+            controls['v_flip'].blockSignals(True)
+
+            # Set values
+            controls['visible'].setChecked(mob_data['visible'])
+            controls['card'].setCurrentIndex(mob_data['card'])
+            controls['x'].setValue(mob_data['x'])
+            controls['y'].setValue(mob_data['y'])
+            controls['color'].setCurrentIndex(mob_data['color'])
+            controls['priority'].setChecked(mob_data['priority'])
+            controls['size'].setCurrentIndex(mob_data['size'])
+            controls['h_flip'].setChecked(mob_data['h_flip'])
+            controls['v_flip'].setChecked(mob_data['v_flip'])
+
+            # Unblock signals
+            controls['visible'].blockSignals(False)
+            controls['card'].blockSignals(False)
+            controls['x'].blockSignals(False)
+            controls['y'].blockSignals(False)
+            controls['color'].blockSignals(False)
+            controls['priority'].blockSignals(False)
+            controls['size'].blockSignals(False)
+            controls['h_flip'].blockSignals(False)
+            controls['v_flip'].blockSignals(False)

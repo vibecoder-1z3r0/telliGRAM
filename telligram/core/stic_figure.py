@@ -63,6 +63,22 @@ class SticFigure:
                     "advance_stack": False  # Only used in color_stack mode
                 })
 
+        # MOB (Moving Object Block) data: 8 MOBs
+        # Each MOB: {visible, card, x, y, color, priority, size, h_flip, v_flip}
+        self.mobs: List[Dict[str, Any]] = []
+        for i in range(8):
+            self.mobs.append({
+                "visible": False,
+                "card": 256,  # Default to first GRAM card
+                "x": 0,
+                "y": 0,
+                "color": 7,  # White
+                "priority": False,  # False=behind, True=in front
+                "size": 0,  # 0=8x8, 1=8x16, 2=16x8, 3=16x16
+                "h_flip": False,
+                "v_flip": False
+            })
+
     def get_tile(self, row: int, col: int) -> Dict[str, Any]:
         """
         Get tile data at position.
@@ -178,7 +194,8 @@ class SticFigure:
                 "show_top": self.show_top_border
             },
             "color_stack": self.color_stack.copy(),
-            "backtab": self._backtab.copy()
+            "backtab": self._backtab.copy(),
+            "mobs": self.mobs.copy()
         }
 
     @classmethod
@@ -212,6 +229,10 @@ class SticFigure:
         # Load BACKTAB data
         if "backtab" in data:
             figure._backtab = data["backtab"].copy()
+
+        # Load MOB data
+        if "mobs" in data:
+            figure.mobs = data["mobs"].copy()
 
         return figure
 
