@@ -612,11 +612,11 @@ class SticFiguresWidget(QWidget):
 
         right_layout.addWidget(mode_group)
 
-        # Selected tile group
-        tile_group = QGroupBox("Selected Tile")
+        # Selected BACKTAB card group
+        tile_group = QGroupBox("Selected BACKTAB Card")
         tile_layout = QVBoxLayout(tile_group)
 
-        self.tile_info_label = QLabel("No tile selected")
+        self.tile_info_label = QLabel("No card selected")
         tile_layout.addWidget(self.tile_info_label)
 
         # Card number display
@@ -799,7 +799,13 @@ class SticFiguresWidget(QWidget):
         if tile:
             # Calculate BACKTAB card number (0-239)
             backtab_card = row * 20 + col
-            self.tile_info_label.setText(f"Card: {backtab_card}, Row: {row}, Col: {col}")
+            # Calculate world coordinates (accounting for 8px border)
+            world_x = col * 8 + 8
+            world_y = row * 8 + 8
+            self.tile_info_label.setText(
+                f"Card: {backtab_card}, Row: {row}, Col: {col}\n"
+                f"World: X={world_x}, Y={world_y}"
+            )
 
             self.card_spin.blockSignals(True)
             self.card_spin.setValue(tile['card'])
