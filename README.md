@@ -18,11 +18,11 @@ GRAM (Graphics RAM) cards are user-definable 8×8 pixel graphics on the Intelliv
 ## Features
 
 - 🎨 **Visual Pixel Editor** - Interactive 8×8 grid with click-and-drag painting
-- 📦 **64-Card Project Manager** - Organize all GRAM cards in one project
+- 📦 **64 GRAM Card Project Manager** - Organize all GRAM cards in one project
 - 💾 **Save/Load Projects** - JSON-based `.tlgm` file format
 - 🔄 **Card Transformations** - Flip horizontal/vertical, clear, invert
 - 👁️ **Live Preview** - See all 64 cards at once with thumbnail grid
-- 📚 **GROM Browser** - Reference all 256 built-in Intellivision characters
+- 📚 **GROM Browser** - Reference 256 GROM cards
 - 🎬 **Animation Timeline** - Sequence GRAM cards with frame timing and playback
 - 🖼️ **STIC Figures** - Complete screen layout designer with 20×12 BACKTAB grid and 8 MOBs
 - ⌨️ **Keyboard Shortcuts** - Ctrl+N/O/S for quick file operations
@@ -86,7 +86,7 @@ player_ship:
 📚 **Comprehensive documentation available in the `docs/` folder:**
 
 - **[GRAM Cards Overview](docs/GRAM_CARDS.md)** - Technical details about GRAM cards
-- **[GROM Layout](docs/GROM_LAYOUT.md)** - Built-in character set reference (cards 0-255)
+- **[GROM Layout](docs/GROM_LAYOUT.md)** - GROM reference (cards 0-255)
 - **[IntyBASIC Format](docs/INTYBASIC_FORMAT.md)** - IntyBASIC BITMAP format specification
 - **[Assembly Format](docs/ASSEMBLY_FORMAT.md)** - as1600 Assembly DECLE format specification
 - **[Hardware Reference](docs/HARDWARE_REFERENCE.md)** - Complete Intellivision hardware quick reference
@@ -154,15 +154,15 @@ python3 -m pytest tests/ --cov=telligram --cov-report=html
 
 ✅ **Phase 2: Basic GUI (COMPLETE)**
 - [x] Main application window with PySide6
-- [x] 64-card grid view with thumbnails
-- [x] Interactive 8×8 pixel editor
+- [x] 64 GRAM card grid view with thumbnails
+- [x] Interactive 8×8 pixel editor for GRAM cards
 - [x] Real-time preview and updates
 - [x] File menu (New, Open, Save, Save As)
 - [x] Edit menu (Clear, Flip H/V)
 - [x] Keyboard shortcuts
 
 ✅ **Phase 3: GROM & Animation (COMPLETE)**
-- [x] GROM data model with all 256 built-in characters (14 tests)
+- [x] GROM data model with 256 cards (14 tests)
 - [x] GROM character browser widget (read-only reference)
 - [x] Animation class for sequencing GRAM cards (18 tests)
 - [x] Timeline editor with playback controls
@@ -209,6 +209,7 @@ Created by **Vibe-Coder 1.z3r0**
 ### References
 - [Intellivision Wiki](https://wiki.intellivision.us/)
 - [IntyBASIC by nanochess](https://nanochess.org/intybasic.html)
+- [MBCC by Peripheral](https://forums.atariage.com/topic/379995-introducing-mbcc-a-c-compiler-for-the-intellivision/)
 - [jzIntv SDK](http://spatula-city.org/~im14u2c/intv/)
 - [as1600 Assembler Documentation](http://spatula-city.org/~im14u2c/intv/)
 
@@ -220,4 +221,3 @@ Created by **Vibe-Coder 1.z3r0**
 
 ---
 
-**Happy GRAM card creation!** 🎮✨
