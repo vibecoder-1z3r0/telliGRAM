@@ -457,6 +457,8 @@ class SticFiguresWidget(QWidget):
         super().__init__(parent)
 
         self.project = project
+        self.main_window = None  # Set by main_window after creation
+        self.current_figure = None  # Current STIC figure being edited
         self.grom_data = None
 
         # Load GROM if provided
@@ -576,19 +578,43 @@ class SticFiguresWidget(QWidget):
 
         right_layout.addWidget(stack_group)
 
-        # Save/Load buttons
-        file_group = QGroupBox("File")
-        file_layout = QVBoxLayout(file_group)
+        # Figure management
+        figure_group = QGroupBox("STIC Figure")
+        figure_layout = QVBoxLayout(figure_group)
 
-        save_btn = QPushButton("Save Figure...")
-        save_btn.clicked.connect(self.save_figure)
-        file_layout.addWidget(save_btn)
+        # Figure dropdown
+        self.figure_combo = QComboBox()
+        self.figure_combo.setMinimumWidth(200)
+        self.figure_combo.currentIndexChanged.connect(self._on_figure_selected)
+        figure_layout.addWidget(self.figure_combo)
 
-        load_btn = QPushButton("Load Figure...")
-        load_btn.clicked.connect(self.load_figure)
-        file_layout.addWidget(load_btn)
+        # Figure management buttons
+        button_layout1 = QHBoxLayout()
+        self.new_figure_btn = QPushButton("New")
+        self.new_figure_btn.clicked.connect(self._new_figure)
+        button_layout1.addWidget(self.new_figure_btn)
 
-        right_layout.addWidget(file_group)
+        self.rename_figure_btn = QPushButton("Rename")
+        self.rename_figure_btn.clicked.connect(self._rename_figure)
+        button_layout1.addWidget(self.rename_figure_btn)
+
+        self.delete_figure_btn = QPushButton("Delete")
+        self.delete_figure_btn.clicked.connect(self._delete_figure)
+        button_layout1.addWidget(self.delete_figure_btn)
+        figure_layout.addLayout(button_layout1)
+
+        # Import/Export buttons (placeholders for now)
+        button_layout2 = QHBoxLayout()
+        self.import_figure_btn = QPushButton("Import...")
+        self.import_figure_btn.clicked.connect(self._import_figure)
+        button_layout2.addWidget(self.import_figure_btn)
+
+        self.export_figure_btn = QPushButton("Export...")
+        self.export_figure_btn.clicked.connect(self._export_figure)
+        button_layout2.addWidget(self.export_figure_btn)
+        figure_layout.addLayout(button_layout2)
+
+        right_layout.addWidget(figure_group)
         right_layout.addStretch()
 
         main_layout.addWidget(right_panel)
@@ -596,6 +622,7 @@ class SticFiguresWidget(QWidget):
         # Initialize data
         self._update_palette()
         self._update_canvas_data()
+        self._refresh_figure_list()
 
         # Current selection state
         self.current_card = 0
@@ -615,6 +642,10 @@ class SticFiguresWidget(QWidget):
         self.project = project
         self._update_palette()
         self._update_canvas_data()
+        self._refresh_figure_list()
+        # Load first figure if available
+        if len(self.project.stic_figures) > 0:
+            self.figure_combo.setCurrentIndex(0)
 
     def _update_palette(self):
         """Update card palette with GRAM/GROM data"""
@@ -715,6 +746,7 @@ class SticFiguresWidget(QWidget):
     def _apply_current_to_selected(self):
         """Apply current card and color to selected tile"""
         if self.selected_row is not None and self.selected_col is not None:
+            # Update canvas
             self.canvas.set_tile(
                 self.selected_row,
                 self.selected_col,
@@ -722,6 +754,15 @@ class SticFiguresWidget(QWidget):
                 self.current_fg_color,
                 self.advance_stack_checkbox.isChecked()
             )
+            # Update current figure if one is loaded
+            if self.current_figure:
+                self.current_figure.set_tile(
+                    self.selected_row,
+                    self.selected_col,
+                    self.current_card,
+                    self.current_fg_color,
+                    advance_stack=self.advance_stack_checkbox.isChecked()
+                )
 
     def _on_card_changed(self, value):
         """Handle card number change"""
@@ -748,17 +789,158 @@ class SticFiguresWidget(QWidget):
     def _on_border_toggled(self, checked):
         """Handle border visibility toggle"""
         self.canvas.border_visible = checked
+        if self.current_figure:
+            self.current_figure.border_visible = checked
         self.canvas.update()
 
     def _on_border_color_changed(self, color_idx):
         """Handle border color change"""
         self.canvas.border_color = color_idx
+        if self.current_figure:
+            self.current_figure.border_color = color_idx
         self.canvas.update()
 
     def _on_stack_color_changed(self, slot, color_idx):
         """Handle color stack change"""
         self.canvas.color_stack[slot] = color_idx
+        if self.current_figure:
+            self.current_figure.color_stack[slot] = color_idx
         self.canvas.update()
+
+    def _refresh_figure_list(self):
+        """Refresh figure dropdown from project"""
+        if not self.project:
+            return
+
+        # Block signals to prevent triggering selection changes
+        self.figure_combo.blockSignals(True)
+        self.figure_combo.clear()
+
+        # Add all figures from project
+        for figure in self.project.stic_figures:
+            self.figure_combo.addItem(figure.name)
+
+        self.figure_combo.blockSignals(False)
+
+        # Enable/disable buttons based on figure availability
+        has_figures = len(self.project.stic_figures) > 0
+        self.rename_figure_btn.setEnabled(has_figures)
+        self.delete_figure_btn.setEnabled(has_figures)
+        self.export_figure_btn.setEnabled(has_figures)
+
+    def _on_figure_selected(self, index):
+        """Handle figure selection from dropdown"""
+        if not self.project or index < 0:
+            self.current_figure = None
+            return
+
+        if index < len(self.project.stic_figures):
+            self.current_figure = self.project.stic_figures[index]
+            self._load_figure(self.current_figure)
+
+    def _load_figure(self, figure):
+        """Load a figure into the canvas and UI"""
+        if not figure:
+            return
+
+        # Update canvas border settings
+        self.canvas.border_visible = figure.border_visible
+        self.canvas.border_color = figure.border_color
+        self.canvas.show_left_border = figure.show_left_border
+        self.canvas.show_top_border = figure.show_top_border
+
+        # Update border UI
+        self.border_checkbox.setChecked(figure.border_visible)
+        self.border_color_combo.setCurrentIndex(figure.border_color)
+
+        # Update color stack
+        self.canvas.color_stack = figure.color_stack.copy()
+        for i in range(4):
+            if i < len(figure.color_stack):
+                self.stack_combos[i].setCurrentIndex(figure.color_stack[i])
+
+        # Load BACKTAB tiles
+        for tile_data in figure.get_all_tiles():
+            row = tile_data["row"]
+            col = tile_data["col"]
+            self.canvas.set_tile(
+                row, col,
+                tile_data["card"],
+                tile_data["fg_color"],
+                tile_data.get("advance_stack", False)
+            )
+
+        self.canvas.update()
+
+    def _new_figure(self):
+        """Create new STIC figure"""
+        if not self.project:
+            return
+
+        from PySide6.QtWidgets import QInputDialog
+        name, ok = QInputDialog.getText(self, "New STIC Figure", "Figure name:")
+        if not ok or not name:
+            return
+
+        # Create new figure
+        from telligram.core.stic_figure import SticFigure
+        figure = SticFigure(name=name)
+        self.project.add_stic_figure(figure)
+        self._refresh_figure_list()
+        # Select the newly created figure
+        self.figure_combo.setCurrentIndex(len(self.project.stic_figures) - 1)
+
+    def _rename_figure(self):
+        """Rename current STIC figure"""
+        if not self.current_figure:
+            return
+
+        from PySide6.QtWidgets import QInputDialog
+        old_name = self.current_figure.name
+        name, ok = QInputDialog.getText(self, "Rename STIC Figure", "New name:", text=old_name)
+        if ok and name and name != old_name:
+            self.current_figure.name = name
+            self._refresh_figure_list()
+
+    def _delete_figure(self):
+        """Delete current STIC figure"""
+        if not self.current_figure or not self.project:
+            return
+
+        reply = QMessageBox.question(
+            self,
+            "Delete STIC Figure",
+            f"Delete figure '{self.current_figure.name}'?",
+            QMessageBox.Yes | QMessageBox.No
+        )
+
+        if reply == QMessageBox.Yes:
+            # Find current index before deletion
+            current_index = self.project.stic_figures.index(self.current_figure)
+            self.project.stic_figures.remove(self.current_figure)
+            self._refresh_figure_list()
+            # Select another figure or none
+            if len(self.project.stic_figures) > 0:
+                index = min(current_index, len(self.project.stic_figures) - 1)
+                self.figure_combo.setCurrentIndex(index)
+            else:
+                self.current_figure = None
+
+    def _import_figure(self):
+        """Import STIC figure from .sticfig file (placeholder)"""
+        QMessageBox.information(
+            self,
+            "Import Figure",
+            "Import functionality will be implemented in a future update."
+        )
+
+    def _export_figure(self):
+        """Export current STIC figure (placeholder)"""
+        QMessageBox.information(
+            self,
+            "Export Figure",
+            "Export functionality will be implemented in a future update."
+        )
 
     def save_figure(self):
         """Save current STIC Figure to JSON file"""
