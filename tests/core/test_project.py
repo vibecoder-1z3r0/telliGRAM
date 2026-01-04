@@ -9,6 +9,7 @@ import tempfile
 from pathlib import Path
 from telligram.core.project import Project
 from telligram.core.card import GramCard
+from telligram.core.stic_figure import SticFigure
 
 
 class TestProjectCreation:
@@ -227,3 +228,162 @@ class TestProjectFileFormat:
 
         # Empty slots should be null
         assert data["cards"][1] is None
+
+
+class TestProjectSticFigures:
+    """Test STIC figures save/load functionality"""
+
+    def test_add_stic_figure(self):
+        """Should add STIC figure to project"""
+        project = Project(name="test")
+        figure = SticFigure(name="Test Figure")
+
+        project.add_stic_figure(figure)
+        assert len(project.stic_figures) == 1
+        assert project.stic_figures[0].name == "Test Figure"
+
+    def test_get_stic_figure_by_name(self):
+        """Should retrieve STIC figure by name"""
+        project = Project(name="test")
+        figure1 = SticFigure(name="Title Screen")
+        figure2 = SticFigure(name="Game Over")
+
+        project.add_stic_figure(figure1)
+        project.add_stic_figure(figure2)
+
+        found = project.get_stic_figure("Game Over")
+        assert found is not None
+        assert found.name == "Game Over"
+
+    def test_get_nonexistent_figure_returns_none(self):
+        """Should return None for nonexistent figure"""
+        project = Project(name="test")
+        assert project.get_stic_figure("Nonexistent") is None
+
+    def test_save_project_with_stic_figures(self, tmp_path):
+        """Should save project with STIC figures to JSON"""
+        project = Project(name="test_game", author="Test")
+
+        # Create a STIC figure with some data
+        figure = SticFigure(name="Title Screen")
+        figure.set_tile(0, 0, card=256, fg_color=7, bg_color=0, advance_stack=False)
+        figure.set_tile(1, 1, card=257, fg_color=3, bg_color=1, advance_stack=True)
+        figure.set_color_stack(1, 2, 3, 4)
+        figure.set_border(visible=True, color=5, show_left=True, show_top=False)
+
+        project.add_stic_figure(figure)
+
+        # Save to file
+        filepath = tmp_path / "test.telligram"
+        project.save(filepath)
+
+        # Verify file exists and contains STIC figures
+        assert filepath.exists()
+        with open(filepath, 'r') as f:
+            data = json.load(f)
+            assert "stic_figures" in data
+            assert len(data["stic_figures"]) == 1
+            assert data["stic_figures"][0]["name"] == "Title Screen"
+
+    def test_load_project_with_stic_figures(self, tmp_path):
+        """Should load project with STIC figures from JSON"""
+        # Create and save project with STIC figures
+        project1 = Project(name="test_game")
+
+        figure = SticFigure(name="Level 1")
+        figure.set_tile(5, 10, card=300, fg_color=6, bg_color=2, advance_stack=False)
+        figure.set_color_stack(0, 2, 4, 6)
+        figure.set_border(visible=False, color=3, show_left=False, show_top=True)
+
+        project1.add_stic_figure(figure)
+
+        filepath = tmp_path / "test.telligram"
+        project1.save(filepath)
+
+        # Load project
+        project2 = Project.load(filepath)
+
+        # Verify STIC figure was loaded
+        assert len(project2.stic_figures) == 1
+        loaded_figure = project2.stic_figures[0]
+        assert loaded_figure.name == "Level 1"
+
+        # Verify tile data
+        tile = loaded_figure.get_tile(5, 10)
+        assert tile["card"] == 300
+        assert tile["fg_color"] == 6
+        assert tile["bg_color"] == 2
+        assert tile["advance_stack"] == False
+
+        # Verify color stack
+        assert loaded_figure.color_stack == [0, 2, 4, 6]
+
+        # Verify border settings
+        assert loaded_figure.border_visible == False
+        assert loaded_figure.border_color == 3
+        assert loaded_figure.show_left_border == False
+        assert loaded_figure.show_top_border == True
+
+    def test_save_load_multiple_stic_figures(self, tmp_path):
+        """Should save/load multiple STIC figures"""
+        project1 = Project(name="multi_screen_game")
+
+        # Create multiple figures
+        for i in range(3):
+            figure = SticFigure(name=f"Screen {i+1}")
+            figure.set_tile(i, i, card=256+i, fg_color=i+1)
+            project1.add_stic_figure(figure)
+
+        filepath = tmp_path / "test.telligram"
+        project1.save(filepath)
+
+        # Load and verify
+        project2 = Project.load(filepath)
+        assert len(project2.stic_figures) == 3
+
+        for i in range(3):
+            assert project2.stic_figures[i].name == f"Screen {i+1}"
+            tile = project2.stic_figures[i].get_tile(i, i)
+            assert tile["card"] == 256+i
+            assert tile["fg_color"] == i+1
+
+    def test_save_project_with_no_stic_figures(self, tmp_path):
+        """Should save/load project with empty STIC figures list"""
+        project1 = Project(name="no_figures")
+
+        filepath = tmp_path / "test.telligram"
+        project1.save(filepath)
+
+        project2 = Project.load(filepath)
+        assert len(project2.stic_figures) == 0
+
+    def test_stic_figure_preserves_all_240_tiles(self, tmp_path):
+        """Should preserve all 240 tiles (20x12 grid)"""
+        project1 = Project(name="full_screen")
+
+        figure = SticFigure(name="Complete Layout")
+        # Set specific tiles at corners and center
+        figure.set_tile(0, 0, card=100, fg_color=1)      # Top-left
+        figure.set_tile(0, 19, card=101, fg_color=2)     # Top-right
+        figure.set_tile(11, 0, card=102, fg_color=3)     # Bottom-left
+        figure.set_tile(11, 19, card=103, fg_color=4)    # Bottom-right
+        figure.set_tile(6, 10, card=104, fg_color=5)     # Center
+
+        project1.add_stic_figure(figure)
+
+        filepath = tmp_path / "test.telligram"
+        project1.save(filepath)
+
+        project2 = Project.load(filepath)
+        loaded_figure = project2.stic_figures[0]
+
+        # Verify corners and center
+        assert loaded_figure.get_tile(0, 0)["card"] == 100
+        assert loaded_figure.get_tile(0, 19)["card"] == 101
+        assert loaded_figure.get_tile(11, 0)["card"] == 102
+        assert loaded_figure.get_tile(11, 19)["card"] == 103
+        assert loaded_figure.get_tile(6, 10)["card"] == 104
+
+        # Verify all 240 tiles exist
+        all_tiles = loaded_figure.get_all_tiles()
+        assert len(all_tiles) == 240
