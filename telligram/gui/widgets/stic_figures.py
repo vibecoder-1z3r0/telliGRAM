@@ -525,7 +525,7 @@ class CardPaletteWidget(QWidget):
         self.gram_scroll.setWidget(self.gram_container)
         self.tabs.addTab(self.gram_scroll, "GRAM")
 
-        # GROM tab
+        # GROM tab (will be added conditionally in set_grom_data if GROM is available)
         self.grom_scroll = QScrollArea()
         self.grom_scroll.setWidgetResizable(True)
         self.grom_container = ClickableContainer()
@@ -533,7 +533,7 @@ class CardPaletteWidget(QWidget):
         self.grom_layout = QVBoxLayout(self.grom_container)
         self.grom_layout.setAlignment(Qt.AlignTop)
         self.grom_scroll.setWidget(self.grom_container)
-        self.tabs.addTab(self.grom_scroll, "GROM")
+        # Note: GROM tab NOT added here - will be added in set_grom_data() if needed
 
         # Selected card tracking
         self.selected_card = 0
@@ -556,12 +556,30 @@ class CardPaletteWidget(QWidget):
                 self.card_widgets[card_num] = widget
 
     def set_grom_data(self, grom_data):
-        """Populate GROM tab with GROM cards"""
+        """Populate GROM tab with GROM cards (or hide tab if no GROM)"""
+        # If no GROM data, hide the GROM tab
+        if grom_data is None:
+            # Find and remove GROM tab if it exists
+            for i in range(self.tabs.count()):
+                if self.tabs.tabText(i) == "GROM":
+                    self.tabs.removeTab(i)
+                    break
+            return
+
         # Clear existing
         while self.grom_layout.count():
             child = self.grom_layout.takeAt(0)
             if child.widget():
                 child.widget().deleteLater()
+
+        # Ensure GROM tab exists (add it if it was removed)
+        grom_tab_exists = False
+        for i in range(self.tabs.count()):
+            if self.tabs.tabText(i) == "GROM":
+                grom_tab_exists = True
+                break
+        if not grom_tab_exists:
+            self.tabs.addTab(self.grom_scroll, "GROM")
 
         # Add GROM cards (0-255)
         for card_num in range(256):
