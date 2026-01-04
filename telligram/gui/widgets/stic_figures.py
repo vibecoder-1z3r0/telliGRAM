@@ -107,6 +107,7 @@ class BacktabCanvas(QWidget):
 
         # Enable mouse tracking for hover tooltips
         self.setMouseTracking(True)
+        print(f"[DEBUG] BacktabCanvas mouse tracking enabled: {self.hasMouseTracking()}")
 
     def set_card_sources(self, grom_data, gram_data):
         """Set GROM and GRAM data sources"""
@@ -171,6 +172,8 @@ class BacktabCanvas(QWidget):
 
     def mouseMoveEvent(self, event):
         """Handle mouse movement for hover tooltips"""
+        print(f"[DEBUG] mouseMoveEvent called at ({event.position().x()}, {event.position().y()})")
+
         # Convert screen position to grid position
         x = event.position().x() - self.border_size
         y = event.position().y() - self.border_size
@@ -184,10 +187,13 @@ class BacktabCanvas(QWidget):
                 backtab_card = row * 20 + col
                 # Set tooltip with card number and position
                 tooltip = f"#: {backtab_card}\nR: {row}, C: {col}"
+                print(f"[DEBUG] Setting tooltip: {tooltip}")
                 self.setToolTip(tooltip)
             else:
+                print("[DEBUG] Outside grid bounds")
                 self.setToolTip("")
         else:
+            print("[DEBUG] Outside border area")
             self.setToolTip("")
 
     def contextMenuEvent(self, event):
