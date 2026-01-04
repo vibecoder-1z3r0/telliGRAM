@@ -1,0 +1,14 @@
+# Development Requirements for telliGRAM
+
+# Testing
+pytest>=7.4.0
+pytest-cov>=4.1.0
+# Note: pytest-qt disabled - see pytest.ini
+
+# Code quality
+black>=23.0.0
+flake8>=6.0.0
+mypy>=1.0.0
+
+# Include production requirements
+-r requirements.txt

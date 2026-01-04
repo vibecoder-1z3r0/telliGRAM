@@ -1,0 +1,236 @@
+"""
+Animation composer widget for multi-layer animation editing.
+
+Manages multiple timeline editors and composite preview for layered animations.
+"""
+
+from PySide6.QtWidgets import (
+    QWidget, QVBoxLayout, QHBoxLayout, QPushButton,
+    QScrollArea, QFrame, QTabWidget, QLabel
+)
+from PySide6.QtCore import Qt, Signal
+
+from telligram.core.project import Project
+from telligram.gui.widgets.timeline_editor_new import TimelineEditorWidget
+from telligram.gui.widgets.composite_preview import CompositePreviewWidget
+
+
+class AnimationComposerWidget(QWidget):
+    """
+    Multi-layer animation composer.
+
+    Shows individual timeline editors for each layer plus composite preview.
+    Starts in single-layer mode and expands to multi-layer when user adds layers.
+    """
+
+    animation_changed = Signal()  # Emitted when any animation changes
+
+    def __init__(self, project: Project, main_window=None):
+        super().__init__()
+        self.project = project
+        self.main_window = main_window
+        self.timeline_editors = []
+        self.is_multi_layer_mode = False
+
+        self.setup_ui()
+
+    def setup_ui(self):
+        """Set up the UI"""
+        layout = QVBoxLayout(self)
+        layout.setContentsMargins(0, 0, 0, 0)
+
+        # Create tab widget
+        self.tab_widget = QTabWidget()
+        layout.addWidget(self.tab_widget, 1)
+
+        # Tab 1: IntelliMation Station
+        timeline_tab = QWidget()
+        timeline_tab_layout = QVBoxLayout(timeline_tab)
+        timeline_tab_layout.setContentsMargins(5, 5, 5, 5)
+
+        # Timeline management buttons (inside the tab)
+        btn_layout = QHBoxLayout()
+        self.add_layer_btn = QPushButton("Add Timeline")
+        self.add_layer_btn.clicked.connect(self._add_layer)
+        btn_layout.addWidget(self.add_layer_btn)
+
+        self.remove_layer_btn = QPushButton("Remove Timeline")
+        self.remove_layer_btn.clicked.connect(self._remove_layer)
+        self.remove_layer_btn.setEnabled(False)
+        btn_layout.addWidget(self.remove_layer_btn)
+
+        btn_layout.addStretch()
+        timeline_tab_layout.addLayout(btn_layout)
+
+        # Create vertically scrollable area for timeline editors
+        scroll_area = QScrollArea()
+        scroll_area.setWidgetResizable(True)
+        scroll_area.setFrameShape(QFrame.NoFrame)
+        scroll_area.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        scroll_area.setVerticalScrollBarPolicy(Qt.ScrollBarAsNeeded)
+
+        # Container widget for scrollable content
+        scroll_widget = QWidget()
+        self.timeline_scroll_layout = QVBoxLayout(scroll_widget)
+        self.timeline_scroll_layout.setContentsMargins(0, 0, 0, 0)
+
+        # Timeline editors will be added here
+        # Create initial timeline editor
+        self.add_timeline_editor()
+
+        # Add stretch at the end so content stays at top
+        self.timeline_scroll_layout.addStretch()
+
+        scroll_area.setWidget(scroll_widget)
+        timeline_tab_layout.addWidget(scroll_area)
+
+        self.tab_widget.addTab(timeline_tab, "Animation Timelines")
+
+        # Tab 2: Composite Sprite Animator
+        self.composite_preview = CompositePreviewWidget(self.project)
+        self.tab_widget.addTab(self.composite_preview, "Composite Sprite Animator")
+
+    def add_timeline_editor(self):
+        """Add a new timeline editor for a layer"""
+        editor = TimelineEditorWidget(main_window=self.main_window)
+        editor.set_project(self.project)
+        editor.animation_changed.connect(self.animation_changed.emit)
+        editor.animation_changed.connect(self._update_composite_preview)
+
+        # Add to layout - insert BEFORE the composite preview
+        # The layout order is: timeline1, timeline2, ..., composite_preview, stretch
+        insert_pos = len(self.timeline_editors)
+        self.timeline_scroll_layout.insertWidget(insert_pos, editor)
+
+        self.timeline_editors.append(editor)
+
+        return editor
+
+    def remove_timeline_editor(self, index: int):
+        """Remove a timeline editor"""
+        if 0 <= index < len(self.timeline_editors):
+            editor = self.timeline_editors.pop(index)
+            self.timeline_scroll_layout.removeWidget(editor)
+            editor.deleteLater()
+
+    def _add_layer(self):
+        """Add a new layer"""
+        if len(self.timeline_editors) >= 8:
+            return  # Maximum 8 layers
+
+        self.add_timeline_editor()
+
+        # Enable multi-layer mode if we have more than 1 layer
+        if len(self.timeline_editors) > 1:
+            self._enable_multi_layer_mode()
+
+        # Update button states
+        self.remove_layer_btn.setEnabled(len(self.timeline_editors) > 1)
+        self.add_layer_btn.setEnabled(len(self.timeline_editors) < 8)
+
+    def _remove_layer(self):
+        """Remove the last layer"""
+        if len(self.timeline_editors) <= 1:
+            return  # Keep at least one layer
+
+        self.remove_timeline_editor(len(self.timeline_editors) - 1)
+
+        # Disable multi-layer mode if back to 1 layer
+        if len(self.timeline_editors) == 1:
+            self._disable_multi_layer_mode()
+
+        # Update button states
+        self.remove_layer_btn.setEnabled(len(self.timeline_editors) > 1)
+        self.add_layer_btn.setEnabled(len(self.timeline_editors) < 8)
+
+    def _enable_multi_layer_mode(self):
+        """Enable multi-layer mode - update composite preview"""
+        if self.is_multi_layer_mode:
+            return
+
+        self.is_multi_layer_mode = True
+        self.composite_preview.update_animations()
+        self._update_composite_preview()
+
+    def _disable_multi_layer_mode(self):
+        """Disable multi-layer mode (composite preview stays available in tab)"""
+        if not self.is_multi_layer_mode:
+            return
+
+        self.is_multi_layer_mode = False
+
+    def _update_composite_preview(self):
+        """Update composite preview when animations change"""
+        # Always update - composite preview is always available in its tab
+        self.composite_preview.update_animations()
+
+    def set_project(self, project: Project):
+        """Set the project for all editors"""
+        self.project = project
+
+        for editor in self.timeline_editors:
+            editor.set_project(project)
+
+        self.composite_preview.project = project
+        self.composite_preview.update_animations()
+        self.composite_preview.refresh_composite_list()
+
+    def refresh(self):
+        """Refresh all editors"""
+        for editor in self.timeline_editors:
+            if editor.current_animation:
+                editor._load_animation(editor.current_animation)
+            editor._refresh_animation_list()
+
+        if self.is_multi_layer_mode:
+            self.composite_preview.update_animations()
+            self.composite_preview.refresh_composite_list()
+
+    def set_current_card_slot(self, slot: int):
+        """
+        Set current card slot for ALL timeline editors.
+
+        When user selects a card, all timelines should know about it.
+        """
+        for editor in self.timeline_editors:
+            editor.set_current_card_slot(slot)
+
+    @property
+    def current_animation(self):
+        """
+        Get current animation from the primary (first) timeline editor.
+
+        This maintains compatibility with animation export functionality.
+        """
+        if self.timeline_editors:
+            return self.timeline_editors[0].current_animation
+        return None
+
+    @property
+    def animation_combo(self):
+        """
+        Get animation combo box from the primary timeline editor.
+
+        This maintains compatibility with undo/redo commands.
+        """
+        if self.timeline_editors:
+            return self.timeline_editors[0].animation_combo
+        return None
+
+    def _load_animation(self, animation):
+        """
+        Load animation in the primary timeline editor.
+
+        This maintains compatibility with undo/redo commands.
+        """
+        if self.timeline_editors:
+            self.timeline_editors[0]._load_animation(animation)
+
+    def _refresh_animation_list(self):
+        """
+        Refresh animation list in the primary timeline editor.
+
+        This maintains compatibility with undo/redo commands.
+        """
+        if self.timeline_editors:
+            self.timeline_editors[0]._refresh_animation_list()
