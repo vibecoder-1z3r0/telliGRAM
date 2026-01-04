@@ -582,6 +582,7 @@ class SticFiguresWidget(QWidget):
         mode_layout.addWidget(self.color_stack_radio)
 
         self.fg_bg_radio = QRadioButton("Foreground/Background Mode")
+        self.fg_bg_radio.toggled.connect(self._on_mode_changed)
         self.mode_button_group.addButton(self.fg_bg_radio, 1)
         mode_layout.addWidget(self.fg_bg_radio)
 
@@ -876,37 +877,49 @@ class SticFiguresWidget(QWidget):
 
     def _on_mode_changed(self, checked):
         """Handle display mode change"""
+        print(f"[DEBUG] _on_mode_changed called: checked={checked}")
+        print(f"[DEBUG] color_stack_radio.isChecked()={self.color_stack_radio.isChecked()}")
+        print(f"[DEBUG] fg_bg_radio.isChecked()={self.fg_bg_radio.isChecked()}")
+
         if not checked:  # Only process when radio is checked, not unchecked
+            print("[DEBUG] Skipping - radio button was unchecked")
             return
 
-        if not self.current_figure:
-            return
+        # Update figure mode if there is one
+        if self.current_figure:
+            if self.color_stack_radio.isChecked():
+                self.current_figure.mode = "color_stack"
+                print("[DEBUG] Set figure mode to: color_stack")
+            else:
+                self.current_figure.mode = "fg_bg"
+                print("[DEBUG] Set figure mode to: fg_bg")
 
-        # Update figure mode
-        if self.color_stack_radio.isChecked():
-            self.current_figure.mode = "color_stack"
-        else:
-            self.current_figure.mode = "fg_bg"
+            # Update canvas display mode
+            self.canvas.display_mode = self.current_figure.mode
 
-        # Update UI visibility and canvas display mode
+        # Update UI visibility
+        print("[DEBUG] Calling _update_mode_ui()")
         self._update_mode_ui()
-        self.canvas.display_mode = self.current_figure.mode
         self.canvas.update()
 
     def _update_mode_ui(self):
         """Update UI control visibility based on current display mode"""
         # Check which radio button is selected (works even without current_figure)
         is_color_stack = self.color_stack_radio.isChecked()
+        print(f"[DEBUG] _update_mode_ui: is_color_stack={is_color_stack}")
 
         # Show/hide BG color controls (FG/BG mode only)
         self.bg_color_label.setVisible(not is_color_stack)
         self.bg_color_combo.setVisible(not is_color_stack)
+        print(f"[DEBUG] BG color controls visible: {not is_color_stack}")
 
         # Show/hide advance stack checkbox (Color Stack mode only)
         self.advance_stack_checkbox.setVisible(is_color_stack)
+        print(f"[DEBUG] Advance stack checkbox visible: {is_color_stack}")
 
         # Show/hide Color Stack group (Color Stack mode only)
         self.stack_group.setVisible(is_color_stack)
+        print(f"[DEBUG] Color Stack group visible: {is_color_stack}")
 
     def _on_grid_toggled(self, checked):
         """Handle grid visibility toggle"""
