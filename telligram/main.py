@@ -1,6 +1,7 @@
 """
 Main entry point for telliGRAM application
 """
+
 import sys
 import argparse
 from pathlib import Path
@@ -11,11 +12,11 @@ from telligram.gui.main_window import MainWindow
 def main():
     """Launch telliGRAM GUI application"""
     # Parse command line arguments
-    parser = argparse.ArgumentParser(description="telliGRAM - Intellivision GRAM Card Creator")
+    parser = argparse.ArgumentParser(
+        description="telliGRAM - Intellivision GRAM Card Creator"
+    )
     parser.add_argument(
-        "--grom",
-        type=str,
-        help="Path to GROM.json file (enables GROM Viewer tab)"
+        "--grom", type=str, help="Path to GROM.json file (enables GROM Viewer tab)"
     )
     args = parser.parse_args()
 

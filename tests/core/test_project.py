@@ -3,6 +3,7 @@ Tests for Project class (save/load functionality)
 
 Following TDD: Write tests FIRST, then implement
 """
+
 import pytest
 import json
 import tempfile
@@ -25,9 +26,7 @@ class TestProjectCreation:
     def test_project_with_metadata(self):
         """Should store project metadata"""
         project = Project(
-            name="space_quest",
-            author="Test Author",
-            description="A space game"
+            name="space_quest", author="Test Author", description="A space game"
         )
         assert project.name == "space_quest"
         assert project.author == "Test Author"
@@ -113,7 +112,7 @@ class TestProjectSaveLoad:
 
         # Verify file exists and is valid JSON
         assert filepath.exists()
-        with open(filepath, 'r') as f:
+        with open(filepath, "r") as f:
             data = json.load(f)
             assert data["name"] == "test_game"
             assert data["author"] == "Test"
@@ -140,7 +139,16 @@ class TestProjectSaveLoad:
         loaded_card = project2.get_card(0)
         assert loaded_card is not None
         assert loaded_card.label == "test_card"
-        assert loaded_card.to_bytes() == [0xFF, 0x81, 0x00, 0x42, 0x00, 0x00, 0x00, 0x00]
+        assert loaded_card.to_bytes() == [
+            0xFF,
+            0x81,
+            0x00,
+            0x42,
+            0x00,
+            0x00,
+            0x00,
+            0x00,
+        ]
 
     def test_save_preserves_all_metadata(self, tmp_path):
         """Should preserve all project metadata on save/load"""
@@ -148,7 +156,7 @@ class TestProjectSaveLoad:
             name="space_quest",
             author="John Doe",
             description="Epic space adventure",
-            version="1.0"
+            version="1.0",
         )
 
         filepath = tmp_path / "test.telligram"
@@ -187,12 +195,12 @@ class TestProjectSaveLoad:
         project.save(filepath)
 
         # Read and verify JSON is formatted nicely
-        with open(filepath, 'r') as f:
+        with open(filepath, "r") as f:
             content = f.read()
             assert '"name": "test"' in content
             assert '"test_card"' in content
             # Should have indentation (not minified)
-            assert '\n' in content
+            assert "\n" in content
 
 
 class TestProjectFileFormat:
@@ -208,7 +216,7 @@ class TestProjectFileFormat:
         filepath = tmp_path / "test.telligram"
         project.save(filepath)
 
-        with open(filepath, 'r') as f:
+        with open(filepath, "r") as f:
             data = json.load(f)
 
         # Required keys
@@ -279,7 +287,7 @@ class TestProjectSticFigures:
 
         # Verify file exists and contains STIC figures
         assert filepath.exists()
-        with open(filepath, 'r') as f:
+        with open(filepath, "r") as f:
             data = json.load(f)
             assert "stic_figures" in data
             assert len(data["stic_figures"]) == 1
@@ -331,7 +339,7 @@ class TestProjectSticFigures:
         # Create multiple figures
         for i in range(3):
             figure = SticFigure(name=f"Screen {i+1}")
-            figure.set_tile(i, i, card=256+i, fg_color=i+1)
+            figure.set_tile(i, i, card=256 + i, fg_color=i + 1)
             project1.add_stic_figure(figure)
 
         filepath = tmp_path / "test.telligram"
@@ -344,8 +352,8 @@ class TestProjectSticFigures:
         for i in range(3):
             assert project2.stic_figures[i].name == f"Screen {i+1}"
             tile = project2.stic_figures[i].get_tile(i, i)
-            assert tile["card"] == 256+i
-            assert tile["fg_color"] == i+1
+            assert tile["card"] == 256 + i
+            assert tile["fg_color"] == i + 1
 
     def test_save_project_with_no_stic_figures(self, tmp_path):
         """Should save/load project with empty STIC figures list"""
@@ -363,11 +371,11 @@ class TestProjectSticFigures:
 
         figure = SticFigure(name="Complete Layout")
         # Set specific tiles at corners and center
-        figure.set_tile(0, 0, card=100, fg_color=1)      # Top-left
-        figure.set_tile(0, 19, card=101, fg_color=2)     # Top-right
-        figure.set_tile(11, 0, card=102, fg_color=3)     # Bottom-left
-        figure.set_tile(11, 19, card=103, fg_color=4)    # Bottom-right
-        figure.set_tile(6, 10, card=104, fg_color=5)     # Center
+        figure.set_tile(0, 0, card=100, fg_color=1)  # Top-left
+        figure.set_tile(0, 19, card=101, fg_color=2)  # Top-right
+        figure.set_tile(11, 0, card=102, fg_color=3)  # Bottom-left
+        figure.set_tile(11, 19, card=103, fg_color=4)  # Bottom-right
+        figure.set_tile(6, 10, card=104, fg_color=5)  # Center
 
         project1.add_stic_figure(figure)
 

@@ -5,9 +5,18 @@ Allows creating and editing GRAM card animation sequences.
 """
 
 from PySide6.QtWidgets import (
-    QWidget, QVBoxLayout, QHBoxLayout, QLabel, QPushButton,
-    QListWidget, QListWidgetItem, QSpinBox, QLineEdit,
-    QGroupBox, QFormLayout, QMessageBox
+    QWidget,
+    QVBoxLayout,
+    QHBoxLayout,
+    QLabel,
+    QPushButton,
+    QListWidget,
+    QListWidgetItem,
+    QSpinBox,
+    QLineEdit,
+    QGroupBox,
+    QFormLayout,
+    QMessageBox,
 )
 from PySide6.QtCore import Qt, Signal, QTimer
 from PySide6.QtGui import QPainter, QColor, QFont
@@ -43,13 +52,15 @@ class AnimationFrameItem(QWidget):
 
         layout.addStretch()
 
-        self.setStyleSheet("""
+        self.setStyleSheet(
+            """
             AnimationFrameItem {
                 background-color: #2b2b2b;
                 border: 1px solid #3c3c3c;
                 border-radius: 2px;
             }
-        """)
+        """
+        )
 
 
 class TimelineEditorWidget(QWidget):
@@ -80,14 +91,16 @@ class TimelineEditorWidget(QWidget):
 
         # Title
         title = QLabel("Animation Timeline")
-        title.setStyleSheet("""
+        title.setStyleSheet(
+            """
             QLabel {
                 color: #cccccc;
                 font-size: 14px;
                 font-weight: bold;
                 padding: 4px;
             }
-        """)
+        """
+        )
         main_layout.addWidget(title)
 
         # Animation selection group
@@ -191,7 +204,8 @@ class TimelineEditorWidget(QWidget):
         main_layout.addStretch()
 
         # Apply dark theme
-        self.setStyleSheet("""
+        self.setStyleSheet(
+            """
             QGroupBox {
                 color: #cccccc;
                 border: 1px solid #3c3c3c;
@@ -232,7 +246,8 @@ class TimelineEditorWidget(QWidget):
                 border: 1px solid #3c3c3c;
                 padding: 2px;
             }
-        """)
+        """
+        )
 
     def set_project(self, project: Project):
         """Set the current project"""
@@ -254,7 +269,9 @@ class TimelineEditorWidget(QWidget):
     def _create_new_animation(self):
         """Create a new animation"""
         if not self.project:
-            QMessageBox.warning(self, "No Project", "Please create or open a project first.")
+            QMessageBox.warning(
+                self, "No Project", "Please create or open a project first."
+            )
             return
 
         # Create new animation with default name

@@ -1,4 +1,5 @@
 """Color palette widget for selecting Intellivision colors"""
+
 from PySide6.QtWidgets import QWidget, QGridLayout, QFrame
 from PySide6.QtCore import Qt, Signal
 from PySide6.QtGui import QPainter, QColor, QPen
@@ -22,7 +23,9 @@ class ColorSwatch(QFrame):
         self.setCursor(Qt.PointingHandCursor)
 
         # Tooltip showing color name and Intellivision color index
-        self.setToolTip(f"{self.color_data['name']} (Intellivision Color #{color_index})")
+        self.setToolTip(
+            f"{self.color_data['name']} (Intellivision Color #{color_index})"
+        )
 
     def set_selected(self, selected: bool):
         """Set selection state"""

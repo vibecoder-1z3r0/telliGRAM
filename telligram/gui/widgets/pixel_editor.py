@@ -1,4 +1,5 @@
 """Pixel editor widget - 8×8 grid for editing GRAM cards"""
+
 from PySide6.QtWidgets import QWidget, QFrame
 from PySide6.QtCore import Qt, Signal, QRect
 from PySide6.QtGui import QPainter, QColor, QPen, QMouseEvent
@@ -99,11 +100,12 @@ class PixelEditorWidget(QWidget):
             # Only create command if card actually changed
             if current_data != self.stroke_start_data:
                 from telligram.gui.main_window import PixelEditCommand
+
                 command = PixelEditCommand(
                     self.main_window,
                     self.main_window.current_card_slot,
                     self.stroke_start_data,
-                    current_data
+                    current_data,
                 )
                 self.main_window.undo_stack.push(command)
 
@@ -137,7 +139,9 @@ class PixelEditorWidget(QWidget):
             return
 
         # Get card color
-        card_color = get_color_hex(self.card.color) if hasattr(self.card, 'color') else "#FFFFFF"
+        card_color = (
+            get_color_hex(self.card.color) if hasattr(self.card, "color") else "#FFFFFF"
+        )
 
         # Draw pixels
         for y in range(self.grid_size):
@@ -147,9 +151,13 @@ class PixelEditorWidget(QWidget):
 
                 # Draw pixel
                 if self.card.get_pixel(x, y):
-                    painter.fillRect(px, py, self.pixel_size, self.pixel_size, QColor(card_color))
+                    painter.fillRect(
+                        px, py, self.pixel_size, self.pixel_size, QColor(card_color)
+                    )
                 else:
-                    painter.fillRect(px, py, self.pixel_size, self.pixel_size, QColor("#2D2D30"))
+                    painter.fillRect(
+                        px, py, self.pixel_size, self.pixel_size, QColor("#2D2D30")
+                    )
 
         # Draw grid lines (if enabled)
         if self.show_grid:
@@ -167,4 +175,4 @@ class PixelEditorWidget(QWidget):
 
         # Draw thicker border
         painter.setPen(QPen(QColor("#666666"), 2))
-        painter.drawRect(0, 0, self.width()-1, self.height()-1)
+        painter.drawRect(0, 0, self.width() - 1, self.height() - 1)

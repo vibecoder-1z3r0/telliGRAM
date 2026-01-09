@@ -75,7 +75,9 @@ class DeleteSticFigureCommand(QUndoCommand):
         self.main_window.stic_figures._refresh_figure_list()
         # Select another figure or none
         if len(self.main_window.project.stic_figures) > 0:
-            index = min(self.figure_index, len(self.main_window.project.stic_figures) - 1)
+            index = min(
+                self.figure_index, len(self.main_window.project.stic_figures) - 1
+            )
             self.main_window.stic_figures.figure_combo.setCurrentIndex(index)
 
     def undo(self):
@@ -107,7 +109,7 @@ class SetTileCommand(QUndoCommand):
             self.new_tile["card"],
             self.new_tile["fg_color"],
             self.new_tile.get("bg_color", 0),
-            self.new_tile.get("advance_stack", False)
+            self.new_tile.get("advance_stack", False),
         )
         self.main_window.stic_figures.canvas.update()
 
@@ -119,7 +121,7 @@ class SetTileCommand(QUndoCommand):
             self.old_tile["card"],
             self.old_tile["fg_color"],
             self.old_tile.get("bg_color", 0),
-            self.old_tile.get("advance_stack", False)
+            self.old_tile.get("advance_stack", False),
         )
         self.main_window.stic_figures.canvas.update()
 
@@ -167,8 +169,12 @@ class SetBorderCommand(QUndoCommand):
         # Update canvas
         self.main_window.stic_figures.canvas.border_visible = self.new_border["visible"]
         self.main_window.stic_figures.canvas.border_color = self.new_border["color"]
-        self.main_window.stic_figures.canvas.show_left_border = self.new_border["show_left"]
-        self.main_window.stic_figures.canvas.show_top_border = self.new_border["show_top"]
+        self.main_window.stic_figures.canvas.show_left_border = self.new_border[
+            "show_left"
+        ]
+        self.main_window.stic_figures.canvas.show_top_border = self.new_border[
+            "show_top"
+        ]
         self.main_window.stic_figures.canvas.update()
 
     def undo(self):
@@ -181,6 +187,10 @@ class SetBorderCommand(QUndoCommand):
         # Update canvas
         self.main_window.stic_figures.canvas.border_visible = self.old_border["visible"]
         self.main_window.stic_figures.canvas.border_color = self.old_border["color"]
-        self.main_window.stic_figures.canvas.show_left_border = self.old_border["show_left"]
-        self.main_window.stic_figures.canvas.show_top_border = self.old_border["show_top"]
+        self.main_window.stic_figures.canvas.show_left_border = self.old_border[
+            "show_left"
+        ]
+        self.main_window.stic_figures.canvas.show_top_border = self.old_border[
+            "show_top"
+        ]
         self.main_window.stic_figures.canvas.update()

@@ -9,9 +9,24 @@ Allows visual design of complete Intellivision screens including:
 """
 
 from PySide6.QtWidgets import (
-    QWidget, QVBoxLayout, QHBoxLayout, QLabel, QScrollArea, QFrame,
-    QPushButton, QComboBox, QCheckBox, QTabWidget, QGridLayout, QGroupBox,
-    QSpinBox, QFileDialog, QMessageBox, QMenu, QRadioButton, QButtonGroup
+    QWidget,
+    QVBoxLayout,
+    QHBoxLayout,
+    QLabel,
+    QScrollArea,
+    QFrame,
+    QPushButton,
+    QComboBox,
+    QCheckBox,
+    QTabWidget,
+    QGridLayout,
+    QGroupBox,
+    QSpinBox,
+    QFileDialog,
+    QMessageBox,
+    QMenu,
+    QRadioButton,
+    QButtonGroup,
 )
 from PySide6.QtCore import Qt, Signal
 from PySide6.QtGui import QPainter, QColor, QPen, QBrush, QPixmap, QAction
@@ -31,16 +46,14 @@ def create_color_combo():
         pixmap.fill(QColor(color_data["hex"]))
 
         # Add item with icon and text
-        combo.addItem(
-            pixmap,
-            f"{i}: {color_data['name']}"
-        )
+        combo.addItem(pixmap, f"{i}: {color_data['name']}")
 
     return combo
 
 
 class ClickableContainer(QWidget):
     """Container widget that emits signal when clicked on empty space"""
+
     clicked = Signal()
 
     def mousePressEvent(self, event):
@@ -77,26 +90,28 @@ class BacktabCanvas(QWidget):
         for row in range(self.grid_rows):
             for col in range(self.grid_cols):
                 self.backtab[(row, col)] = {
-                    'card': 0,  # Card number (0-319)
-                    'fg_color': 7,  # Foreground color (0-15)
-                    'bg_color': 0,  # Background color (0-15, FG/BG mode only)
-                    'advance_stack': False  # Advance color stack after tile
+                    "card": 0,  # Card number (0-319)
+                    "fg_color": 7,  # Foreground color (0-15)
+                    "bg_color": 0,  # Background color (0-15, FG/BG mode only)
+                    "advance_stack": False,  # Advance color stack after tile
                 }
 
         # MOB data: 8 MOBs
         self.mobs = []
         for i in range(8):
-            self.mobs.append({
-                "visible": False,
-                "card": 256,
-                "x": 0,
-                "y": 0,
-                "color": 7,
-                "priority": False,
-                "size": 0,
-                "h_flip": False,
-                "v_flip": False
-            })
+            self.mobs.append(
+                {
+                    "visible": False,
+                    "card": 256,
+                    "x": 0,
+                    "y": 0,
+                    "color": 7,
+                    "priority": False,
+                    "size": 0,
+                    "h_flip": False,
+                    "v_flip": False,
+                }
+            )
 
         # Current color stack and position
         self.color_stack = [0, 1, 2, 3]  # Default: Black, Blue, Brown, Tan
@@ -138,10 +153,10 @@ class BacktabCanvas(QWidget):
         """Set tile data at specific position"""
         if (row, col) in self.backtab:
             self.backtab[(row, col)] = {
-                'card': card,
-                'fg_color': fg_color,
-                'bg_color': bg_color,
-                'advance_stack': advance_stack
+                "card": card,
+                "fg_color": fg_color,
+                "bg_color": bg_color,
+                "advance_stack": advance_stack,
             }
             self.update()
 
@@ -154,10 +169,10 @@ class BacktabCanvas(QWidget):
         for row in range(self.grid_rows):
             for col in range(self.grid_cols):
                 self.backtab[(row, col)] = {
-                    'card': 0,
-                    'fg_color': 7,
-                    'bg_color': 0,
-                    'advance_stack': False
+                    "card": 0,
+                    "fg_color": 7,
+                    "bg_color": 0,
+                    "advance_stack": False,
                 }
         self.update()
 
@@ -213,7 +228,7 @@ class BacktabCanvas(QWidget):
             self.hovered_col = None
 
         # Repaint if hover changed
-        if (self.hovered_row != prev_row or self.hovered_col != prev_col):
+        if self.hovered_row != prev_row or self.hovered_col != prev_col:
             self.update()
 
     def leaveEvent(self, event):
@@ -282,10 +297,12 @@ class BacktabCanvas(QWidget):
                     # Draw tile background
                     tile_x = playfield_x + (col * self.tile_size)
                     tile_y = playfield_y + (row * self.tile_size)
-                    painter.fillRect(tile_x, tile_y, self.tile_size, self.tile_size, QColor(bg_hex))
+                    painter.fillRect(
+                        tile_x, tile_y, self.tile_size, self.tile_size, QColor(bg_hex)
+                    )
 
                     # Advance stack if flag set
-                    if tile['advance_stack']:
+                    if tile["advance_stack"]:
                         stack_pos += 1
 
         else:  # fg_bg mode
@@ -295,13 +312,15 @@ class BacktabCanvas(QWidget):
                     tile = self.backtab[(row, col)]
 
                     # Get background color
-                    bg_color_idx = tile.get('bg_color', 0)
+                    bg_color_idx = tile.get("bg_color", 0)
                     bg_hex = get_color_hex(bg_color_idx)
 
                     # Draw tile background
                     tile_x = playfield_x + (col * self.tile_size)
                     tile_y = playfield_y + (row * self.tile_size)
-                    painter.fillRect(tile_x, tile_y, self.tile_size, self.tile_size, QColor(bg_hex))
+                    painter.fillRect(
+                        tile_x, tile_y, self.tile_size, self.tile_size, QColor(bg_hex)
+                    )
 
         # STEP 2: Draw MOBs with priority=False (behind foreground)
         self._draw_mobs(painter, priority=False)
@@ -315,18 +334,20 @@ class BacktabCanvas(QWidget):
 
                     # Get colors
                     bg_color_idx = self.color_stack[stack_pos % 4]
-                    fg_hex = get_color_hex(tile['fg_color'])
+                    fg_hex = get_color_hex(tile["fg_color"])
                     bg_hex = get_color_hex(bg_color_idx)
 
                     # Draw tile foreground (card data)
                     tile_x = playfield_x + (col * self.tile_size)
                     tile_y = playfield_y + (row * self.tile_size)
-                    card_data = self._get_card_data(tile['card'])
+                    card_data = self._get_card_data(tile["card"])
                     if card_data:
-                        self._draw_card(painter, tile_x, tile_y, card_data, fg_hex, bg_hex)
+                        self._draw_card(
+                            painter, tile_x, tile_y, card_data, fg_hex, bg_hex
+                        )
 
                     # Advance stack if flag set
-                    if tile['advance_stack']:
+                    if tile["advance_stack"]:
                         stack_pos += 1
 
         else:  # fg_bg mode
@@ -335,17 +356,19 @@ class BacktabCanvas(QWidget):
                     tile = self.backtab[(row, col)]
 
                     # Get colors
-                    fg_color_idx = tile['fg_color']
-                    bg_color_idx = tile.get('bg_color', 0)
+                    fg_color_idx = tile["fg_color"]
+                    bg_color_idx = tile.get("bg_color", 0)
                     fg_hex = get_color_hex(fg_color_idx)
                     bg_hex = get_color_hex(bg_color_idx)
 
                     # Draw tile foreground (card data)
                     tile_x = playfield_x + (col * self.tile_size)
                     tile_y = playfield_y + (row * self.tile_size)
-                    card_data = self._get_card_data(tile['card'])
+                    card_data = self._get_card_data(tile["card"])
                     if card_data:
-                        self._draw_card(painter, tile_x, tile_y, card_data, fg_hex, bg_hex)
+                        self._draw_card(
+                            painter, tile_x, tile_y, card_data, fg_hex, bg_hex
+                        )
 
         # Draw grid lines
         if self.show_grid:
@@ -369,7 +392,11 @@ class BacktabCanvas(QWidget):
             painter.drawRect(sel_x, sel_y, self.tile_size, self.tile_size)
 
         # Draw hover info on tile (if enabled)
-        if self.show_hover_info and self.hovered_row is not None and self.hovered_col is not None:
+        if (
+            self.show_hover_info
+            and self.hovered_row is not None
+            and self.hovered_col is not None
+        ):
             hover_x = playfield_x + (self.hovered_col * self.tile_size)
             hover_y = playfield_y + (self.hovered_row * self.tile_size)
 
@@ -377,12 +404,14 @@ class BacktabCanvas(QWidget):
             backtab_card = self.hovered_row * 20 + self.hovered_col
 
             # Draw semi-transparent background
-            painter.fillRect(hover_x, hover_y, self.tile_size, self.tile_size,
-                           QColor(0, 0, 0, 180))
+            painter.fillRect(
+                hover_x, hover_y, self.tile_size, self.tile_size, QColor(0, 0, 0, 180)
+            )
 
             # Draw text
             painter.setPen(QColor("#FFFFFF"))
             from PySide6.QtGui import QFont
+
             font = QFont("Monospace", 7)
             painter.setFont(font)
 
@@ -399,40 +428,48 @@ class BacktabCanvas(QWidget):
         """Draw MOBs with the specified priority setting"""
         for mob_idx, mob in enumerate(self.mobs):
             # Only draw MOBs matching the requested priority
-            if not mob['visible'] or mob['priority'] != priority:
+            if not mob["visible"] or mob["priority"] != priority:
                 continue
 
             # Get card data (MOBs can only use GRAM cards 256-319)
-            card_data = self._get_card_data(mob['card'])
+            card_data = self._get_card_data(mob["card"])
             if not card_data:
                 continue
 
             # Calculate MOB canvas position from world coordinates
             # World coords are in INTV pixels, scale by 6 for canvas
             # X has -1 offset correction: X=7,Y=8 aligns with card 0
-            mob_x = (mob['x'] - 1) * 6
-            mob_y = mob['y'] * 6
+            mob_x = (mob["x"] - 1) * 6
+            mob_y = mob["y"] * 6
 
             # Get size multiplier (0=8x8, 1=8x16, 2=16x8, 3=16x16)
             size_map = {
-                0: (1, 1),   # 8x8
-                1: (1, 2),   # 8x16
-                2: (2, 1),   # 16x8
-                3: (2, 2)    # 16x16
+                0: (1, 1),  # 8x8
+                1: (1, 2),  # 8x16
+                2: (2, 1),  # 16x8
+                3: (2, 2),  # 16x16
             }
-            width_mult, height_mult = size_map.get(mob['size'], (1, 1))
+            width_mult, height_mult = size_map.get(mob["size"], (1, 1))
 
             # Get color
-            fg_hex = get_color_hex(mob['color'])
+            fg_hex = get_color_hex(mob["color"])
 
             # Draw the MOB card (with size and flip)
             self._draw_mob_card(
-                painter, mob_x, mob_y, card_data,
-                fg_hex, width_mult, height_mult,
-                mob['h_flip'], mob['v_flip']
+                painter,
+                mob_x,
+                mob_y,
+                card_data,
+                fg_hex,
+                width_mult,
+                height_mult,
+                mob["h_flip"],
+                mob["v_flip"],
             )
 
-    def _draw_mob_card(self, painter, x, y, card_data, fg_hex, width_mult, height_mult, h_flip, v_flip):
+    def _draw_mob_card(
+        self, painter, x, y, card_data, fg_hex, width_mult, height_mult, h_flip, v_flip
+    ):
         """Draw a MOB card at the specified position with size and flip"""
         # MOBs are transparent (no background), so we just draw the foreground pixels
         pixel_scale = 6  # Each card pixel is 6x6 display pixels
@@ -551,7 +588,9 @@ class CardPaletteWidget(QWidget):
         for slot in range(64):
             if slot < len(gram_data):
                 card_num = 256 + slot
-                widget = self._create_card_thumbnail(card_num, gram_data[slot], f"GRAM Slot {slot}")
+                widget = self._create_card_thumbnail(
+                    card_num, gram_data[slot], f"GRAM Slot {slot}"
+                )
                 self.gram_layout.addWidget(widget)
                 self.card_widgets[card_num] = widget
 
@@ -594,7 +633,9 @@ class CardPaletteWidget(QWidget):
         frame = QFrame()
         frame.setFrameStyle(QFrame.Box)
         frame.setFixedHeight(80)
-        frame.setStyleSheet("QFrame { border: 1px solid #3c3c3c; background-color: #2b2b2b; }")
+        frame.setStyleSheet(
+            "QFrame { border: 1px solid #3c3c3c; background-color: #2b2b2b; }"
+        )
 
         layout = QHBoxLayout(frame)
         layout.setContentsMargins(5, 5, 5, 5)
@@ -646,7 +687,9 @@ class CardPaletteWidget(QWidget):
                     if bit:
                         px = col * pixel_size
                         py = row * pixel_size
-                        painter.fillRect(px, py, pixel_size, pixel_size, QColor("#FFFFFF"))
+                        painter.fillRect(
+                            px, py, pixel_size, pixel_size, QColor("#FFFFFF")
+                        )
             painter.end()
 
         return pixmap
@@ -660,7 +703,9 @@ class CardPaletteWidget(QWidget):
             )
 
         self.selected_card = card_num
-        frame.setStyleSheet("QFrame { border: 2px solid #0078D4; background-color: #1a3a52; }")
+        frame.setStyleSheet(
+            "QFrame { border: 2px solid #0078D4; background-color: #1a3a52; }"
+        )
         self.card_selected.emit(card_num)
 
 
@@ -808,7 +853,9 @@ class SticFiguresWidget(QWidget):
         border_color_layout.addWidget(QLabel("Border Color:"))
         self.border_color_combo = create_color_combo()
         self.border_color_combo.setCurrentIndex(0)  # Black
-        self.border_color_combo.currentIndexChanged.connect(self._on_border_color_changed)
+        self.border_color_combo.currentIndexChanged.connect(
+            self._on_border_color_changed
+        )
         border_color_layout.addWidget(self.border_color_combo)
         display_layout.addLayout(border_color_layout)
 
@@ -887,7 +934,9 @@ class SticFiguresWidget(QWidget):
             slot_layout.addWidget(QLabel(f"Slot {i}:"))
             combo = create_color_combo()
             combo.setCurrentIndex([0, 1, 2, 3][i])  # Default stack
-            combo.currentIndexChanged.connect(lambda idx, slot=i: self._on_stack_color_changed(slot, idx))
+            combo.currentIndexChanged.connect(
+                lambda idx, slot=i: self._on_stack_color_changed(slot, idx)
+            )
             slot_layout.addWidget(combo)
             stack_layout.addLayout(slot_layout)
             self.stack_combos.append(combo)
@@ -918,9 +967,9 @@ class SticFiguresWidget(QWidget):
             mob_row1.setSpacing(4)
 
             # Visibility checkbox
-            controls['visible'] = QCheckBox()
-            controls['visible'].setMaximumWidth(20)
-            mob_row1.addWidget(controls['visible'])
+            controls["visible"] = QCheckBox()
+            controls["visible"].setMaximumWidth(20)
+            mob_row1.addWidget(controls["visible"])
 
             # MOB number label
             mob_label = QLabel(f"{mob_idx}:")
@@ -928,26 +977,30 @@ class SticFiguresWidget(QWidget):
             mob_row1.addWidget(mob_label)
 
             # GRAM# dropdown (cards 256-319, MOBs can only use GRAM)
-            controls['card'] = QComboBox()
-            controls['card'].setMaximumWidth(70)
+            controls["card"] = QComboBox()
+            controls["card"].setMaximumWidth(70)
             for card_num in range(256, 320):
-                controls['card'].addItem(f"{card_num}")
-            controls['card'].setCurrentIndex(0)  # Default to GRAM card 256
-            mob_row1.addWidget(controls['card'])
+                controls["card"].addItem(f"{card_num}")
+            controls["card"].setCurrentIndex(0)  # Default to GRAM card 256
+            mob_row1.addWidget(controls["card"])
 
             # X position (INTV world coordinates: 0-175)
             mob_row1.addWidget(QLabel("X"))
-            controls['x'] = QSpinBox()
-            controls['x'].setRange(0, 175)  # 8px border + 160px playfield + 8px border - 1
-            controls['x'].setMaximumWidth(50)
-            mob_row1.addWidget(controls['x'])
+            controls["x"] = QSpinBox()
+            controls["x"].setRange(
+                0, 175
+            )  # 8px border + 160px playfield + 8px border - 1
+            controls["x"].setMaximumWidth(50)
+            mob_row1.addWidget(controls["x"])
 
             # Y position (INTV world coordinates: 0-111)
             mob_row1.addWidget(QLabel("Y"))
-            controls['y'] = QSpinBox()
-            controls['y'].setRange(0, 111)  # 8px border + 96px playfield + 8px border - 1
-            controls['y'].setMaximumWidth(50)
-            mob_row1.addWidget(controls['y'])
+            controls["y"] = QSpinBox()
+            controls["y"].setRange(
+                0, 111
+            )  # 8px border + 96px playfield + 8px border - 1
+            controls["y"].setMaximumWidth(50)
+            mob_row1.addWidget(controls["y"])
 
             mob_row1.addStretch()
             mobs_layout.addLayout(mob_row1)
@@ -959,36 +1012,36 @@ class SticFiguresWidget(QWidget):
 
             # Color (compact: just swatch + number)
             mob_row2.addWidget(QLabel("C:"))
-            controls['color'] = QComboBox()
-            controls['color'].setMaximumWidth(55)
+            controls["color"] = QComboBox()
+            controls["color"].setMaximumWidth(55)
             for i in range(16):
                 pixmap = QPixmap(12, 12)
                 pixmap.fill(QColor(get_color_hex(i)))
-                controls['color'].addItem(pixmap, f"{i}")
-            controls['color'].setCurrentIndex(7)  # White
-            mob_row2.addWidget(controls['color'])
+                controls["color"].addItem(pixmap, f"{i}")
+            controls["color"].setCurrentIndex(7)  # White
+            mob_row2.addWidget(controls["color"])
 
             # Priority checkbox (F/B = Front/Back)
-            controls['priority'] = QCheckBox("F/B")
-            controls['priority'].setMaximumWidth(40)
-            mob_row2.addWidget(controls['priority'])
+            controls["priority"] = QCheckBox("F/B")
+            controls["priority"].setMaximumWidth(40)
+            mob_row2.addWidget(controls["priority"])
 
             # Size dropdown
             mob_row2.addWidget(QLabel("S:"))
-            controls['size'] = QComboBox()
-            controls['size'].setMaximumWidth(60)
-            controls['size'].addItems(["8x8", "8x16", "16x8", "16x16"])
-            mob_row2.addWidget(controls['size'])
+            controls["size"] = QComboBox()
+            controls["size"].setMaximumWidth(60)
+            controls["size"].addItems(["8x8", "8x16", "16x8", "16x16"])
+            mob_row2.addWidget(controls["size"])
 
             # Horizontal flip
-            controls['h_flip'] = QCheckBox("H")
-            controls['h_flip'].setMaximumWidth(30)
-            mob_row2.addWidget(controls['h_flip'])
+            controls["h_flip"] = QCheckBox("H")
+            controls["h_flip"].setMaximumWidth(30)
+            mob_row2.addWidget(controls["h_flip"])
 
             # Vertical flip
-            controls['v_flip'] = QCheckBox("V")
-            controls['v_flip'].setMaximumWidth(30)
-            mob_row2.addWidget(controls['v_flip'])
+            controls["v_flip"] = QCheckBox("V")
+            controls["v_flip"].setMaximumWidth(30)
+            mob_row2.addWidget(controls["v_flip"])
 
             mob_row2.addStretch()
             mobs_layout.addLayout(mob_row2)
@@ -1007,15 +1060,33 @@ class SticFiguresWidget(QWidget):
 
         # Connect MOB control signals
         for mob_idx, controls in enumerate(self.mob_controls):
-            controls['visible'].toggled.connect(lambda checked, idx=mob_idx: self._on_mob_visible_changed(idx, checked))
-            controls['card'].currentIndexChanged.connect(lambda card, idx=mob_idx: self._on_mob_card_changed(idx, card))
-            controls['x'].valueChanged.connect(lambda x, idx=mob_idx: self._on_mob_x_changed(idx, x))
-            controls['y'].valueChanged.connect(lambda y, idx=mob_idx: self._on_mob_y_changed(idx, y))
-            controls['color'].currentIndexChanged.connect(lambda color, idx=mob_idx: self._on_mob_color_changed(idx, color))
-            controls['priority'].toggled.connect(lambda checked, idx=mob_idx: self._on_mob_priority_changed(idx, checked))
-            controls['size'].currentIndexChanged.connect(lambda size, idx=mob_idx: self._on_mob_size_changed(idx, size))
-            controls['h_flip'].toggled.connect(lambda checked, idx=mob_idx: self._on_mob_hflip_changed(idx, checked))
-            controls['v_flip'].toggled.connect(lambda checked, idx=mob_idx: self._on_mob_vflip_changed(idx, checked))
+            controls["visible"].toggled.connect(
+                lambda checked, idx=mob_idx: self._on_mob_visible_changed(idx, checked)
+            )
+            controls["card"].currentIndexChanged.connect(
+                lambda card, idx=mob_idx: self._on_mob_card_changed(idx, card)
+            )
+            controls["x"].valueChanged.connect(
+                lambda x, idx=mob_idx: self._on_mob_x_changed(idx, x)
+            )
+            controls["y"].valueChanged.connect(
+                lambda y, idx=mob_idx: self._on_mob_y_changed(idx, y)
+            )
+            controls["color"].currentIndexChanged.connect(
+                lambda color, idx=mob_idx: self._on_mob_color_changed(idx, color)
+            )
+            controls["priority"].toggled.connect(
+                lambda checked, idx=mob_idx: self._on_mob_priority_changed(idx, checked)
+            )
+            controls["size"].currentIndexChanged.connect(
+                lambda size, idx=mob_idx: self._on_mob_size_changed(idx, size)
+            )
+            controls["h_flip"].toggled.connect(
+                lambda checked, idx=mob_idx: self._on_mob_hflip_changed(idx, checked)
+            )
+            controls["v_flip"].toggled.connect(
+                lambda checked, idx=mob_idx: self._on_mob_vflip_changed(idx, checked)
+            )
 
         right_layout.addStretch()
 
@@ -1116,28 +1187,28 @@ class SticFiguresWidget(QWidget):
             )
 
             self.card_spin.blockSignals(True)
-            self.card_spin.setValue(tile['card'])
+            self.card_spin.setValue(tile["card"])
             self.card_spin.blockSignals(False)
 
             self.fg_color_combo.blockSignals(True)
-            self.fg_color_combo.setCurrentIndex(tile['fg_color'])
+            self.fg_color_combo.setCurrentIndex(tile["fg_color"])
             self.fg_color_combo.blockSignals(False)
 
             # Update BG color if tile has it
-            if 'bg_color' in tile:
+            if "bg_color" in tile:
                 self.bg_color_combo.blockSignals(True)
-                self.bg_color_combo.setCurrentIndex(tile['bg_color'])
+                self.bg_color_combo.setCurrentIndex(tile["bg_color"])
                 self.bg_color_combo.blockSignals(False)
 
             self.advance_stack_checkbox.blockSignals(True)
-            self.advance_stack_checkbox.setChecked(tile['advance_stack'])
+            self.advance_stack_checkbox.setChecked(tile["advance_stack"])
             self.advance_stack_checkbox.blockSignals(False)
 
             # Update current card/color to match tile (eyedropper effect)
-            self.current_card = tile['card']
-            self.current_fg_color = tile['fg_color']
-            if 'bg_color' in tile:
-                self.current_bg_color = tile['bg_color']
+            self.current_card = tile["card"]
+            self.current_fg_color = tile["fg_color"]
+            if "bg_color" in tile:
+                self.current_bg_color = tile["bg_color"]
 
     def _on_tile_clicked(self, row, col):
         """Handle tile click on canvas - selects tile with eyedropper effect.
@@ -1179,7 +1250,7 @@ class SticFiguresWidget(QWidget):
                 self.current_card,
                 self.current_fg_color,
                 bg_color=self.current_bg_color,
-                advance_stack=self.advance_stack_checkbox.isChecked()
+                advance_stack=self.advance_stack_checkbox.isChecked(),
             )
             # Update current figure if one is loaded
             if self.current_figure:
@@ -1189,7 +1260,7 @@ class SticFiguresWidget(QWidget):
                     self.current_card,
                     self.current_fg_color,
                     bg_color=self.current_bg_color,
-                    advance_stack=self.advance_stack_checkbox.isChecked()
+                    advance_stack=self.advance_stack_checkbox.isChecked(),
                 )
 
     def _on_card_changed(self, value):
@@ -1348,11 +1419,12 @@ class SticFiguresWidget(QWidget):
             row = tile_data["row"]
             col = tile_data["col"]
             self.canvas.set_tile(
-                row, col,
+                row,
+                col,
                 tile_data["card"],
                 tile_data["fg_color"],
                 bg_color=tile_data.get("bg_color", 0),
-                advance_stack=tile_data.get("advance_stack", False)
+                advance_stack=tile_data.get("advance_stack", False),
             )
 
         # Load MOB data into canvas
@@ -1369,12 +1441,14 @@ class SticFiguresWidget(QWidget):
             return
 
         from PySide6.QtWidgets import QInputDialog
+
         name, ok = QInputDialog.getText(self, "New STIC Figure", "Figure name:")
         if not ok or not name:
             return
 
         # Create new figure
         from telligram.core.stic_figure import SticFigure
+
         figure = SticFigure(name=name)
         self.project.add_stic_figure(figure)
         self._refresh_figure_list()
@@ -1387,8 +1461,11 @@ class SticFiguresWidget(QWidget):
             return
 
         from PySide6.QtWidgets import QInputDialog
+
         old_name = self.current_figure.name
-        name, ok = QInputDialog.getText(self, "Rename STIC Figure", "New name:", text=old_name)
+        name, ok = QInputDialog.getText(
+            self, "Rename STIC Figure", "New name:", text=old_name
+        )
         if ok and name and name != old_name:
             self.current_figure.name = name
             self._refresh_figure_list()
@@ -1402,7 +1479,7 @@ class SticFiguresWidget(QWidget):
             self,
             "Delete STIC Figure",
             f"Delete figure '{self.current_figure.name}'?",
-            QMessageBox.Yes | QMessageBox.No
+            QMessageBox.Yes | QMessageBox.No,
         )
 
         if reply == QMessageBox.Yes:
@@ -1422,7 +1499,7 @@ class SticFiguresWidget(QWidget):
         QMessageBox.information(
             self,
             "Import Figure",
-            "Import functionality will be implemented in a future update."
+            "Import functionality will be implemented in a future update.",
         )
 
     def _export_figure(self):
@@ -1430,7 +1507,7 @@ class SticFiguresWidget(QWidget):
         QMessageBox.information(
             self,
             "Export Figure",
-            "Export functionality will be implemented in a future update."
+            "Export functionality will be implemented in a future update.",
         )
 
     def save_figure(self):
@@ -1439,7 +1516,7 @@ class SticFiguresWidget(QWidget):
             self,
             "Save STIC Figure",
             "",
-            "STIC Figure Files (*.sticfig);;JSON Files (*.json);;All Files (*)"
+            "STIC Figure Files (*.sticfig);;JSON Files (*.json);;All Files (*)",
         )
 
         if not file_path:
@@ -1451,13 +1528,15 @@ class SticFiguresWidget(QWidget):
             for row in range(self.canvas.grid_rows):
                 for col in range(self.canvas.grid_cols):
                     tile = self.canvas.get_tile(row, col)
-                    backtab_data.append({
-                        "row": row,
-                        "col": col,
-                        "card": tile['card'],
-                        "fg_color": tile['fg_color'],
-                        "advance_stack": tile['advance_stack']
-                    })
+                    backtab_data.append(
+                        {
+                            "row": row,
+                            "col": col,
+                            "card": tile["card"],
+                            "fg_color": tile["fg_color"],
+                            "advance_stack": tile["advance_stack"],
+                        }
+                    )
 
             # Build complete figure data
             figure_data = {
@@ -1467,27 +1546,23 @@ class SticFiguresWidget(QWidget):
                     "visible": self.canvas.border_visible,
                     "color": self.canvas.border_color,
                     "show_left": self.canvas.show_left_border,
-                    "show_top": self.canvas.show_top_border
+                    "show_top": self.canvas.show_top_border,
                 },
                 "color_stack": self.canvas.color_stack.copy(),
-                "backtab": backtab_data
+                "backtab": backtab_data,
             }
 
             # Save to file
-            with open(file_path, 'w') as f:
+            with open(file_path, "w") as f:
                 json.dump(figure_data, f, indent=2)
 
             QMessageBox.information(
-                self,
-                "Success",
-                f"STIC Figure saved to:\n{file_path}"
+                self, "Success", f"STIC Figure saved to:\n{file_path}"
             )
 
         except Exception as e:
             QMessageBox.critical(
-                self,
-                "Save Error",
-                f"Failed to save STIC Figure:\n{str(e)}"
+                self, "Save Error", f"Failed to save STIC Figure:\n{str(e)}"
             )
 
     def load_figure(self):
@@ -1496,7 +1571,7 @@ class SticFiguresWidget(QWidget):
             self,
             "Load STIC Figure",
             "",
-            "STIC Figure Files (*.sticfig);;JSON Files (*.json);;All Files (*)"
+            "STIC Figure Files (*.sticfig);;JSON Files (*.json);;All Files (*)",
         )
 
         if not file_path:
@@ -1504,7 +1579,7 @@ class SticFiguresWidget(QWidget):
 
         try:
             # Load from file
-            with open(file_path, 'r') as f:
+            with open(file_path, "r") as f:
                 figure_data = json.load(f)
 
             # Validate data
@@ -1545,24 +1620,20 @@ class SticFiguresWidget(QWidget):
             self.canvas.update()
 
             QMessageBox.information(
-                self,
-                "Success",
-                f"STIC Figure loaded from:\n{file_path}"
+                self, "Success", f"STIC Figure loaded from:\n{file_path}"
             )
 
         except Exception as e:
             QMessageBox.critical(
-                self,
-                "Load Error",
-                f"Failed to load STIC Figure:\n{str(e)}"
+                self, "Load Error", f"Failed to load STIC Figure:\n{str(e)}"
             )
 
     # MOB control handlers
     def _on_mob_visible_changed(self, mob_idx, checked):
         """Handle MOB visibility checkbox change"""
         if self.current_figure:
-            self.current_figure.mobs[mob_idx]['visible'] = checked
-            self.canvas.mobs[mob_idx]['visible'] = checked
+            self.current_figure.mobs[mob_idx]["visible"] = checked
+            self.canvas.mobs[mob_idx]["visible"] = checked
             self.canvas.update()
 
     def _on_mob_card_changed(self, mob_idx, card_idx):
@@ -1570,57 +1641,57 @@ class SticFiguresWidget(QWidget):
         if self.current_figure:
             # Dropdown shows cards 256-319, so add 256 to index
             card = 256 + card_idx
-            self.current_figure.mobs[mob_idx]['card'] = card
-            self.canvas.mobs[mob_idx]['card'] = card
+            self.current_figure.mobs[mob_idx]["card"] = card
+            self.canvas.mobs[mob_idx]["card"] = card
             self.canvas.update()
 
     def _on_mob_x_changed(self, mob_idx, x):
         """Handle MOB X position change"""
         if self.current_figure:
-            self.current_figure.mobs[mob_idx]['x'] = x
-            self.canvas.mobs[mob_idx]['x'] = x
+            self.current_figure.mobs[mob_idx]["x"] = x
+            self.canvas.mobs[mob_idx]["x"] = x
             self.canvas.update()
 
     def _on_mob_y_changed(self, mob_idx, y):
         """Handle MOB Y position change"""
         if self.current_figure:
-            self.current_figure.mobs[mob_idx]['y'] = y
-            self.canvas.mobs[mob_idx]['y'] = y
+            self.current_figure.mobs[mob_idx]["y"] = y
+            self.canvas.mobs[mob_idx]["y"] = y
             self.canvas.update()
 
     def _on_mob_color_changed(self, mob_idx, color):
         """Handle MOB color dropdown change"""
         if self.current_figure:
-            self.current_figure.mobs[mob_idx]['color'] = color
-            self.canvas.mobs[mob_idx]['color'] = color
+            self.current_figure.mobs[mob_idx]["color"] = color
+            self.canvas.mobs[mob_idx]["color"] = color
             self.canvas.update()
 
     def _on_mob_priority_changed(self, mob_idx, checked):
         """Handle MOB priority checkbox change"""
         if self.current_figure:
-            self.current_figure.mobs[mob_idx]['priority'] = checked
-            self.canvas.mobs[mob_idx]['priority'] = checked
+            self.current_figure.mobs[mob_idx]["priority"] = checked
+            self.canvas.mobs[mob_idx]["priority"] = checked
             self.canvas.update()
 
     def _on_mob_size_changed(self, mob_idx, size_idx):
         """Handle MOB size dropdown change"""
         if self.current_figure:
-            self.current_figure.mobs[mob_idx]['size'] = size_idx
-            self.canvas.mobs[mob_idx]['size'] = size_idx
+            self.current_figure.mobs[mob_idx]["size"] = size_idx
+            self.canvas.mobs[mob_idx]["size"] = size_idx
             self.canvas.update()
 
     def _on_mob_hflip_changed(self, mob_idx, checked):
         """Handle MOB horizontal flip checkbox change"""
         if self.current_figure:
-            self.current_figure.mobs[mob_idx]['h_flip'] = checked
-            self.canvas.mobs[mob_idx]['h_flip'] = checked
+            self.current_figure.mobs[mob_idx]["h_flip"] = checked
+            self.canvas.mobs[mob_idx]["h_flip"] = checked
             self.canvas.update()
 
     def _on_mob_vflip_changed(self, mob_idx, checked):
         """Handle MOB vertical flip checkbox change"""
         if self.current_figure:
-            self.current_figure.mobs[mob_idx]['v_flip'] = checked
-            self.canvas.mobs[mob_idx]['v_flip'] = checked
+            self.current_figure.mobs[mob_idx]["v_flip"] = checked
+            self.canvas.mobs[mob_idx]["v_flip"] = checked
             self.canvas.update()
 
     def _load_mobs_from_figure(self, figure):
@@ -1633,35 +1704,35 @@ class SticFiguresWidget(QWidget):
             controls = self.mob_controls[mob_idx]
 
             # Block signals while updating to avoid triggering save
-            controls['visible'].blockSignals(True)
-            controls['card'].blockSignals(True)
-            controls['x'].blockSignals(True)
-            controls['y'].blockSignals(True)
-            controls['color'].blockSignals(True)
-            controls['priority'].blockSignals(True)
-            controls['size'].blockSignals(True)
-            controls['h_flip'].blockSignals(True)
-            controls['v_flip'].blockSignals(True)
+            controls["visible"].blockSignals(True)
+            controls["card"].blockSignals(True)
+            controls["x"].blockSignals(True)
+            controls["y"].blockSignals(True)
+            controls["color"].blockSignals(True)
+            controls["priority"].blockSignals(True)
+            controls["size"].blockSignals(True)
+            controls["h_flip"].blockSignals(True)
+            controls["v_flip"].blockSignals(True)
 
             # Set values
-            controls['visible'].setChecked(mob_data['visible'])
+            controls["visible"].setChecked(mob_data["visible"])
             # Card dropdown shows 256-319, so subtract 256 to get index
-            controls['card'].setCurrentIndex(mob_data['card'] - 256)
-            controls['x'].setValue(mob_data['x'])
-            controls['y'].setValue(mob_data['y'])
-            controls['color'].setCurrentIndex(mob_data['color'])
-            controls['priority'].setChecked(mob_data['priority'])
-            controls['size'].setCurrentIndex(mob_data['size'])
-            controls['h_flip'].setChecked(mob_data['h_flip'])
-            controls['v_flip'].setChecked(mob_data['v_flip'])
+            controls["card"].setCurrentIndex(mob_data["card"] - 256)
+            controls["x"].setValue(mob_data["x"])
+            controls["y"].setValue(mob_data["y"])
+            controls["color"].setCurrentIndex(mob_data["color"])
+            controls["priority"].setChecked(mob_data["priority"])
+            controls["size"].setCurrentIndex(mob_data["size"])
+            controls["h_flip"].setChecked(mob_data["h_flip"])
+            controls["v_flip"].setChecked(mob_data["v_flip"])
 
             # Unblock signals
-            controls['visible'].blockSignals(False)
-            controls['card'].blockSignals(False)
-            controls['x'].blockSignals(False)
-            controls['y'].blockSignals(False)
-            controls['color'].blockSignals(False)
-            controls['priority'].blockSignals(False)
-            controls['size'].blockSignals(False)
-            controls['h_flip'].blockSignals(False)
-            controls['v_flip'].blockSignals(False)
+            controls["visible"].blockSignals(False)
+            controls["card"].blockSignals(False)
+            controls["x"].blockSignals(False)
+            controls["y"].blockSignals(False)
+            controls["color"].blockSignals(False)
+            controls["priority"].blockSignals(False)
+            controls["size"].blockSignals(False)
+            controls["h_flip"].blockSignals(False)
+            controls["v_flip"].blockSignals(False)

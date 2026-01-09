@@ -1,8 +1,21 @@
 """Main application window for telliGRAM"""
+
 from PySide6.QtWidgets import (
-    QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
-    QMenuBar, QMenu, QFileDialog, QMessageBox, QStatusBar,
-    QLabel, QPushButton, QTabWidget, QApplication, QInputDialog, QCheckBox
+    QMainWindow,
+    QWidget,
+    QVBoxLayout,
+    QHBoxLayout,
+    QMenuBar,
+    QMenu,
+    QFileDialog,
+    QMessageBox,
+    QStatusBar,
+    QLabel,
+    QPushButton,
+    QTabWidget,
+    QApplication,
+    QInputDialog,
+    QCheckBox,
 )
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QAction, QUndoStack, QUndoCommand
@@ -29,6 +42,7 @@ class MainWindow(QMainWindow):
 
         # Create default STIC figure for new projects
         from telligram.core.stic_figure import SticFigure
+
         default_figure = SticFigure(name="Figure 1")
         self.project.add_stic_figure(default_figure)
 
@@ -37,7 +51,9 @@ class MainWindow(QMainWindow):
         self.undo_stack = QUndoStack(self)
         self.grom_path = grom_path  # Path to GROM.json file (None = no GROM tab)
 
-        self.setWindowTitle(f"telliGRAM v{__version__} - Intellivision GRAM Card Creator, Animator and BACKTAB/STIC Designer")
+        self.setWindowTitle(
+            f"telliGRAM v{__version__} - Intellivision GRAM Card Creator, Animator and BACKTAB/STIC Designer"
+        )
         self.setMinimumSize(1200, 800)
         self.resize(1750, 880)  # Default window size with proper spacing
 
@@ -131,7 +147,9 @@ class MainWindow(QMainWindow):
             self.grom_browser = None
 
         # Tab 3: STIC Figures
-        self.stic_figures = SticFiguresWidget(project=self.project, grom_path=self.grom_path)
+        self.stic_figures = SticFiguresWidget(
+            project=self.project, grom_path=self.grom_path
+        )
         self.main_tabs.addTab(self.stic_figures, "STIC Figures")
 
     def _create_intellimation_station_tab(self):
@@ -211,7 +229,9 @@ class MainWindow(QMainWindow):
         main_layout.addWidget(left_panel, stretch=0)  # Don't stretch
 
         # Right panel - Animation Timelines + Composite Sprite Animator
-        self.timeline_editor = AnimationComposerWidget(project=self.project, main_window=self)
+        self.timeline_editor = AnimationComposerWidget(
+            project=self.project, main_window=self
+        )
         main_layout.addWidget(self.timeline_editor, stretch=1)  # Takes remaining space
 
         return tab_widget
@@ -251,6 +271,7 @@ class MainWindow(QMainWindow):
 
         # Create default STIC figure
         from telligram.core.stic_figure import SticFigure
+
         default_figure = SticFigure(name="Figure 1")
         self.project.add_stic_figure(default_figure)
 
@@ -266,10 +287,7 @@ class MainWindow(QMainWindow):
     def open_project(self):
         """Open project from file"""
         filename, _ = QFileDialog.getOpenFileName(
-            self,
-            "Open Project",
-            "",
-            "telliGRAM Projects (*.telligram);;All Files (*)"
+            self, "Open Project", "", "telliGRAM Projects (*.telligram);;All Files (*)"
         )
 
         if filename:
@@ -307,12 +325,12 @@ class MainWindow(QMainWindow):
             self,
             "Save Project As",
             "",
-            "telliGRAM Projects (*.telligram);;All Files (*)"
+            "telliGRAM Projects (*.telligram);;All Files (*)",
         )
 
         if filename:
-            if not filename.endswith('.telligram'):
-                filename += '.telligram'
+            if not filename.endswith(".telligram"):
+                filename += ".telligram"
 
             try:
                 self.current_file = Path(filename)
@@ -332,7 +350,7 @@ class MainWindow(QMainWindow):
         self.timeline_editor.set_current_card_slot(slot)
 
         # Update color palette to show this card's color
-        if card is not None and hasattr(card, 'color'):
+        if card is not None and hasattr(card, "color"):
             self.color_palette.set_color(card.color)
             self.color_label.setText(f"<b>Color (#{card.color}):</b>")
 
@@ -340,10 +358,12 @@ class MainWindow(QMainWindow):
         """Handle color selection from palette"""
         card = self.project.get_card(self.current_card_slot)
         if card is not None:
-            old_color = card.color if hasattr(card, 'color') else 7
+            old_color = card.color if hasattr(card, "color") else 7
             if old_color != color_index:
                 # Create undoable command
-                command = ChangeCardColorCommand(self, self.current_card_slot, old_color, color_index)
+                command = ChangeCardColorCommand(
+                    self, self.current_card_slot, old_color, color_index
+                )
                 self.undo_stack.push(command)
                 # Update color label
                 self.color_label.setText(f"<b>Color (#{color_index}):</b>")
@@ -427,7 +447,9 @@ class MainWindow(QMainWindow):
         command = AddFrameCommand(self, animation, card_slot, duration)
         self.undo_stack.push(command)
 
-    def insert_frame_undoable(self, animation, index: int, card_slot: int, duration: int):
+    def insert_frame_undoable(
+        self, animation, index: int, card_slot: int, duration: int
+    ):
         """Insert frame with undo support"""
         command = InsertFrameCommand(self, animation, index, card_slot, duration)
         self.undo_stack.push(command)
@@ -437,9 +459,13 @@ class MainWindow(QMainWindow):
         command = RemoveFrameCommand(self, animation, index)
         self.undo_stack.push(command)
 
-    def change_frame_duration_undoable(self, animation, frame_index: int, old_duration: int, new_duration: int):
+    def change_frame_duration_undoable(
+        self, animation, frame_index: int, old_duration: int, new_duration: int
+    ):
         """Change frame duration with undo support"""
-        command = ChangeFrameDurationCommand(self, animation, frame_index, old_duration, new_duration)
+        command = ChangeFrameDurationCommand(
+            self, animation, frame_index, old_duration, new_duration
+        )
         self.undo_stack.push(command)
 
     def reorder_frame_undoable(self, animation, from_index: int, to_index: int):
@@ -467,18 +493,19 @@ class MainWindow(QMainWindow):
             "This application does not distribute GROM graphics from the Intellivision and requires "
             "user-supplied data for previewing built-in characters. This application is built to aid "
             "graphical programming for the Intellivision.  This project is not affiliated or endorsed by Atari Interactive, Inc.</small></p>"
-            "<p><i><a href='https://aiattribution.github.io/statements/AIA-PAI-Nc-Hin-R-?model=Claude%20Code%20%5BSonnet%204.5%5D-v1.0'>AIA PAI Nc Hin R Claude Code [Sonnet 4.5] v1.0</a></i></p>"
+            "<p><i><a href='https://aiattribution.github.io/statements/AIA-PAI-Nc-Hin-R-?model=Claude%20Code%20%5BSonnet%204.5%5D-v1.0'>AIA PAI Nc Hin R Claude Code [Sonnet 4.5] v1.0</a></i></p>",
         )
 
     def export_all_gram_cards(self):
         """Export all GRAM cards using unified export dialog"""
+
         def generator(format_key):
             """Generate code based on selected format"""
             generators = {
                 "intybasic_visual": self._generate_all_cards_intybasic_visual,
                 "intybasic_data": self._generate_all_cards_intybasic_data,
                 "mbcc": self._generate_all_cards_mbcc,
-                "asm": self._generate_all_cards_asm
+                "asm": self._generate_all_cards_asm,
             }
             return generators[format_key]()
 
@@ -500,7 +527,7 @@ class MainWindow(QMainWindow):
                 # Convert to visual representation (1 -> X, 0 -> .)
                 visual_rows = []
                 for row in binary_rows:
-                    visual_row = row.replace('1', 'X').replace('0', '.')
+                    visual_row = row.replace("1", "X").replace("0", ".")
                     visual_rows.append(f'    "{visual_row}"')
 
                 code += f"' GRAM Card #{slot} (slot {256 + slot})\n"
@@ -555,7 +582,7 @@ class MainWindow(QMainWindow):
             # Convert to visual representation (1 -> #, 0 -> .)
             visual_rows = []
             for row in binary_rows:
-                visual_row = row.replace('1', '#').replace('0', '.')
+                visual_row = row.replace("1", "#").replace("0", ".")
                 visual_rows.append(f'            "{visual_row}"')
 
             # Add comment
@@ -603,16 +630,22 @@ class MainWindow(QMainWindow):
     def export_animation(self, animation):
         """Export animation using unified export dialog"""
         if not animation:
-            QMessageBox.warning(self, "No Animation", "Please select an animation to export.")
+            QMessageBox.warning(
+                self, "No Animation", "Please select an animation to export."
+            )
             return
 
         def generator(format_key):
             """Generate code based on selected format"""
             generators = {
-                "intybasic_visual": lambda: self._generate_animation_intybasic(animation),
-                "intybasic_data": lambda: self._generate_animation_intybasic(animation),  # Same as visual for animations
+                "intybasic_visual": lambda: self._generate_animation_intybasic(
+                    animation
+                ),
+                "intybasic_data": lambda: self._generate_animation_intybasic(
+                    animation
+                ),  # Same as visual for animations
                 "mbcc": lambda: self._generate_animation_mbcc(animation),
-                "asm": lambda: self._generate_animation_asm(animation)
+                "asm": lambda: self._generate_animation_asm(animation),
             }
             return generators[format_key]()
 
@@ -642,7 +675,7 @@ class MainWindow(QMainWindow):
             binary_rows = card.to_binary_strings()
             visual_rows = []
             for row in binary_rows:
-                visual_row = row.replace('1', 'X').replace('0', '.')
+                visual_row = row.replace("1", "X").replace("0", ".")
                 visual_rows.append(f'    "{visual_row}"')
 
             code += f"BITMAP {anim.name}_card_{slot}\n"
@@ -662,7 +695,9 @@ class MainWindow(QMainWindow):
             code += f"    DATA {frame['card_slot']}, {frame['duration']}"
             code += f"  ' Frame {i}: slot {frame['card_slot']}, duration {frame['duration']}\n"
 
-        code += f"\n' Usage: Loop through frames, load each card for specified duration\n"
+        code += (
+            f"\n' Usage: Loop through frames, load each card for specified duration\n"
+        )
         code += f"' Loop mode: {anim.loop}\n"
 
         return code
@@ -690,7 +725,7 @@ class MainWindow(QMainWindow):
             binary_rows = card.to_binary_strings()
             visual_rows = []
             for row in binary_rows:
-                visual_row = row.replace('1', '#').replace('0', '.')
+                visual_row = row.replace("1", "#").replace("0", ".")
                 visual_rows.append(f'        "{visual_row}"')
 
             code += f"const U16 {anim.name}_card_{slot} = SBITMAP(\n"
@@ -774,6 +809,7 @@ class MainWindow(QMainWindow):
 
 # Undo/Redo Command Classes
 
+
 class CardOperationCommand(QUndoCommand):
     """Base class for card operation commands"""
 
@@ -793,6 +829,7 @@ class CardOperationCommand(QUndoCommand):
         """Restore old card state"""
         if self.old_data is not None:
             from telligram.core.card import GramCard
+
             card = GramCard(data=self.old_data)
             self.main_window.project.set_card(self.slot, card)
             self.main_window.card_grid.update_card(self.slot, card)
@@ -804,6 +841,7 @@ class CardOperationCommand(QUndoCommand):
         """Apply new card state"""
         if self.new_data is not None:
             from telligram.core.card import GramCard
+
             card = GramCard(data=self.new_data)
             self.main_window.project.set_card(self.slot, card)
             self.main_window.card_grid.update_card(self.slot, card)
@@ -820,6 +858,7 @@ class ClearCardCommand(CardOperationCommand):
 
         # Calculate new state without modifying original
         from telligram.core.card import GramCard
+
         self.new_data = [0] * 8  # Empty card
 
 
@@ -831,6 +870,7 @@ class FlipHorizontalCommand(CardOperationCommand):
 
         # Calculate new state without modifying original
         from telligram.core.card import GramCard
+
         card = main_window.project.get_card(slot)
         if card is not None:
             # Create a copy and flip it
@@ -847,6 +887,7 @@ class FlipVerticalCommand(CardOperationCommand):
 
         # Calculate new state without modifying original
         from telligram.core.card import GramCard
+
         card = main_window.project.get_card(slot)
         if card is not None:
             # Create a copy and flip it
@@ -878,6 +919,7 @@ class PixelEditCommand(CardOperationCommand):
         """Restore old card state"""
         if self.old_data is not None:
             from telligram.core.card import GramCard
+
             card = GramCard(data=self.old_data)
             self.main_window.project.set_card(self.slot, card)
             self.main_window.card_grid.update_card(self.slot, card)
@@ -889,6 +931,7 @@ class PixelEditCommand(CardOperationCommand):
         """Apply new card state"""
         if self.new_data is not None:
             from telligram.core.card import GramCard
+
             card = GramCard(data=self.new_data)
             self.main_window.project.set_card(self.slot, card)
             self.main_window.card_grid.update_card(self.slot, card)
@@ -917,11 +960,13 @@ class ChangeCardColorCommand(QUndoCommand):
             if self.main_window.current_card_slot == self.slot:
                 self.main_window.pixel_editor.set_card(card)
                 # Update color palette selection
-                if hasattr(self.main_window, 'color_palette'):
+                if hasattr(self.main_window, "color_palette"):
                     self.main_window.color_palette.set_color(self.old_color)
                 # Update color label
-                if hasattr(self.main_window, 'color_label'):
-                    self.main_window.color_label.setText(f"<b>Color (#{self.old_color}):</b>")
+                if hasattr(self.main_window, "color_label"):
+                    self.main_window.color_label.setText(
+                        f"<b>Color (#{self.old_color}):</b>"
+                    )
             # Update timeline if needed
             if self.main_window.timeline_editor.current_animation:
                 self.main_window.timeline_editor._load_animation(
@@ -938,11 +983,13 @@ class ChangeCardColorCommand(QUndoCommand):
             if self.main_window.current_card_slot == self.slot:
                 self.main_window.pixel_editor.set_card(card)
                 # Update color palette selection
-                if hasattr(self.main_window, 'color_palette'):
+                if hasattr(self.main_window, "color_palette"):
                     self.main_window.color_palette.set_color(self.new_color)
                 # Update color label
-                if hasattr(self.main_window, 'color_label'):
-                    self.main_window.color_label.setText(f"<b>Color (#{self.new_color}):</b>")
+                if hasattr(self.main_window, "color_label"):
+                    self.main_window.color_label.setText(
+                        f"<b>Color (#{self.new_color}):</b>"
+                    )
             # Update timeline if needed
             if self.main_window.timeline_editor.current_animation:
                 self.main_window.timeline_editor._load_animation(
@@ -951,6 +998,7 @@ class ChangeCardColorCommand(QUndoCommand):
 
 
 # Animation Undo/Redo Command Classes
+
 
 class CreateAnimationCommand(QUndoCommand):
     """Command for creating a new animation"""
@@ -964,6 +1012,7 @@ class CreateAnimationCommand(QUndoCommand):
     def redo(self):
         """Create the animation"""
         from telligram.core.animation import Animation
+
         self.animation = Animation(name=self.animation_name)
         self.main_window.project.add_animation(self.animation)
         self.main_window.timeline_editor._refresh_animation_list()
@@ -982,7 +1031,9 @@ class CreateAnimationCommand(QUndoCommand):
             if len(self.main_window.project.animations) > 0:
                 self.main_window.timeline_editor.animation_combo.setCurrentIndex(0)
                 # Manually load since signals are blocked during refresh
-                self.main_window.timeline_editor._load_animation(self.main_window.project.animations[0])
+                self.main_window.timeline_editor._load_animation(
+                    self.main_window.project.animations[0]
+                )
             else:
                 self.main_window.timeline_editor._load_animation(None)
 
@@ -1026,21 +1077,28 @@ class DeleteAnimationCommand(QUndoCommand):
         self.main_window.timeline_editor._refresh_animation_list()
         # Select another animation or none
         if len(self.main_window.project.animations) > 0:
-            index = min(self.animation_index, len(self.main_window.project.animations) - 1)
+            index = min(
+                self.animation_index, len(self.main_window.project.animations) - 1
+            )
             self.main_window.timeline_editor.animation_combo.setCurrentIndex(index)
             # Manually load since signals are blocked during refresh
-            self.main_window.timeline_editor._load_animation(self.main_window.project.animations[index])
+            self.main_window.timeline_editor._load_animation(
+                self.main_window.project.animations[index]
+            )
         else:
             self.main_window.timeline_editor._load_animation(None)
 
     def undo(self):
         """Restore the animation"""
         from telligram.core.animation import Animation
+
         restored_anim = Animation.from_dict(self.animation_data)
         self.main_window.project.animations.insert(self.animation_index, restored_anim)
         self.animation = restored_anim  # Update reference
         self.main_window.timeline_editor._refresh_animation_list()
-        self.main_window.timeline_editor.animation_combo.setCurrentIndex(self.animation_index)
+        self.main_window.timeline_editor.animation_combo.setCurrentIndex(
+            self.animation_index
+        )
         # Manually load since signals are blocked during refresh
         self.main_window.timeline_editor._load_animation(restored_anim)
 
@@ -1065,7 +1123,10 @@ class AddFrameCommand(QUndoCommand):
 
     def undo(self):
         """Remove the frame"""
-        if self.frame_index is not None and self.frame_index < self.animation.frame_count:
+        if (
+            self.frame_index is not None
+            and self.frame_index < self.animation.frame_count
+        ):
             self.animation.remove_frame(self.frame_index)
             self.main_window.timeline_editor._load_animation(self.animation)
             self.main_window.timeline_editor._refresh_animation_list()

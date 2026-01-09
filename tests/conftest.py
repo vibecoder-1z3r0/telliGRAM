@@ -1,4 +1,5 @@
 """Test configuration and fixtures"""
+
 import pytest
 
 
@@ -8,6 +9,7 @@ def qapp():
     # Import only when needed (for GUI tests)
     try:
         from PySide6.QtWidgets import QApplication
+
         app = QApplication.instance()
         if app is None:
             app = QApplication([])

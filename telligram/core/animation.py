@@ -59,10 +59,7 @@ class Animation:
             card_slot: GRAM card slot number (0-63)
             duration: How many frames to display this card
         """
-        self._frames.append({
-            "card_slot": card_slot,
-            "duration": duration
-        })
+        self._frames.append({"card_slot": card_slot, "duration": duration})
 
     def insert_frame(self, index: int, card_slot: int, duration: int) -> None:
         """
@@ -73,10 +70,7 @@ class Animation:
             card_slot: GRAM card slot number
             duration: Frame duration
         """
-        self._frames.insert(index, {
-            "card_slot": card_slot,
-            "duration": duration
-        })
+        self._frames.insert(index, {"card_slot": card_slot, "duration": duration})
 
     def get_frame(self, index: int) -> Dict[str, int]:
         """
@@ -141,11 +135,11 @@ class Animation:
             "name": self.name,
             "fps": self.fps,
             "loop": self.loop,
-            "frames": self._frames.copy()
+            "frames": self._frames.copy(),
         }
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> 'Animation':
+    def from_dict(cls, data: Dict[str, Any]) -> "Animation":
         """
         Create animation from dictionary.
 
@@ -156,9 +150,7 @@ class Animation:
             Animation instance
         """
         anim = cls(
-            name=data["name"],
-            fps=data.get("fps", 10),
-            loop=data.get("loop", False)
+            name=data["name"], fps=data.get("fps", 10), loop=data.get("loop", False)
         )
 
         # Handle new multi-track format with layers

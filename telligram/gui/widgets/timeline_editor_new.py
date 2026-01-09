@@ -1,8 +1,20 @@
 """Enhanced timeline editor widget for animation sequences"""
+
 from PySide6.QtWidgets import (
-    QWidget, QVBoxLayout, QHBoxLayout, QScrollArea,
-    QPushButton, QLabel, QSlider, QCheckBox, QSpinBox, QFrame, QComboBox,
-    QLineEdit, QMessageBox, QInputDialog
+    QWidget,
+    QVBoxLayout,
+    QHBoxLayout,
+    QScrollArea,
+    QPushButton,
+    QLabel,
+    QSlider,
+    QCheckBox,
+    QSpinBox,
+    QFrame,
+    QComboBox,
+    QLineEdit,
+    QMessageBox,
+    QInputDialog,
 )
 from PySide6.QtCore import Qt, Signal, QTimer, QSize, QMimeData, QPoint
 from PySide6.QtGui import QPainter, QColor, QPen, QPixmap, QDrag
@@ -90,14 +102,17 @@ class FrameThumbnail(QFrame):
     def _update_style(self):
         """Update visual style"""
         if self.is_current:
-            self.setStyleSheet("""
+            self.setStyleSheet(
+                """
                 QFrame {
                     background-color: #0078D4;
                     border: 3px solid #0078D4;
                 }
-            """)
+            """
+            )
         else:
-            self.setStyleSheet("""
+            self.setStyleSheet(
+                """
                 QFrame {
                     background-color: #2b2b2b;
                     border: 1px solid #3c3c3c;
@@ -105,7 +120,8 @@ class FrameThumbnail(QFrame):
                 QFrame:hover {
                     border: 1px solid #666;
                 }
-            """)
+            """
+            )
 
     def _on_duration_changed(self, value):
         """Emit duration change signal"""
@@ -160,25 +176,33 @@ class FrameThumbnail(QFrame):
 
         # Move actions
         move_left_action = QAction("Move Left", self)
-        move_left_action.triggered.connect(lambda: self.reorder_requested.emit(self.frame_index, self.frame_index - 1))
+        move_left_action.triggered.connect(
+            lambda: self.reorder_requested.emit(self.frame_index, self.frame_index - 1)
+        )
         move_left_action.setEnabled(self.frame_index > 0)
         menu.addAction(move_left_action)
 
         move_right_action = QAction("Move Right", self)
-        move_right_action.triggered.connect(lambda: self.reorder_requested.emit(self.frame_index, self.frame_index + 1))
+        move_right_action.triggered.connect(
+            lambda: self.reorder_requested.emit(self.frame_index, self.frame_index + 1)
+        )
         # Enable will be checked by parent
         menu.addAction(move_right_action)
 
         menu.addSeparator()
 
         duplicate_action = QAction("Duplicate Card", self)
-        duplicate_action.triggered.connect(lambda: self.duplicate_requested.emit(self.frame_index))
+        duplicate_action.triggered.connect(
+            lambda: self.duplicate_requested.emit(self.frame_index)
+        )
         menu.addAction(duplicate_action)
 
         menu.addSeparator()
 
         remove_action = QAction("Remove Card", self)
-        remove_action.triggered.connect(lambda: self.remove_requested.emit(self.frame_index))
+        remove_action.triggered.connect(
+            lambda: self.remove_requested.emit(self.frame_index)
+        )
         menu.addAction(remove_action)
 
         menu.exec(event.globalPos())
@@ -204,10 +228,12 @@ class FrameThumbnail(QFrame):
         pixel_size = preview_size // 8
 
         # Draw background
-        painter.fillRect(preview_x, preview_y, preview_size, preview_size, QColor("#1a1a1a"))
+        painter.fillRect(
+            preview_x, preview_y, preview_size, preview_size, QColor("#1a1a1a")
+        )
 
         # Get card color
-        card_color = get_color_hex(card.color) if hasattr(card, 'color') else "#FFFFFF"
+        card_color = get_color_hex(card.color) if hasattr(card, "color") else "#FFFFFF"
 
         # Draw pixels
         for y in range(8):
@@ -218,7 +244,7 @@ class FrameThumbnail(QFrame):
                         preview_y + y * pixel_size,
                         pixel_size,
                         pixel_size,
-                        QColor(card_color)
+                        QColor(card_color),
                     )
 
         # Draw grid (if enabled)
@@ -273,7 +299,9 @@ class AnimationPreviewWidget(QFrame):
         card = self.project.get_card(self.current_card_slot)
         if card is None:
             painter.setPen(QColor("#888"))
-            painter.drawText(self.rect(), Qt.AlignCenter, f"Card {self.current_card_slot}\nEmpty")
+            painter.drawText(
+                self.rect(), Qt.AlignCenter, f"Card {self.current_card_slot}\nEmpty"
+            )
             return
 
         # Draw card preview (160x160 centered)
@@ -283,13 +311,17 @@ class AnimationPreviewWidget(QFrame):
         offset_y = (200 - preview_size) // 2
 
         # Draw background
-        painter.fillRect(offset_x, offset_y, preview_size, preview_size, QColor("#1a1a1a"))
+        painter.fillRect(
+            offset_x, offset_y, preview_size, preview_size, QColor("#1a1a1a")
+        )
 
         # Get card color - use override if set
         if self.color_override is not None:
             card_color = get_color_hex(self.color_override)
         else:
-            card_color = get_color_hex(card.color) if hasattr(card, 'color') else "#FFFFFF"
+            card_color = (
+                get_color_hex(card.color) if hasattr(card, "color") else "#FFFFFF"
+            )
 
         # Draw pixels
         for y in range(8):
@@ -300,7 +332,7 @@ class AnimationPreviewWidget(QFrame):
                         offset_y + y * pixel_size,
                         pixel_size,
                         pixel_size,
-                        QColor(card_color)
+                        QColor(card_color),
                     )
 
         # Draw grid (if enabled)
@@ -480,7 +512,9 @@ class TimelineEditorWidget(QWidget):
         for color_name in COLOR_NAMES:
             self.color_override_combo.addItem(color_name)
         self.color_override_combo.setCurrentIndex(0)
-        self.color_override_combo.currentIndexChanged.connect(self._on_color_override_changed)
+        self.color_override_combo.currentIndexChanged.connect(
+            self._on_color_override_changed
+        )
         frame_controls.addWidget(self.color_override_combo)
 
         frame_controls.addStretch()
@@ -602,7 +636,9 @@ class TimelineEditorWidget(QWidget):
 
         frame_data = self.current_animation.get_frame(index)
         thumb = FrameThumbnail(index)
-        thumb.set_frame_data(frame_data["card_slot"], frame_data["duration"], self.project)
+        thumb.set_frame_data(
+            frame_data["card_slot"], frame_data["duration"], self.project
+        )
         thumb.show_grid = self.show_grid  # Inherit grid setting
         thumb.clicked.connect(self._on_frame_clicked)
         thumb.duration_changed.connect(self._on_frame_duration_changed)
@@ -645,11 +681,15 @@ class TimelineEditorWidget(QWidget):
             return
 
         old_name = self.current_animation.name
-        name, ok = QInputDialog.getText(self, "Rename Animation", "New name:", text=old_name)
+        name, ok = QInputDialog.getText(
+            self, "Rename Animation", "New name:", text=old_name
+        )
         if ok and name and name != old_name:
             # Use undoable command if main_window available
             if self.main_window:
-                self.main_window.rename_animation_undoable(self.current_animation, old_name, name)
+                self.main_window.rename_animation_undoable(
+                    self.current_animation, old_name, name
+                )
             else:
                 # Fallback
                 self.current_animation.name = name
@@ -665,7 +705,7 @@ class TimelineEditorWidget(QWidget):
             self,
             "Delete Animation",
             f"Delete animation '{self.current_animation.name}'?",
-            QMessageBox.Yes | QMessageBox.No
+            QMessageBox.Yes | QMessageBox.No,
         )
 
         if reply == QMessageBox.Yes:
@@ -674,7 +714,9 @@ class TimelineEditorWidget(QWidget):
 
             # Use undoable command if main_window available
             if self.main_window:
-                self.main_window.delete_animation_undoable(self.current_animation, current_index)
+                self.main_window.delete_animation_undoable(
+                    self.current_animation, current_index
+                )
             else:
                 # Fallback
                 self.project.animations.remove(self.current_animation)
@@ -688,14 +730,18 @@ class TimelineEditorWidget(QWidget):
     def _export_animation(self):
         """Export current animation"""
         if not self.current_animation:
-            QMessageBox.warning(self, "No Animation", "Please select an animation to export.")
+            QMessageBox.warning(
+                self, "No Animation", "Please select an animation to export."
+            )
             return
 
         # Call main window's export method
         if self.main_window:
             self.main_window.export_animation(self.current_animation)
         else:
-            QMessageBox.warning(self, "Export Not Available", "Export requires main window context.")
+            QMessageBox.warning(
+                self, "Export Not Available", "Export requires main window context."
+            )
 
     def _add_current_card(self):
         """Add current card to end of animation"""
@@ -717,10 +763,14 @@ class TimelineEditorWidget(QWidget):
 
         # Use undoable command if main_window available
         if self.main_window:
-            self.main_window.add_frame_undoable(self.current_animation, self.current_card_slot, 5)
+            self.main_window.add_frame_undoable(
+                self.current_animation, self.current_card_slot, 5
+            )
         else:
             # Fallback
-            self.current_animation.add_frame(card_slot=self.current_card_slot, duration=5)
+            self.current_animation.add_frame(
+                card_slot=self.current_card_slot, duration=5
+            )
             self._create_frame_thumbnail(self.current_animation.frame_count - 1)
             self._refresh_animation_list()
             self._update_playback_info()
@@ -741,10 +791,14 @@ class TimelineEditorWidget(QWidget):
 
         # Use undoable command if main_window available
         if self.main_window:
-            self.main_window.insert_frame_undoable(self.current_animation, selected_index, self.current_card_slot, 5)
+            self.main_window.insert_frame_undoable(
+                self.current_animation, selected_index, self.current_card_slot, 5
+            )
         else:
             # Fallback
-            self.current_animation.insert_frame(selected_index, self.current_card_slot, duration=5)
+            self.current_animation.insert_frame(
+                selected_index, self.current_card_slot, duration=5
+            )
             self._load_animation(self.current_animation)
             self._refresh_animation_list()
             self.animation_changed.emit()
@@ -774,7 +828,10 @@ class TimelineEditorWidget(QWidget):
 
     def _on_frame_duration_changed(self, frame_index, new_duration):
         """Handle duration change"""
-        if not self.current_animation or frame_index >= self.current_animation.frame_count:
+        if (
+            not self.current_animation
+            or frame_index >= self.current_animation.frame_count
+        ):
             return
 
         frame = self.current_animation.get_frame(frame_index)
@@ -801,7 +858,9 @@ class TimelineEditorWidget(QWidget):
 
         # Use undoable command if main_window available
         if self.main_window:
-            self.main_window.reorder_frame_undoable(self.current_animation, from_index, to_index)
+            self.main_window.reorder_frame_undoable(
+                self.current_animation, from_index, to_index
+            )
         else:
             # Fallback
             frame = self.current_animation._frames.pop(from_index)
@@ -820,7 +879,9 @@ class TimelineEditorWidget(QWidget):
         else:
             # Fallback
             frame = self.current_animation.get_frame(index)
-            self.current_animation.insert_frame(index + 1, frame["card_slot"], frame["duration"])
+            self.current_animation.insert_frame(
+                index + 1, frame["card_slot"], frame["duration"]
+            )
             self._load_animation(self.current_animation)
             self._refresh_animation_list()
             self.animation_changed.emit()
@@ -829,15 +890,22 @@ class TimelineEditorWidget(QWidget):
         """Move currently selected/playing frame left"""
         if not self.current_animation or self.current_playback_frame <= 0:
             return
-        self._reorder_frames(self.current_playback_frame, self.current_playback_frame - 1)
+        self._reorder_frames(
+            self.current_playback_frame, self.current_playback_frame - 1
+        )
         self.current_playback_frame -= 1
         self._update_current_frame_highlight()
 
     def _move_selected_right(self):
         """Move currently selected/playing frame right"""
-        if not self.current_animation or self.current_playback_frame >= self.current_animation.frame_count - 1:
+        if (
+            not self.current_animation
+            or self.current_playback_frame >= self.current_animation.frame_count - 1
+        ):
             return
-        self._reorder_frames(self.current_playback_frame, self.current_playback_frame + 1)
+        self._reorder_frames(
+            self.current_playback_frame, self.current_playback_frame + 1
+        )
         self.current_playback_frame += 1
         self._update_current_frame_highlight()
 
@@ -853,7 +921,7 @@ class TimelineEditorWidget(QWidget):
     def _on_loop_changed(self, state):
         """Handle loop checkbox change"""
         if self.current_animation:
-            self.current_animation.loop = (state == Qt.Checked)
+            self.current_animation.loop = state == Qt.Checked
             self.animation_changed.emit()
 
     def _on_color_override_changed(self, index):
@@ -870,7 +938,7 @@ class TimelineEditorWidget(QWidget):
 
     def _on_grid_changed(self, state):
         """Handle grid checkbox toggle"""
-        self.show_grid = (state == Qt.Checked)
+        self.show_grid = state == Qt.Checked
 
         # Update all frame thumbnails
         for thumb in self.frame_thumbnails:
@@ -921,12 +989,17 @@ class TimelineEditorWidget(QWidget):
 
     def _update_playback_timer(self):
         """Update timer interval based on current frame's duration and FPS"""
-        if self.current_animation and self.current_playback_frame < self.current_animation.frame_count:
+        if (
+            self.current_animation
+            and self.current_playback_frame < self.current_animation.frame_count
+        ):
             frame = self.current_animation.get_frame(self.current_playback_frame)
             duration_frames = frame["duration"]
             # Calculate milliseconds: (duration in frames) / (frames per second) * 1000
             interval_ms = int((duration_frames / self.current_animation.fps) * 1000)
-            self.playback_timer.setInterval(max(16, interval_ms))  # Minimum 16ms (~60fps max)
+            self.playback_timer.setInterval(
+                max(16, interval_ms)
+            )  # Minimum 16ms (~60fps max)
 
     def _advance_frame(self):
         """Advance to next frame during playback"""
@@ -967,9 +1040,13 @@ class TimelineEditorWidget(QWidget):
 
             # Get current card duration for frame range display
             if self.current_playback_frame < total_cards:
-                current_card = self.current_animation.get_frame(self.current_playback_frame)
+                current_card = self.current_animation.get_frame(
+                    self.current_playback_frame
+                )
                 card_duration = current_card["duration"]
-                frame_range = f"{current_frame + 1:03d}-{current_frame + card_duration:03d}"
+                frame_range = (
+                    f"{current_frame + 1:03d}-{current_frame + card_duration:03d}"
+                )
             else:
                 frame_range = f"{current_frame + 1:03d}"
 
@@ -982,9 +1059,14 @@ class TimelineEditorWidget(QWidget):
 
     def _update_preview(self):
         """Update animation preview with current frame"""
-        if self.current_animation and self.current_playback_frame < self.current_animation.frame_count:
+        if (
+            self.current_animation
+            and self.current_playback_frame < self.current_animation.frame_count
+        ):
             frame = self.current_animation.get_frame(self.current_playback_frame)
-            self.preview_widget.set_card(frame["card_slot"], self.project, self.current_color_override)
+            self.preview_widget.set_card(
+                frame["card_slot"], self.project, self.current_color_override
+            )
         else:
             self.preview_widget.clear()
 

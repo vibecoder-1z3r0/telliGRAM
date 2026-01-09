@@ -1,4 +1,5 @@
 """GRAM Card data model"""
+
 from typing import List, Optional, Dict, Any
 from telligram.core.constants import DEFAULT_CARD_COLOR
 
@@ -14,7 +15,9 @@ class GramCard:
     WIDTH = 8
     HEIGHT = 8
 
-    def __init__(self, data: Optional[List[int]] = None, color: int = DEFAULT_CARD_COLOR):
+    def __init__(
+        self, data: Optional[List[int]] = None, color: int = DEFAULT_CARD_COLOR
+    ):
         """
         Initialize GRAM card
 
@@ -29,7 +32,9 @@ class GramCard:
             self._data = [0] * self.HEIGHT
         else:
             if len(data) != self.HEIGHT:
-                raise ValueError(f"Card data must be {self.HEIGHT} bytes, got {len(data)}")
+                raise ValueError(
+                    f"Card data must be {self.HEIGHT} bytes, got {len(data)}"
+                )
 
             # Validate each byte is 0-255
             for i, byte in enumerate(data):
@@ -89,7 +94,7 @@ class GramCard:
 
         bit = 7 - x
         if value:
-            self._data[y] |= (1 << bit)  # Set bit
+            self._data[y] |= 1 << bit  # Set bit
         else:
             self._data[y] &= ~(1 << bit)  # Clear bit
 
@@ -104,7 +109,7 @@ class GramCard:
         Returns:
             List of 8 strings, each 8 characters (e.g., "11110000")
         """
-        return [format(byte, '08b') for byte in self._data]
+        return [format(byte, "08b") for byte in self._data]
 
     def to_hex_strings(self) -> List[str]:
         """
@@ -113,7 +118,7 @@ class GramCard:
         Returns:
             List of 8 strings, each 2 characters (e.g., "FF")
         """
-        return [format(byte, '02X') for byte in self._data]
+        return [format(byte, "02X") for byte in self._data]
 
     def to_dict(self) -> Dict[str, Any]:
         """
@@ -122,14 +127,10 @@ class GramCard:
         Returns:
             Dict with 'label', 'data', and 'color' keys
         """
-        return {
-            "label": self.label,
-            "data": self.to_bytes(),
-            "color": self.color
-        }
+        return {"label": self.label, "data": self.to_bytes(), "color": self.color}
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> 'GramCard':
+    def from_dict(cls, data: Dict[str, Any]) -> "GramCard":
         """
         Create card from dictionary
 
@@ -152,7 +153,7 @@ class GramCard:
             reversed_byte = 0
             for bit in range(8):
                 if byte & (1 << bit):
-                    reversed_byte |= (1 << (7 - bit))
+                    reversed_byte |= 1 << (7 - bit)
             self._data[i] = reversed_byte
 
     def flip_vertical(self) -> None:

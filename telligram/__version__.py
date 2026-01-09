@@ -1,6 +1,8 @@
 """Version information for telliGRAM."""
+
 import sys
 from pathlib import Path
+
 
 def get_version() -> str:
     """Get version from pyproject.toml"""
@@ -19,5 +21,6 @@ def get_version() -> str:
     except Exception:
         # Fallback if pyproject.toml can't be read or tomli not installed
         return "0.1.0-alpha"
+
 
 __version__ = get_version()

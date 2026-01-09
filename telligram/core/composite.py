@@ -34,11 +34,16 @@ class LayerComposite:
         #   "end_behavior": str,        # "loop", "hold", or "hide"
         #   "color_override": int|None  # Intellivision color index (0-15), None = original
         # }
-        self.fps: int = 60              # Composite playback speed
-        self.loop: bool = False         # Loop entire composite
+        self.fps: int = 60  # Composite playback speed
+        self.loop: bool = False  # Loop entire composite
 
-    def add_layer(self, animation_name: str, visible: bool = True,
-                  end_behavior: str = "loop", color_override: Optional[int] = None) -> None:
+    def add_layer(
+        self,
+        animation_name: str,
+        visible: bool = True,
+        end_behavior: str = "loop",
+        color_override: Optional[int] = None,
+    ) -> None:
         """
         Add a layer to the composite.
 
@@ -57,12 +62,14 @@ class LayerComposite:
         if color_override is not None and not (0 <= color_override <= 15):
             raise ValueError("color_override must be 0-15 or None")
 
-        self.layers.append({
-            "animation_name": animation_name,
-            "visible": visible,
-            "end_behavior": end_behavior,
-            "color_override": color_override
-        })
+        self.layers.append(
+            {
+                "animation_name": animation_name,
+                "visible": visible,
+                "end_behavior": end_behavior,
+                "color_override": color_override,
+            }
+        )
 
     def remove_layer(self, index: int) -> None:
         """
@@ -111,11 +118,11 @@ class LayerComposite:
             "name": self.name,
             "layers": self.layers.copy(),
             "fps": self.fps,
-            "loop": self.loop
+            "loop": self.loop,
         }
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> 'LayerComposite':
+    def from_dict(cls, data: Dict[str, Any]) -> "LayerComposite":
         """
         Deserialize from JSON.
 
@@ -175,7 +182,9 @@ class LayerComposite:
                     card_slot = animation.get_card_at_frame(frame_num, loop=True)
                 elif end_behavior == "hold":
                     # Hold on last frame
-                    card_slot = animation.get_card_at_frame(total_duration - 1, loop=False)
+                    card_slot = animation.get_card_at_frame(
+                        total_duration - 1, loop=False
+                    )
                 else:  # hide
                     # Hide layer
                     card_slot = None

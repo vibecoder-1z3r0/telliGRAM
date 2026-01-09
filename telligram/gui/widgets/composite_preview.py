@@ -6,9 +6,20 @@ controls for visibility, color override, and end behavior.
 """
 
 from PySide6.QtWidgets import (
-    QWidget, QVBoxLayout, QHBoxLayout, QLabel, QPushButton,
-    QComboBox, QCheckBox, QSlider, QFrame, QGroupBox, QScrollArea,
-    QInputDialog, QMessageBox, QSpinBox
+    QWidget,
+    QVBoxLayout,
+    QHBoxLayout,
+    QLabel,
+    QPushButton,
+    QComboBox,
+    QCheckBox,
+    QSlider,
+    QFrame,
+    QGroupBox,
+    QScrollArea,
+    QInputDialog,
+    QMessageBox,
+    QSpinBox,
 )
 from PySide6.QtCore import Qt, Signal, QTimer
 from PySide6.QtGui import QPainter, QColor
@@ -57,13 +68,17 @@ class LayerControlWidget(QFrame):
         self.move_up_btn = QPushButton("↑")
         self.move_up_btn.setMaximumWidth(30)
         self.move_up_btn.setToolTip("Move layer up")
-        self.move_up_btn.clicked.connect(lambda: self.move_up_requested.emit(self.layer_index))
+        self.move_up_btn.clicked.connect(
+            lambda: self.move_up_requested.emit(self.layer_index)
+        )
         top_layout.addWidget(self.move_up_btn)
 
         self.move_down_btn = QPushButton("↓")
         self.move_down_btn.setMaximumWidth(30)
         self.move_down_btn.setToolTip("Move layer down")
-        self.move_down_btn.clicked.connect(lambda: self.move_down_requested.emit(self.layer_index))
+        self.move_down_btn.clicked.connect(
+            lambda: self.move_down_requested.emit(self.layer_index)
+        )
         top_layout.addWidget(self.move_down_btn)
 
         self.animation_combo = QComboBox()
@@ -91,7 +106,9 @@ class LayerControlWidget(QFrame):
         self.end_behavior_combo.addItem("Hold", "hold")
         self.end_behavior_combo.addItem("Hide", "hide")
         self.end_behavior_combo.setEnabled(False)
-        self.end_behavior_combo.currentIndexChanged.connect(lambda: self.layer_changed.emit())
+        self.end_behavior_combo.currentIndexChanged.connect(
+            lambda: self.layer_changed.emit()
+        )
         bottom_layout.addWidget(self.end_behavior_combo)
 
         layout.addLayout(bottom_layout)
@@ -127,7 +144,9 @@ class LayerControlWidget(QFrame):
             self.stack_stitch_combo.addItem("Stack Below", "stack")
             self.stack_stitch_combo.addItem("Stitch Below", "stitch")
             self.stack_stitch_combo.setEnabled(False)
-            self.stack_stitch_combo.currentIndexChanged.connect(lambda: self.layer_changed.emit())
+            self.stack_stitch_combo.currentIndexChanged.connect(
+                lambda: self.layer_changed.emit()
+            )
             stack_stitch_layout.addWidget(self.stack_stitch_combo)
             stack_stitch_layout.addStretch()
 
@@ -174,12 +193,16 @@ class LayerControlWidget(QFrame):
 
         # Always return a config dict to preserve settings even when layer is unchecked
         config = {
-            "animation_name": self.animation_combo.currentText() if self.animation_combo.currentIndex() >= 0 else "",
+            "animation_name": (
+                self.animation_combo.currentText()
+                if self.animation_combo.currentIndex() >= 0
+                else ""
+            ),
             "visible": is_visible,
             "end_behavior": self.end_behavior_combo.currentData(),
             "color_override": self.color_combo.currentData(),
             "x_offset": self.x_offset_spin.value(),
-            "y_offset": self.y_offset_spin.value()
+            "y_offset": self.y_offset_spin.value(),
         }
 
         # Add stack_stitch mode if available (layers 1-7)
@@ -282,21 +305,31 @@ class CompositePreviewArea(QWidget):
 
         if self.composite and self.project:
             # Get card slots for all layers at current frame
-            card_slots = self.composite.get_card_at_frame(self.current_frame, self.project)
+            card_slots = self.composite.get_card_at_frame(
+                self.current_frame, self.project
+            )
 
             # Calculate cumulative stack/stitch positions for each layer
             # Each layer's base position is determined by stack/stitch relative to layer below
             layer_positions = {}  # layer_idx -> (base_x_cards, base_y_cards)
 
             for layer_idx in range(8):
-                layer_config = self.composite.layers[layer_idx] if layer_idx < len(self.composite.layers) else None
+                layer_config = (
+                    self.composite.layers[layer_idx]
+                    if layer_idx < len(self.composite.layers)
+                    else None
+                )
 
                 if layer_idx == 0:
                     # Parent/Base layer starts at origin
                     layer_positions[layer_idx] = (0, 0)
                 else:
                     # Check if this layer is stacked/stitched to layer below
-                    stack_stitch = layer_config.get("stack_stitch", "none") if layer_config else "none"
+                    stack_stitch = (
+                        layer_config.get("stack_stitch", "none")
+                        if layer_config
+                        else "none"
+                    )
 
                     # Get position of layer below
                     prev_x, prev_y = layer_positions.get(layer_idx - 1, (0, 0))
@@ -322,7 +355,11 @@ class CompositePreviewArea(QWidget):
                     continue
 
                 # Determine color to use
-                layer_config = self.composite.layers[layer_idx] if layer_idx < len(self.composite.layers) else None
+                layer_config = (
+                    self.composite.layers[layer_idx]
+                    if layer_idx < len(self.composite.layers)
+                    else None
+                )
                 if layer_config and layer_config.get("color_override") is not None:
                     color_index = layer_config["color_override"]
                 else:
@@ -342,14 +379,20 @@ class CompositePreviewArea(QWidget):
                     for x in range(8):
                         if card.get_pixel(x, y):
                             # Apply all offsets in card pixels
-                            final_x = offset_x + (base_x_cards + x + x_offset_cards) * self.pixel_size
-                            final_y = offset_y + (base_y_cards + y + y_offset_cards) * self.pixel_size
+                            final_x = (
+                                offset_x
+                                + (base_x_cards + x + x_offset_cards) * self.pixel_size
+                            )
+                            final_y = (
+                                offset_y
+                                + (base_y_cards + y + y_offset_cards) * self.pixel_size
+                            )
                             painter.fillRect(
                                 final_x,
                                 final_y,
                                 self.pixel_size,
                                 self.pixel_size,
-                                color
+                                color,
                             )
 
         # Draw grid if enabled
@@ -598,7 +641,10 @@ class CompositePreviewWidget(QWidget):
         num_configured_layers = 0
         for i, layer_config in enumerate(self.current_composite.layers):
             # Only count layers that are visible or have a non-empty animation name
-            if layer_config.get("visible") or (layer_config.get("animation_name") and layer_config.get("animation_name").strip()):
+            if layer_config.get("visible") or (
+                layer_config.get("animation_name")
+                and layer_config.get("animation_name").strip()
+            ):
                 num_configured_layers = i + 1
 
         # Ensure at least 2 layers are visible (Parent/Base + Layer 1)
@@ -617,7 +663,9 @@ class CompositePreviewWidget(QWidget):
         # Load layer configurations
         for i in range(8):
             if i < len(self.current_composite.layers):
-                self.layer_controls[i].set_layer_config(self.current_composite.layers[i])
+                self.layer_controls[i].set_layer_config(
+                    self.current_composite.layers[i]
+                )
             else:
                 self.layer_controls[i].set_layer_config(None)
 
@@ -715,7 +763,10 @@ class CompositePreviewWidget(QWidget):
         # Swap configurations
         layers = self.current_composite.layers
         if layer_index < len(layers) and layer_index - 1 < len(layers):
-            layers[layer_index], layers[layer_index - 1] = layers[layer_index - 1], layers[layer_index]
+            layers[layer_index], layers[layer_index - 1] = (
+                layers[layer_index - 1],
+                layers[layer_index],
+            )
 
             # Reload UI
             self._load_composite_to_controls()
@@ -729,7 +780,10 @@ class CompositePreviewWidget(QWidget):
         # Swap configurations
         layers = self.current_composite.layers
         if layer_index < len(layers) and layer_index + 1 < len(layers):
-            layers[layer_index], layers[layer_index + 1] = layers[layer_index + 1], layers[layer_index]
+            layers[layer_index], layers[layer_index + 1] = (
+                layers[layer_index + 1],
+                layers[layer_index],
+            )
 
             # Reload UI
             self._load_composite_to_controls()
@@ -767,7 +821,9 @@ class CompositePreviewWidget(QWidget):
         if ok and name:
             # Check if name already exists
             if self.project.get_composite(name):
-                QMessageBox.warning(self, "Name Exists", f"A composite named '{name}' already exists.")
+                QMessageBox.warning(
+                    self, "Name Exists", f"A composite named '{name}' already exists."
+                )
                 return
 
             # Create new composite
@@ -797,7 +853,9 @@ class CompositePreviewWidget(QWidget):
         if ok and name and name != current_name:
             # Check if name already exists
             if self.project.get_composite(name):
-                QMessageBox.warning(self, "Name Exists", f"A composite named '{name}' already exists.")
+                QMessageBox.warning(
+                    self, "Name Exists", f"A composite named '{name}' already exists."
+                )
                 return
 
             # Rename
@@ -821,7 +879,7 @@ class CompositePreviewWidget(QWidget):
             "Delete Composite",
             f"Are you sure you want to delete '{composite.name}'?",
             QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
-            QMessageBox.StandardButton.No
+            QMessageBox.StandardButton.No,
         )
 
         if result == QMessageBox.StandardButton.Yes:
@@ -848,7 +906,7 @@ class CompositePreviewWidget(QWidget):
 
     def _on_grid_changed(self, state):
         """Handle grid checkbox change"""
-        self.preview_area.show_grid = (state == Qt.CheckState.Checked)
+        self.preview_area.show_grid = state == Qt.CheckState.Checked
         self.preview_area.update()
 
     def _start_playback(self):

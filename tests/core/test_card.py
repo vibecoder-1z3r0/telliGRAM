@@ -3,6 +3,7 @@ Tests for GramCard class
 
 Following TDD: Write tests FIRST, then implement to make them pass
 """
+
 import pytest
 from telligram.core.card import GramCard
 
@@ -116,7 +117,7 @@ class TestGramCardDataExport:
         """Should create card from dictionary"""
         data_dict = {
             "label": "test_card",
-            "data": [0xFF, 0x81, 0x00, 0x42, 0x00, 0x00, 0x00, 0x00]
+            "data": [0xFF, 0x81, 0x00, 0x42, 0x00, 0x00, 0x00, 0x00],
         }
         card = GramCard.from_dict(data_dict)
         assert card.label == "test_card"

@@ -1,7 +1,16 @@
 """Card grid widget - displays all 64 GRAM card slots"""
+
 from PySide6.QtWidgets import (
-    QWidget, QGridLayout, QFrame, QLabel, QVBoxLayout,
-    QMenu, QDialog, QTextEdit, QPushButton, QApplication
+    QWidget,
+    QGridLayout,
+    QFrame,
+    QLabel,
+    QVBoxLayout,
+    QMenu,
+    QDialog,
+    QTextEdit,
+    QPushButton,
+    QApplication,
 )
 from PySide6.QtCore import Qt, Signal
 from PySide6.QtGui import QPainter, QColor, QPen, QPixmap, QAction, QFont
@@ -22,7 +31,9 @@ class CardThumbnail(QFrame):
         self.slot = slot
         self.card = None
         self.selected = False
-        self.parent_grid = parent_grid  # Reference to CardGridWidget for clipboard access
+        self.parent_grid = (
+            parent_grid  # Reference to CardGridWidget for clipboard access
+        )
         self.setFixedSize(70, 90)
 
         # Create UI elements
@@ -69,7 +80,9 @@ class CardThumbnail(QFrame):
         offset_y = 2
 
         # Get card color
-        card_color = get_color_hex(self.card.color) if hasattr(self.card, 'color') else "#FFFFFF"
+        card_color = (
+            get_color_hex(self.card.color) if hasattr(self.card, "color") else "#FFFFFF"
+        )
 
         for y in range(8):
             for x in range(8):
@@ -79,7 +92,7 @@ class CardThumbnail(QFrame):
                         offset_y + y * pixel_size,
                         pixel_size,
                         pixel_size,
-                        QColor(card_color)
+                        QColor(card_color),
                     )
 
         painter.end()
@@ -88,7 +101,8 @@ class CardThumbnail(QFrame):
     def _update_style(self):
         """Update visual style based on selection state"""
         if self.selected:
-            self.setStyleSheet("""
+            self.setStyleSheet(
+                """
                 QFrame {
                     background-color: #0078D4;
                     border: 2px solid #0078D4;
@@ -97,9 +111,11 @@ class CardThumbnail(QFrame):
                     color: #b4b4b4;
                     background-color: transparent;
                 }
-            """)
+            """
+            )
         else:
-            self.setStyleSheet("""
+            self.setStyleSheet(
+                """
                 QFrame {
                     background-color: #2b2b2b;
                     border: 1px solid #3c3c3c;
@@ -108,7 +124,8 @@ class CardThumbnail(QFrame):
                     color: #787878;
                     background-color: transparent;
                 }
-            """)
+            """
+            )
 
     def set_card(self, card: GramCard):
         """Set card to display"""
@@ -176,7 +193,9 @@ class CardThumbnail(QFrame):
                 color_data = INTELLIVISION_PALETTE[i]
                 color_action = QAction(f"{color_data['name']} (#{i})", self)
                 # Use *args to ignore the 'checked' argument that triggered() passes
-                color_action.triggered.connect(lambda *args, idx=i: self._change_color(idx))
+                color_action.triggered.connect(
+                    lambda *args, idx=i: self._change_color(idx)
+                )
                 color_menu.addAction(color_action)
 
         # Separator before export
@@ -219,7 +238,7 @@ class CardThumbnail(QFrame):
         # Convert to visual representation (1 -> X, 0 -> .)
         visual_rows = []
         for row in binary_rows:
-            visual_row = row.replace('1', 'X').replace('0', '.')
+            visual_row = row.replace("1", "X").replace("0", ".")
             visual_rows.append(f'    "{visual_row}"')
 
         # Format as IntyBASIC BITMAP
@@ -250,7 +269,7 @@ class CardThumbnail(QFrame):
         # Convert to visual representation (1 -> #, 0 -> .)
         visual_rows = []
         for row in binary_rows:
-            visual_row = row.replace('1', '#').replace('0', '.')
+            visual_row = row.replace("1", "#").replace("0", ".")
             visual_rows.append(f'            "{visual_row}"')
 
         # Format as MBCC SBITMAP
@@ -293,6 +312,7 @@ class CardThumbnail(QFrame):
         if self.card is not None and self.parent_grid and self.parent_grid.main_window:
             # Use undo command
             from telligram.gui.main_window import ClearCardCommand
+
             command = ClearCardCommand(self.parent_grid.main_window, self.slot)
             self.parent_grid.main_window.undo_stack.push(command)
 
@@ -301,6 +321,7 @@ class CardThumbnail(QFrame):
         if self.card is not None and self.parent_grid and self.parent_grid.main_window:
             # Use undo command
             from telligram.gui.main_window import FlipHorizontalCommand
+
             command = FlipHorizontalCommand(self.parent_grid.main_window, self.slot)
             self.parent_grid.main_window.undo_stack.push(command)
 
@@ -309,17 +330,21 @@ class CardThumbnail(QFrame):
         if self.card is not None and self.parent_grid and self.parent_grid.main_window:
             # Use undo command
             from telligram.gui.main_window import FlipVerticalCommand
+
             command = FlipVerticalCommand(self.parent_grid.main_window, self.slot)
             self.parent_grid.main_window.undo_stack.push(command)
 
     def _change_color(self, color_index: int):
         """Change this card's color"""
         if self.card is not None and self.parent_grid and self.parent_grid.main_window:
-            old_color = self.card.color if hasattr(self.card, 'color') else 7
+            old_color = self.card.color if hasattr(self.card, "color") else 7
             if old_color != color_index:
                 # Use undo command
                 from telligram.gui.main_window import ChangeCardColorCommand
-                command = ChangeCardColorCommand(self.parent_grid.main_window, self.slot, old_color, color_index)
+
+                command = ChangeCardColorCommand(
+                    self.parent_grid.main_window, self.slot, old_color, color_index
+                )
                 self.parent_grid.main_window.undo_stack.push(command)
 
 
@@ -404,6 +429,7 @@ class CardGridWidget(QWidget):
         # Use undo command if main_window is available
         if self.main_window:
             from telligram.gui.main_window import PasteCardCommand
+
             command = PasteCardCommand(self.main_window, slot, self._card_clipboard)
             self.main_window.undo_stack.push(command)
         else:

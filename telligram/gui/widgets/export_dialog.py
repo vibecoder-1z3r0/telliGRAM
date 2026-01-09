@@ -6,8 +6,15 @@ the generated code.
 """
 
 from PySide6.QtWidgets import (
-    QDialog, QVBoxLayout, QHBoxLayout, QLabel, QComboBox,
-    QTextEdit, QPushButton, QFileDialog, QMessageBox
+    QDialog,
+    QVBoxLayout,
+    QHBoxLayout,
+    QLabel,
+    QComboBox,
+    QTextEdit,
+    QPushButton,
+    QFileDialog,
+    QMessageBox,
 )
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QFont
@@ -95,15 +102,13 @@ class ExportDialog(QDialog):
     def _copy_to_clipboard(self):
         """Copy code to clipboard"""
         from PySide6.QtGui import QGuiApplication
+
         clipboard = QGuiApplication.clipboard()
         clipboard.setText(self.code_text.toPlainText())
 
         # Show brief confirmation
         QMessageBox.information(
-            self,
-            "Copied",
-            "Code copied to clipboard!",
-            QMessageBox.Ok
+            self, "Copied", "Code copied to clipboard!", QMessageBox.Ok
         )
 
     def _save_to_file(self):
@@ -115,31 +120,20 @@ class ExportDialog(QDialog):
             "intybasic_visual": "IntyBASIC Source (*.bas);;All Files (*)",
             "intybasic_data": "IntyBASIC Source (*.bas);;All Files (*)",
             "mbcc": "C Header (*.h);;C Source (*.c);;All Files (*)",
-            "asm": "Assembly Source (*.asm);;All Files (*)"
+            "asm": "Assembly Source (*.asm);;All Files (*)",
         }
 
         filename, _ = QFileDialog.getSaveFileName(
-            self,
-            "Save Export",
-            "",
-            filters.get(format_key, "All Files (*)")
+            self, "Save Export", "", filters.get(format_key, "All Files (*)")
         )
 
         if not filename:
             return
 
         try:
-            with open(filename, 'w') as f:
+            with open(filename, "w") as f:
                 f.write(self.code_text.toPlainText())
 
-            QMessageBox.information(
-                self,
-                "Success",
-                f"Code saved to:\n{filename}"
-            )
+            QMessageBox.information(self, "Success", f"Code saved to:\n{filename}")
         except Exception as e:
-            QMessageBox.critical(
-                self,
-                "Error",
-                f"Failed to save file:\n{str(e)}"
-            )
+            QMessageBox.critical(self, "Error", f"Failed to save file:\n{str(e)}")

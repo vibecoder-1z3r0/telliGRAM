@@ -5,8 +5,14 @@ Manages multiple timeline editors and composite preview for layered animations.
 """
 
 from PySide6.QtWidgets import (
-    QWidget, QVBoxLayout, QHBoxLayout, QPushButton,
-    QScrollArea, QFrame, QTabWidget, QLabel
+    QWidget,
+    QVBoxLayout,
+    QHBoxLayout,
+    QPushButton,
+    QScrollArea,
+    QFrame,
+    QTabWidget,
+    QLabel,
 )
 from PySide6.QtCore import Qt, Signal
 

@@ -143,7 +143,10 @@ class GromData:
         }
 
         Args:
-            grom_json_path: Path to GROM.json file (required)
+            grom_json_path: Path to GROM.json file. If not provided, searches:
+                          1. Current working directory
+                          2. Package directory (where grom.py is)
+                          3. Project root (parent of telligram package)
 
         Returns:
             List of 256 cards, each card is a list of 8 bytes.
@@ -154,17 +157,35 @@ class GromData:
             ValueError: If GROM file format is invalid
         """
         if not grom_json_path:
-            raise ValueError("GROM file path is required")
+            # Search for GROM.json in common locations
+            search_paths = [
+                Path.cwd() / "GROM.json",  # Current directory
+                Path(__file__).parent / "GROM.json",  # Package directory
+                Path(__file__).parent.parent.parent / "GROM.json",  # Project root
+            ]
+
+            for path in search_paths:
+                if path.exists():
+                    grom_json_path = path
+                    break
+
+            if not grom_json_path:
+                raise ValueError(
+                    "GROM file not found. Searched: "
+                    + ", ".join(str(p) for p in search_paths)
+                )
 
         if not grom_json_path.exists():
             raise FileNotFoundError(f"GROM file not found: {grom_json_path}")
 
         try:
-            with open(grom_json_path, 'r') as f:
+            with open(grom_json_path, "r") as f:
                 data = json.load(f)
 
                 if not isinstance(data, dict):
-                    raise ValueError(f"Invalid GROM.json format: expected object with card numbers as keys")
+                    raise ValueError(
+                        f"Invalid GROM.json format: expected object with card numbers as keys"
+                    )
 
                 # Initialize all 256 cards as blank
                 cards = [[0x00] * 8 for _ in range(256)]
@@ -194,7 +215,9 @@ class GromData:
 
                         # Validate card number is in range
                         if card_num < 0 or card_num > 255:
-                            print(f"WARNING: Ignoring out-of-bounds card number: {card_num} (must be 0-255)")
+                            print(
+                                f"WARNING: Ignoring out-of-bounds card number: {card_num} (must be 0-255)"
+                            )
                             continue
 
                         # Handle both old (array) and new (object) formats
@@ -206,22 +229,30 @@ class GromData:
                             card_data = value.get("data")
                             card_label = value.get("label")
                             if card_data is None:
-                                print(f"WARNING: Ignoring card {card_num}: missing 'data' field")
+                                print(
+                                    f"WARNING: Ignoring card {card_num}: missing 'data' field"
+                                )
                                 continue
                         elif isinstance(value, list):
                             # Old format: [...]
                             card_data = value
                         else:
-                            print(f"WARNING: Ignoring card {card_num}: value must be array or object")
+                            print(
+                                f"WARNING: Ignoring card {card_num}: value must be array or object"
+                            )
                             continue
 
                         # Validate card data is a list of 8 bytes
                         if not isinstance(card_data, list):
-                            print(f"WARNING: Ignoring card {card_num}: data must be an array")
+                            print(
+                                f"WARNING: Ignoring card {card_num}: data must be an array"
+                            )
                             continue
 
                         if len(card_data) != 8:
-                            print(f"WARNING: Ignoring card {card_num}: expected 8 bytes, got {len(card_data)}")
+                            print(
+                                f"WARNING: Ignoring card {card_num}: expected 8 bytes, got {len(card_data)}"
+                            )
                             continue
 
                         # Parse and validate each byte
@@ -230,7 +261,9 @@ class GromData:
                         for i, byte_val in enumerate(card_data):
                             parsed = self._parse_byte(byte_val)
                             if parsed is None:
-                                print(f"WARNING: Ignoring card {card_num}: invalid byte at index {i}: {byte_val}")
+                                print(
+                                    f"WARNING: Ignoring card {card_num}: invalid byte at index {i}: {byte_val}"
+                                )
                                 valid = False
                                 break
                             parsed_bytes.append(parsed)

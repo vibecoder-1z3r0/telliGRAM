@@ -19,7 +19,7 @@ class TestAnimationCreation:
         anim = Animation(name="walk_cycle")
         assert anim.name == "walk_cycle"
         assert anim.frame_count == 0
-        assert anim.fps == 10  # Default 10 FPS
+        assert anim.fps == 60  # Default 60 FPS (matches STIC 60Hz)
 
     def test_create_animation_with_custom_fps(self):
         """Should create animation with custom FPS"""
@@ -154,8 +154,8 @@ class TestAnimationSerialization:
             "loop": True,
             "frames": [
                 {"card_slot": 0, "duration": 2},
-                {"card_slot": 1, "duration": 2}
-            ]
+                {"card_slot": 1, "duration": 2},
+            ],
         }
         anim = Animation.from_dict(data)
         assert anim.name == "walk"
@@ -170,7 +170,7 @@ class TestProjectWithAnimations:
     def test_project_stores_animations(self):
         """Project should store animation list"""
         project = Project(name="game")
-        assert hasattr(project, 'animations')
+        assert hasattr(project, "animations")
         assert len(project.animations) == 0
 
     def test_add_animation_to_project(self):

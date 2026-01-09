@@ -6,8 +6,17 @@ Helps users reference available characters and avoid wasting GRAM slots.
 """
 
 from PySide6.QtWidgets import (
-    QWidget, QGridLayout, QLabel, QVBoxLayout, QHBoxLayout, QScrollArea, QFrame,
-    QMenu, QInputDialog, QCheckBox, QPushButton
+    QWidget,
+    QGridLayout,
+    QLabel,
+    QVBoxLayout,
+    QHBoxLayout,
+    QScrollArea,
+    QFrame,
+    QMenu,
+    QInputDialog,
+    QCheckBox,
+    QPushButton,
 )
 from PySide6.QtCore import Qt, Signal
 from PySide6.QtGui import QPainter, QColor, QPen, QFont, QPixmap, QAction
@@ -81,7 +90,8 @@ class GromThumbnail(QFrame):
     def _update_style(self):
         """Update visual style based on selection state (match GRAM)"""
         if self.selected:
-            self.setStyleSheet("""
+            self.setStyleSheet(
+                """
                 QFrame {
                     background-color: #0078D4;
                     border: 2px solid #0078D4;
@@ -90,9 +100,11 @@ class GromThumbnail(QFrame):
                     color: #b4b4b4;
                     background-color: transparent;
                 }
-            """)
+            """
+            )
         else:
-            self.setStyleSheet("""
+            self.setStyleSheet(
+                """
                 QFrame {
                     background-color: #2b2b2b;
                     border: 1px solid #3c3c3c;
@@ -101,7 +113,8 @@ class GromThumbnail(QFrame):
                     color: #787878;
                     background-color: transparent;
                 }
-            """)
+            """
+            )
 
     def _render_character(self) -> QPixmap:
         """Render GROM character to QPixmap - more WSL-compatible than direct painting"""
@@ -124,7 +137,7 @@ class GromThumbnail(QFrame):
                         y * self.pixel_size,
                         self.pixel_size,
                         self.pixel_size,
-                        QColor(255, 255, 255)  # White to match GRAM thumbnails
+                        QColor(255, 255, 255),  # White to match GRAM thumbnails
                     )
 
         painter.end()
@@ -222,9 +235,13 @@ class GromPreviewWidget(QWidget):
 
                 # Draw pixel
                 if pixel_on:
-                    painter.fillRect(px, py, self.pixel_size, self.pixel_size, QColor(card_color))
+                    painter.fillRect(
+                        px, py, self.pixel_size, self.pixel_size, QColor(card_color)
+                    )
                 else:
-                    painter.fillRect(px, py, self.pixel_size, self.pixel_size, QColor("#2D2D30"))
+                    painter.fillRect(
+                        px, py, self.pixel_size, self.pixel_size, QColor("#2D2D30")
+                    )
 
         # Draw grid lines (if enabled)
         if self.show_grid:
@@ -242,7 +259,7 @@ class GromPreviewWidget(QWidget):
 
         # Draw thicker border
         painter.setPen(QPen(QColor("#666666"), 2))
-        painter.drawRect(0, 0, self.width()-1, self.height()-1)
+        painter.drawRect(0, 0, self.width() - 1, self.height() - 1)
 
 
 class GromBrowserWidget(QWidget):
@@ -274,7 +291,8 @@ class GromBrowserWidget(QWidget):
 
         # Title label
         title = QLabel("GROM Cards (0-255)")
-        title.setStyleSheet("""
+        title.setStyleSheet(
+            """
             QLabel {
                 color: #cccccc;
                 font-size: 14px;
@@ -282,7 +300,8 @@ class GromBrowserWidget(QWidget):
                 padding: 8px;
                 background-color: #1e1e1e;
             }
-        """)
+        """
+        )
         main_layout.addWidget(title)
 
         # Split layout: grid on left, preview panel on right
@@ -295,12 +314,14 @@ class GromBrowserWidget(QWidget):
         scroll.setWidgetResizable(True)
         scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
         scroll.setVerticalScrollBarPolicy(Qt.ScrollBarAsNeeded)
-        scroll.setStyleSheet("""
+        scroll.setStyleSheet(
+            """
             QScrollArea {
                 border: none;
                 background-color: #1e1e1e;
             }
-        """)
+        """
+        )
 
         # Container for the grid
         container = QWidget()

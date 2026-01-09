@@ -12,7 +12,6 @@ INTELLIVISION_PALETTE = [
     {"index": 5, "name": "Green", "hex": "#00A756", "rgb": (0, 167, 86)},
     {"index": 6, "name": "Yellow", "hex": "#FAEB27", "rgb": (250, 235, 39)},
     {"index": 7, "name": "White", "hex": "#FCFFFF", "rgb": (252, 255, 255)},
-
     # Index 8-15: Extended palette
     {"index": 8, "name": "Gray", "hex": "#A7A8A8", "rgb": (167, 168, 168)},
     {"index": 9, "name": "Cyan", "hex": "#5ACBFF", "rgb": (90, 203, 255)},
@@ -30,17 +29,20 @@ DEFAULT_CARD_COLOR = 7
 # Color names list for easy dropdown population
 COLOR_NAMES = [color["name"] for color in INTELLIVISION_PALETTE]
 
+
 def get_color_hex(index: int) -> str:
     """Get hex color string for a palette index (0-15)"""
     if 0 <= index < len(INTELLIVISION_PALETTE):
         return INTELLIVISION_PALETTE[index]["hex"]
     return INTELLIVISION_PALETTE[DEFAULT_CARD_COLOR]["hex"]
 
+
 def get_color_rgb(index: int) -> tuple:
     """Get RGB tuple for a palette index (0-15)"""
     if 0 <= index < len(INTELLIVISION_PALETTE):
         return INTELLIVISION_PALETTE[index]["rgb"]
     return INTELLIVISION_PALETTE[DEFAULT_CARD_COLOR]["rgb"]
+
 
 def get_color_name(index: int) -> str:
     """Get color name for a palette index (0-15)"""

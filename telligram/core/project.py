@@ -1,4 +1,5 @@
 """Project model for telliGRAM - handles save/load"""
+
 import json
 from pathlib import Path
 from typing import List, Optional, Dict, Any
@@ -18,11 +19,7 @@ class Project:
     MAX_CARDS = 64  # Maximum GRAM cards (256-319)
 
     def __init__(
-        self,
-        name: str,
-        author: str = "",
-        description: str = "",
-        version: str = "1.0"
+        self, name: str, author: str = "", description: str = "", version: str = "1.0"
     ):
         """
         Initialize new project
@@ -196,22 +193,15 @@ class Project:
             "description": self.description,
             "version": self.version,
             "cards": [
-                card.to_dict() if card is not None else None
-                for card in self.cards
+                card.to_dict() if card is not None else None for card in self.cards
             ],
-            "animations": [
-                anim.to_dict() for anim in self.animations
-            ],
-            "composites": [
-                comp.to_dict() for comp in self.composites
-            ],
-            "stic_figures": [
-                figure.to_dict() for figure in self.stic_figures
-            ]
+            "animations": [anim.to_dict() for anim in self.animations],
+            "composites": [comp.to_dict() for comp in self.composites],
+            "stic_figures": [figure.to_dict() for figure in self.stic_figures],
         }
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> 'Project':
+    def from_dict(cls, data: Dict[str, Any]) -> "Project":
         """
         Create project from dictionary
 
@@ -225,7 +215,7 @@ class Project:
             name=data["name"],
             author=data.get("author", ""),
             description=data.get("description", ""),
-            version=data.get("version", "1.0")
+            version=data.get("version", "1.0"),
         )
 
         # Load cards
@@ -264,11 +254,11 @@ class Project:
         filepath.parent.mkdir(parents=True, exist_ok=True)
 
         # Save as formatted JSON (human-readable)
-        with open(filepath, 'w') as f:
+        with open(filepath, "w") as f:
             json.dump(self.to_dict(), f, indent=2)
 
     @classmethod
-    def load(cls, filepath: Path) -> 'Project':
+    def load(cls, filepath: Path) -> "Project":
         """
         Load project from JSON file
 
@@ -286,7 +276,7 @@ class Project:
         if not filepath.exists():
             raise FileNotFoundError(f"Project file not found: {filepath}")
 
-        with open(filepath, 'r') as f:
+        with open(filepath, "r") as f:
             data = json.load(f)
 
         return cls.from_dict(data)

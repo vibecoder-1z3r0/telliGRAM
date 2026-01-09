@@ -19,11 +19,7 @@ class SticFigure:
     Designed for visual screen design and export to game code.
     """
 
-    def __init__(
-        self,
-        name: str,
-        mode: str = "color_stack"
-    ):
+    def __init__(self, name: str, mode: str = "color_stack"):
         """
         Create new STIC figure.
 
@@ -54,30 +50,34 @@ class SticFigure:
         self._backtab: List[Dict[str, Any]] = []
         for row in range(12):
             for col in range(20):
-                self._backtab.append({
-                    "row": row,
-                    "col": col,
-                    "card": 0,
-                    "fg_color": 7,
-                    "bg_color": 0,  # Only used in fg_bg mode
-                    "advance_stack": False  # Only used in color_stack mode
-                })
+                self._backtab.append(
+                    {
+                        "row": row,
+                        "col": col,
+                        "card": 0,
+                        "fg_color": 7,
+                        "bg_color": 0,  # Only used in fg_bg mode
+                        "advance_stack": False,  # Only used in color_stack mode
+                    }
+                )
 
         # MOB (Moving Object Block) data: 8 MOBs
         # Each MOB: {visible, card, x, y, color, priority, size, h_flip, v_flip}
         self.mobs: List[Dict[str, Any]] = []
         for i in range(8):
-            self.mobs.append({
-                "visible": False,
-                "card": 256,  # Default to first GRAM card
-                "x": 0,
-                "y": 0,
-                "color": 7,  # White
-                "priority": False,  # False=behind, True=in front
-                "size": 0,  # 0=8x8, 1=8x16, 2=16x8, 3=16x16
-                "h_flip": False,
-                "v_flip": False
-            })
+            self.mobs.append(
+                {
+                    "visible": False,
+                    "card": 256,  # Default to first GRAM card
+                    "x": 0,
+                    "y": 0,
+                    "color": 7,  # White
+                    "priority": False,  # False=behind, True=in front
+                    "size": 0,  # 0=8x8, 1=8x16, 2=16x8, 3=16x16
+                    "h_flip": False,
+                    "v_flip": False,
+                }
+            )
 
     def get_tile(self, row: int, col: int) -> Dict[str, Any]:
         """
@@ -106,7 +106,7 @@ class SticFigure:
         card: int,
         fg_color: int,
         bg_color: int = 0,
-        advance_stack: bool = False
+        advance_stack: bool = False,
     ) -> None:
         """
         Set tile data at position.
@@ -132,7 +132,7 @@ class SticFigure:
             "card": card,
             "fg_color": fg_color,
             "bg_color": bg_color,
-            "advance_stack": advance_stack
+            "advance_stack": advance_stack,
         }
 
     def get_all_tiles(self) -> List[Dict[str, Any]]:
@@ -161,7 +161,7 @@ class SticFigure:
         visible: bool = True,
         color: int = 0,
         show_left: bool = True,
-        show_top: bool = True
+        show_top: bool = True,
     ) -> None:
         """
         Set border configuration.
@@ -191,15 +191,15 @@ class SticFigure:
                 "visible": self.border_visible,
                 "color": self.border_color,
                 "show_left": self.show_left_border,
-                "show_top": self.show_top_border
+                "show_top": self.show_top_border,
             },
             "color_stack": self.color_stack.copy(),
             "backtab": self._backtab.copy(),
-            "mobs": self.mobs.copy()
+            "mobs": self.mobs.copy(),
         }
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> 'SticFigure':
+    def from_dict(cls, data: Dict[str, Any]) -> "SticFigure":
         """
         Create STIC figure from dictionary.
 
@@ -209,10 +209,7 @@ class SticFigure:
         Returns:
             SticFigure instance
         """
-        figure = cls(
-            name=data["name"],
-            mode=data.get("mode", "color_stack")
-        )
+        figure = cls(name=data["name"], mode=data.get("mode", "color_stack"))
 
         # Load border settings
         if "border" in data:
