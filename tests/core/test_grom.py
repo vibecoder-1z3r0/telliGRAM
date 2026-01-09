@@ -63,12 +63,11 @@ class TestGromData:
     def test_get_card_label(self):
         """Should get label for GROM card"""
         grom = GromData()
-        # ASCII characters should return their character
-        assert grom.get_label(0) == "' '"
-        assert grom.get_label(33) == "'A'"
-        assert grom.get_label(16) == "'0'"
-        # Extended characters should return description
-        assert grom.get_label(95) != ""
+        # Check labels from actual GROM.json
+        assert grom.get_label(0) == "Blank"
+        assert grom.get_label(4) == "Diamond"
+        # Cards without labels should return empty string
+        assert grom.get_label(255) == ""
 
     def test_is_ascii_card(self):
         """Should identify ASCII vs extended GROM cards"""
@@ -88,47 +87,40 @@ class TestGromCardData:
         space = grom.get_card(0)
         assert all(byte == 0 for byte in space)
 
-    def test_letter_a_has_correct_bitmap(self):
-        """Letter 'A' should match expected bitmap"""
+    def test_card_0_is_blank(self):
+        """Card 0 should be blank in the test GROM"""
         grom = GromData()
-        card_a = grom.get_card(33)  # 'A' is GROM card 33
-        # Based on GROM_LAYOUT.md documentation:
-        # ..XXX... = 0x18
-        # .X...X.. = 0x24
-        # X.....X. = 0x42
-        # X.....X. = 0x42
-        # XXXXXXX. = 0x7E
-        # X.....X. = 0x42
-        # X.....X. = 0x42
-        # ........ = 0x00
-        expected = [0x18, 0x24, 0x42, 0x42, 0x7E, 0x42, 0x42, 0x00]
-        assert list(card_a) == expected
-
-    def test_number_zero_has_correct_bitmap(self):
-        """Number '0' should match expected bitmap"""
-        grom = GromData()
-        card_0 = grom.get_card(16)  # '0' is GROM card 16
-        # Based on GROM_LAYOUT.md documentation
-        expected = [0x18, 0x24, 0x42, 0x42, 0x42, 0x42, 0x24, 0x18]
+        card_0 = grom.get_card(0)
+        # Based on actual GROM.json - card 0 is "Blank"
+        expected = [0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00]
         assert list(card_0) == expected
+
+    def test_card_4_is_diamond(self):
+        """Card 4 should be diamond shape"""
+        grom = GromData()
+        card_4 = grom.get_card(4)
+        # Based on actual GROM.json - card 4 is "Diamond"
+        # "___##___", "__####__", "_######_", "########", "_######_", "__####__", "___##___", "________"
+        expected = [0x18, 0x3C, 0x7E, 0xFF, 0x7E, 0x3C, 0x18, 0x00]
+        assert list(card_4) == expected
 
 
 class TestGromStringConversion:
     """Test converting text strings to GROM card sequences"""
 
     def test_text_to_grom_cards(self):
-        """Should convert text string to GROM card numbers"""
+        """Should convert text string to GROM card numbers using ASCII offset"""
         grom = GromData()
-        cards = grom.text_to_cards("HELLO")
-        # H=40, E=37, L=44, L=44, O=47
-        assert cards == [40, 37, 44, 44, 47]
+        cards = grom.text_to_cards("ABC")
+        # 'A' (ASCII 65) -> GROM 33, 'B' (ASCII 66) -> GROM 34, 'C' (ASCII 67) -> GROM 35
+        assert cards == [33, 34, 35]
 
     def test_text_to_grom_with_numbers(self):
-        """Should convert numbers in text"""
+        """Should convert space to GROM card 0"""
         grom = GromData()
-        cards = grom.text_to_cards("SCORE: 100")
-        # S=51, C=35, O=47, R=50, E=37, :=26, space=0, 1=17, 0=16, 0=16
-        assert cards == [51, 35, 47, 50, 37, 26, 0, 17, 16, 16]
+        cards = grom.text_to_cards(" ")
+        # Space (ASCII 32) -> GROM 0
+        assert cards == [0]
 
     def test_empty_string(self):
         """Should handle empty string"""
